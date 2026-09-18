@@ -1,0 +1,9 @@
+{
+  "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+  "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18",
+  "state_file": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18.json",
+  "state_sha256": "8ff819f7d1e824dbdbb1b2ef15be5980b65607048d0986039933c41111f08687",
+  "status": "ACTIVE_SEARCH_LAYER__ACOUSTIC_ANCHOR_OPEN",
+  "updated": "2026-09-18",
+  "authority_boundary": "implementation/search state only; does not move Mari semantic canon or accept an acoustic anchor"
+}
