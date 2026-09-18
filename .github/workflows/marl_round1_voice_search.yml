@@ -1,0 +1,91 @@
+name: marl-round1-voice-search
+
+on:
+  push:
+    branches:
+      - mari-acoustic-realization-layer-20260918
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+
+jobs:
+  marl-round1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build pinned native Qwen engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git curl
+          git init qwen-native
+          cd qwen-native
+          git remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git fetch --depth 1 origin "$QWEN_C_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$QWEN_C_SHA"
+          make blas SIMD=portable
+          ./qwen_tts --self-test
+
+      - name: Download VoiceDesign model
+        run: |
+          set -euo pipefail
+          cd qwen-native
+          ./download_model.sh --model voice-design --dir qwen3-tts-voice-design
+
+      - name: Render MARL round 1
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cd qwen-native
+          TEXT="Give me the problem as it is."
+
+          ./qwen_tts -d qwen3-tts-voice-design -l English             --instruct "An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation darker tonal color distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture lighter vocal weight moderate natural warmth. Avoid anime-girl or cute synthetic idol behavior; avoid generic intimate breathy woman; avoid generic sultry cyber-diva; avoid emotionless robot; avoid renderer-default femininity mistaken for identity."             --text "$TEXT" --seed 40411 --temperature 0.5 --int4 -j4 --max-duration 8             -o ../out/MARL-R1-A.wav
+
+          ./qwen_tts -d qwen3-tts-voice-design -l English             --instruct "An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation brighter tonal color without girlishness distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture balanced vocal weight moderate natural warmth. Avoid anime-girl or cute synthetic idol behavior; avoid generic intimate breathy woman; avoid generic sultry cyber-diva; avoid emotionless robot; avoid renderer-default femininity mistaken for identity."             --text "$TEXT" --seed 40412 --temperature 0.5 --int4 -j4 --max-duration 8             -o ../out/MARL-R1-B.wav
+
+          ./qwen_tts -d qwen3-tts-voice-design -l English             --instruct "An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation balanced brightness and depth distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture heavier grounded vocal weight moderate natural warmth. Avoid anime-girl or cute synthetic idol behavior; avoid generic intimate breathy woman; avoid generic sultry cyber-diva; avoid emotionless robot; avoid renderer-default femininity mistaken for identity."             --text "$TEXT" --seed 40413 --temperature 0.5 --int4 -j4 --max-duration 8             -o ../out/MARL-R1-C.wav
+
+          cd ..
+          sha256sum out/*.wav > out/SHA256SUMS.txt
+          python - <<'PY'
+          import json, hashlib, pathlib, wave
+          out=pathlib.Path('out')
+          rows=[]
+          controls={
+            'MARL-R1-A':{'vocal_weight':-0.32,'brightness':-0.32},
+            'MARL-R1-B':{'vocal_weight':0.0,'brightness':0.32},
+            'MARL-R1-C':{'vocal_weight':0.32,'brightness':0.0},
+          }
+          for p in sorted(out.glob('MARL-R1-*.wav')):
+              h=hashlib.sha256(p.read_bytes()).hexdigest()
+              with wave.open(str(p),'rb') as w:
+                  duration=w.getnframes()/w.getframerate()
+                  sr=w.getframerate()
+              rows.append({'candidate_id':p.stem,'controls':controls[p.stem],'wav_sha256':h,'sample_rate':sr,'duration_s':duration,'status':'GENERATED_PENDING_CARL_JUDGMENT'})
+          manifest={
+            'plan_id':'MARL-PLAN-ee2f8c921d3e',
+            'parent_state_digest':'af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d',
+            'renderer':'Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign',
+            'implementation':'gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7',
+            'fixed_text':'Give me the problem as it is.',
+            'fixed_performance':'neutral',
+            'candidates':rows,
+            'semantic_effect':'generation only; no candidate accepted or promoted'
+          }
+          (out/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          print(json.dumps(manifest,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marl-round1-audition
+          path: out/
+          compression-level: 0
+          retention-days: 7
