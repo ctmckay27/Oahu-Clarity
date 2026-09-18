@@ -45,10 +45,12 @@
     "deterministic next-search planning under fixed state",
     "JSON persistence roundtrip preserves state digest",
     "official and native Qwen reference-cloning execution verified",
-    "native Qwen VoiceDesign candidate generation verified"
+    "native Qwen VoiceDesign candidate generation verified",
+    "CLI experiment/listening ingestion preserves structured feedback",
+    "verification evidence can advance the layer from accepted anchor into hardening without changing semantic identity"
   ],
   "verification": {
-    "local_pytest": "9 passed",
+    "local_pytest": "11 passed",
     "date": "2026-09-18"
   },
   "semantic_non_effects": [
