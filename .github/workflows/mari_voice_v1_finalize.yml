@@ -1,0 +1,643 @@
+name: mari-voice-v1-finalize
+
+on:
+  push:
+    branches: [mari-voice-v1-finalize-20260918]
+    paths: [.github/workflows/mari_voice_v1_finalize.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: mari-voice-v1-finalize
+  cancel-in-progress: true
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  VD_REV: 5ecdb67327fd37bb2e042aab12ff7391903235d3
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  anchor-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    outputs:
+      base_rev: ${{ steps.revisions.outputs.base_rev }}
+      cv_rev: ${{ steps.revisions.outputs.cv_rev }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build pinned native Qwen engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git ffmpeg
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          engine/qwen_tts --self-test
+          engine/qwen_tts --caps > engine_caps.txt
+
+      - name: Acquire exact VoiceDesign revision
+        run: |
+          set -euo pipefail
+          cd engine
+          sed "s|/resolve/main|/resolve/$VD_REV|g" download_model.sh > pinned_vd_download.sh
+          bash pinned_vd_download.sh --model voice-design --dir voice-design
+
+      - name: Download rejected acoustic exemplars
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-qwen-native-design-trio
+          github-token: ${{ github.token }}
+          run-id: 35391726537
+          path: negatives/mvd
+
+      - name: Download rejected MARL R1 exemplars
+        uses: actions/download-artifact@v4
+        with:
+          name: marl-round1-audition
+          github-token: ${{ github.token }}
+          run-id: 35393940703
+          path: negatives/r1
+
+      - name: Generate BF16 anchor pool
+        run: |
+          set -euo pipefail
+          mkdir -p anchor_pool/logs
+          python -u - <<'PY'
+          import hashlib, json, pathlib, subprocess, time
+          prompts = {
+            "G1": "An adult woman speaking natural conversational American English. Grounded low-mid center, clear dry supported phonation, calm authority, subtle organic texture, direct but not announcer-like.",
+            "G2": "An adult woman speaking natural conversational American English. Centered midrange with a lightly dark timbre, precise but relaxed consonants, self-possessed delivery, understated intensity and natural microvariation.",
+            "G3": "An adult woman speaking natural conversational American English. Balanced mid-low voice, clear resonance, lean but not thin, lightly lived-in texture, intelligent conversational timing, steady and unforced.",
+            "G4": "An adult woman speaking natural conversational American English. Richer vocal weight without heaviness, dry present tone, poised and controlled, natural irregularity, no breathy intimacy and no theatrical projection.",
+            "G5": "An adult woman speaking natural conversational American English. Cool-neutral timbre, medium-low pitch, articulate but relaxed, confident without hardness, individual and human rather than polished into sameness.",
+            "G6": "An adult woman speaking natural conversational American English. Warm-neutral without softness becoming the personality, centered adult pitch, grounded breath support, controlled diction, subtle asymmetry and human texture."
+          }
+          text = "I understand the problem. Give me the facts in the order they happened, not the order they were explained later. Then we can decide what actually matters."
+          records=[]
+          for pi,(pk,prompt) in enumerate(prompts.items()):
+              for sj,seed in enumerate([51101+pi*10,51102+pi*10]):
+                  cid=f"{pk}-{sj+1}"
+                  wav=pathlib.Path("anchor_pool")/f"{cid}.wav"
+                  args=["engine/qwen_tts","-d","engine/voice-design","--voice-design","-l","English","--instruct",prompt,"--text",text,"--seed",str(seed),"--temperature","0.45","--top-k","40","--top-p","0.95","--rep-penalty","1.05","--max-duration","18","-j4","-o",str(wav)]
+                  t=time.monotonic()
+                  with open(pathlib.Path("anchor_pool/logs")/f"{cid}.txt","w") as log:
+                      subprocess.run(args,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=360)
+                  records.append({"candidate_id":cid,"prompt_family":pk,"prompt":prompt,"seed":seed,"text":text,"argv":args,"wall_s":time.monotonic()-t})
+                  pathlib.Path("anchor_pool/generation.json").write_text(json.dumps(records,indent=2))
+                  print(cid, flush=True)
+          PY
+
+      - name: Install independent evaluation stack
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.5.1' 'torchaudio==2.5.1'
+          python -m pip install 'numpy<2' 'scipy==1.14.1' 'soundfile==0.13.1' 'librosa==0.10.2.post1' 'faster-whisper==1.2.1' 'speechbrain==1.0.3' 'transformers==4.48.3' 'huggingface-hub>=0.27,<1'
+          git clone --depth 1 --branch v1.2.0 https://github.com/tarepan/SpeechMOS.git speechmos-evaluator
+
+      - name: Evaluate candidates and select production acoustic anchor
+        run: |
+          python -u - <<'PY'
+          import json, math, pathlib, re, subprocess, hashlib
+          import numpy as np
+          import soundfile as sf
+          import librosa
+          import torch, torch.nn as nn
+          from scipy.signal import resample_poly
+          from scipy.spatial.distance import cosine
+          from math import gcd
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi, snapshot_download
+          from speechbrain.inference.speaker import EncoderClassifier
+          from transformers import Wav2Vec2Processor
+          from transformers.models.wav2vec2.modeling_wav2vec2 import Wav2Vec2Model, Wav2Vec2PreTrainedModel
+
+          torch.set_num_threads(4)
+          out=pathlib.Path("anchor_pool")
+          gen={x["candidate_id"]:x for x in json.loads((out/"generation.json").read_text())}
+
+          # independent naturalness model
+          mos=torch.hub.load("speechmos-evaluator","utmos22_strong",source="local").eval()
+
+          # independent ASR
+          asr_id="Systran/faster-whisper-small.en"
+          asr_rev=HfApi().model_info(asr_id).sha
+          asr=WhisperModel(snapshot_download(asr_id,revision=asr_rev),device="cpu",compute_type="int8",cpu_threads=4)
+
+          # speaker embedding model
+          spk=EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",savedir="models/ecapa",run_opts={"device":"cpu"})
+
+          # age/gender model (6-layer, evaluation use only)
+          class ModelHead(nn.Module):
+              def __init__(self,config,num_labels):
+                  super().__init__(); self.dense=nn.Linear(config.hidden_size,config.hidden_size); self.dropout=nn.Dropout(config.final_dropout); self.out_proj=nn.Linear(config.hidden_size,num_labels)
+              def forward(self,x):
+                  x=self.dropout(x); x=self.dense(x); x=torch.tanh(x); x=self.dropout(x); return self.out_proj(x)
+          class AgeGenderModel(Wav2Vec2PreTrainedModel):
+              def __init__(self,config):
+                  super().__init__(config); self.wav2vec2=Wav2Vec2Model(config); self.age=ModelHead(config,1); self.gender=ModelHead(config,3); self.init_weights()
+              def forward(self,input_values):
+                  h=self.wav2vec2(input_values)[0].mean(dim=1); return h,self.age(h),torch.softmax(self.gender(h),dim=1)
+          ag_id="audeering/wav2vec2-large-robust-6-ft-age-gender"
+          ag_rev=HfApi().model_info(ag_id).sha
+          processor=Wav2Vec2Processor.from_pretrained(ag_id,revision=ag_rev)
+          ag=AgeGenderModel.from_pretrained(ag_id,revision=ag_rev).eval()
+
+          def words(t): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower().replace("’","'"))
+          def ed(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1): c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+          def load16(path):
+              y,sr=sf.read(path,dtype="float32",always_2d=True); y=y.mean(1)
+              g=gcd(sr,16000); return resample_poly(y,16000//g,sr//g).astype("float32"),sr
+          def spkemb(y16):
+              t=torch.from_numpy(y16).float().unsqueeze(0)
+              with torch.no_grad(): e=spk.encode_batch(t).squeeze().cpu().numpy()
+              return e/np.linalg.norm(e)
+          def agpred(y16):
+              z=processor(y16,sampling_rate=16000)["input_values"][0]
+              with torch.no_grad(): _,age,gender=ag(torch.from_numpy(z).float().unsqueeze(0))
+              a=float(age.item())*100.0; g=gender.squeeze().cpu().numpy()
+              return a,float(g[0]),float(g[1]),float(g[2])
+          def metrics(path,text):
+              y,sr=sf.read(path,dtype="float32",always_2d=True); mono=y.mean(1)
+              y16,_=load16(path)
+              with torch.no_grad(): m=float(mos(torch.from_numpy(y16).unsqueeze(0),16000).item())
+              segs,_=asr.transcribe(y16,language="en",beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+              transcript=" ".join(s.text.strip() for s in segs)
+              ref=words(text); hyp=words(transcript); wer=ed(ref,hyp)/max(1,len(ref))
+              age,fem,male,child=agpred(y16)
+              f0,_,_=librosa.pyin(mono,fmin=70,fmax=350,sr=sr)
+              medf0=float(np.nanmedian(f0)) if np.isfinite(f0).any() else None
+              return {"utmos":m,"asr_text":transcript,"wer":wer,"age_pred":age,"female_prob":fem,"male_prob":male,"child_prob":child,"f0_median_hz":medf0,"duration_s":len(mono)/sr,"peak_abs":float(np.max(np.abs(mono))),"clipped_fraction":float(np.mean(np.abs(mono)>=.999)),"speaker_embedding":spkemb(y16).tolist()}
+
+          neg_paths=sorted(pathlib.Path("negatives").rglob("*.wav"))
+          neg_emb=[]
+          for p in neg_paths:
+              y16,_=load16(p); neg_emb.append((p.name,spkemb(y16)))
+          results=[]
+          for p in sorted(out.glob("G*.wav")):
+              cid=p.stem; r={**gen[cid],**metrics(p,gen[cid]["text"]),"wav":str(p),"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
+              e=np.array(r["speaker_embedding"])
+              sims=[(n,float(np.dot(e,ne))) for n,ne in neg_emb]
+              r["max_rejected_similarity"]=max(v for _,v in sims) if sims else None
+              r["nearest_rejected"]=max(sims,key=lambda x:x[1])[0] if sims else None
+              results.append(r)
+              (out/"candidate_metrics.json").write_text(json.dumps(results,indent=2))
+              print(cid,r["utmos"],r["female_prob"],r["age_pred"],r["max_rejected_similarity"],flush=True)
+
+          embs=np.array([r["speaker_embedding"] for r in results])
+          centroid=embs.mean(0); centroid=centroid/np.linalg.norm(centroid)
+          for r,e in zip(results,embs):
+              r["distinctiveness_from_pool_centroid"]=1-float(np.dot(e,centroid))
+              rate=len(words(r["text"]))*60/r["duration_s"]
+              r["words_per_minute"]=rate
+              quality=max(0,min(1,(r["utmos"]-3.8)/0.9))
+              female=max(0,min(1,(r["female_prob"]-.45)/.5))
+              adult=1-max(0,min(1,abs(r["age_pred"]-34)/22))
+              separation=max(0,min(1,(1-r["max_rejected_similarity"])/.65))
+              pace=max(0,1-abs(rate-155)/90)
+              distinct=max(0,min(1,r["distinctiveness_from_pool_centroid"]/0.28))
+              r["selection_score"]=0.42*quality+0.18*female+0.12*adult+0.16*separation+0.07*pace+0.05*distinct
+              r["hard_pass"]=bool(r["utmos"]>=4.25 and r["wer"]<=0.08 and r["female_prob"]>=0.55 and r["child_prob"]<=0.20 and r["age_pred"]>=22 and r["clipped_fraction"]<1e-4 and r["duration_s"]<17.8)
+
+          eligible=[r for r in results if r["hard_pass"]]
+          if not eligible:
+              # fail closed; never force a bad anchor
+              (out/"selection.json").write_text(json.dumps({"status":"NO_ELIGIBLE_ANCHOR","results":results},indent=2))
+              raise SystemExit("No anchor passed the hard acoustic screen")
+          selected=max(eligible,key=lambda r:r["selection_score"])
+          selection={"status":"SELECTED_FOR_PROFILE_HARDENING","candidate_id":selected["candidate_id"],"score":selected["selection_score"],"selection_basis":"UTMOS naturalness + adult-feminine classifier + ASR + distance from rejected speaker embeddings + pacing + modest distinctiveness","limitations":["Automatic models are screening evidence, not human aesthetic truth.","Rejected-voice separation uses ECAPA embeddings and does not prove perceptual difference.","This selection is authorized by the user's delegated Mari Voice v1 acoustic authority."],"selected":selected,"all_results":results,"negative_files":[n for n,_ in neg_emb],"evaluator_revisions":{"asr":asr_rev,"age_gender":ag_rev}}
+          (out/"selection.json").write_text(json.dumps(selection,indent=2))
+          pathlib.Path("selected").mkdir(exist_ok=True)
+          import shutil
+          shutil.copy2(out/f'{selected["candidate_id"]}.wav',"selected/mari_anchor.wav")
+          pathlib.Path("selected/anchor_meta.json").write_text(json.dumps(selection,indent=2))
+          PY
+
+      - name: Resolve Base and CustomVoice revisions
+        id: revisions
+        run: |
+          python - <<'PY'
+          from huggingface_hub import HfApi
+          api=HfApi()
+          base=api.model_info("Qwen/Qwen3-TTS-12Hz-1.7B-Base").sha
+          cv=api.model_info("Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice").sha
+          open("base_rev.txt","w").write(base+"\n")
+          open("cv_rev.txt","w").write(cv+"\n")
+          with open("revisions.json","w") as f:
+              import json; json.dump({"base_model":"Qwen/Qwen3-TTS-12Hz-1.7B-Base","base_revision":base,"customvoice_model":"Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice","customvoice_revision":cv},f,indent=2)
+          PY
+          echo "base_rev=$(cat base_rev.txt)" >> "$GITHUB_OUTPUT"
+          echo "cv_rev=$(cat cv_rev.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Replace VoiceDesign weights with exact Base model
+        run: |
+          set -euo pipefail
+          rm -rf engine/voice-design
+          cd engine
+          BASE_REV="$(cat ../base_rev.txt)"
+          sed "s|/resolve/main|/resolve/$BASE_REV|g" download_model.sh > pinned_base_download.sh
+          bash pinned_base_download.sh --model base-large --dir base-large
+
+      - name: Build persistent Mari profiles from selected anchor
+        run: |
+          set -euo pipefail
+          mkdir -p selected/logs
+          TEXT="This is the persistence check. The voice should remain the same speaker even though the sentence has never been spoken before."
+          engine/qwen_tts -d engine/base-large --ref-audio selected/mari_anchor.wav -l English --voice-name "Mari Voice v1" --save-voice selected/mari_v1.qvoice --text "$TEXT" --seed 60404 --temperature 0.45 -j4 -o selected/profile_graft_validation.wav > selected/logs/graft_create.txt 2>&1
+          engine/qwen_tts -d engine/base-large --ref-audio selected/mari_anchor.wav --xvector-only -l English --voice-name "Mari Voice v1" --save-voice selected/mari_v1.bin --text "$TEXT" --seed 60404 --temperature 0.45 -j4 -o selected/profile_xvector_validation.wav > selected/logs/xvector_create.txt 2>&1
+          sha256sum selected/* > selected/SHA256SUMS.txt || true
+          cp revisions.json selected/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-v1-anchor-and-profiles
+          path: |
+            selected/
+            anchor_pool/selection.json
+            anchor_pool/candidate_metrics.json
+            engine_caps.txt
+          retention-days: 14
+          compression-level: 0
+
+  harden:
+    needs: anchor-search
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-v1-anchor-and-profiles
+          path: assets
+
+      - name: Build pinned production engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git ffmpeg
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          engine/qwen_tts --self-test
+          cd engine
+          CV_REV="${{ needs.anchor-search.outputs.cv_rev }}"
+          sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
+          bash pinned_cv_download.sh --model large --dir customvoice-large
+
+      - name: Install verification stack
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.5.1' 'torchaudio==2.5.1'
+          python -m pip install 'numpy<2' 'scipy==1.14.1' 'soundfile==0.13.1' 'librosa==0.10.2.post1' 'faster-whisper==1.2.1' 'speechbrain==1.0.3' 'huggingface-hub>=0.27,<1'
+          git clone --depth 1 --branch v1.2.0 https://github.com/tarepan/SpeechMOS.git speechmos-evaluator
+
+      - name: Compare persistent profile modes on unseen neutral text
+        run: |
+          set -euo pipefail
+          mkdir -p hardening/profile_compare hardening/logs
+          python - <<'PY'
+          import json, pathlib
+          texts=[
+            "The first thing I want is the exact sequence. We can argue about interpretation after we know what actually happened.",
+            "No, that is not the same problem. It looks similar from far away, but the failure starts somewhere else entirely.",
+            "I can work with uncertainty. What I cannot work with is pretending we know something that we have not checked."
+          ]
+          pathlib.Path("hardening/profile_texts.json").write_text(json.dumps(texts,indent=2))
+          PY
+          python - <<'PY'
+          import json,subprocess,pathlib
+          texts=json.load(open("hardening/profile_texts.json"))
+          profiles=[("graft","assets/mari_v1.qvoice",["--icl-only"]),("xvector","assets/mari_v1.bin",["--xvector-only"])]
+          for mode,profile,flags in profiles:
+            for i,text in enumerate(texts):
+              out=f"hardening/profile_compare/{mode}_{i}.wav"
+              cmd=["engine/qwen_tts","-d","engine/customvoice-large","--load-voice",profile,*flags,"-l","English","--text",text,"--seed",str(71000+i),"--temperature","0.45","-j4","-o",out]
+              with open(f"hardening/logs/{mode}_{i}.txt","w") as log: subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=360)
+          PY
+
+      - name: Select profile mode from waveform evidence
+        run: |
+          python -u - <<'PY'
+          import json,re,pathlib,numpy as np,soundfile as sf,torch,hashlib
+          from math import gcd
+          from scipy.signal import resample_poly
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi,snapshot_download
+          from speechbrain.inference.speaker import EncoderClassifier
+          torch.set_num_threads(4)
+          mos=torch.hub.load("speechmos-evaluator","utmos22_strong",source="local").eval()
+          aid="Systran/faster-whisper-small.en"; arev=HfApi().model_info(aid).sha
+          asr=WhisperModel(snapshot_download(aid,revision=arev),device="cpu",compute_type="int8",cpu_threads=4)
+          spk=EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",savedir="models/ecapa",run_opts={"device":"cpu"})
+          texts=json.load(open("hardening/profile_texts.json"))
+          def words(t):return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+            p=list(range(len(b)+1))
+            for i,x in enumerate(a,1):
+              c=[i]
+              for j,y in enumerate(b,1):c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+              p=c
+            return p[-1]
+          def load16(p):
+            y,sr=sf.read(p,dtype="float32",always_2d=True); y=y.mean(1); g=gcd(sr,16000);return resample_poly(y,16000//g,sr//g).astype("float32")
+          def emb(y):
+            with torch.no_grad():e=spk.encode_batch(torch.from_numpy(y).float().unsqueeze(0)).squeeze().cpu().numpy()
+            return e/np.linalg.norm(e)
+          anchor=emb(load16("assets/mari_anchor.wav"))
+          rows=[]
+          for mode in ["graft","xvector"]:
+            for i,text in enumerate(texts):
+              p=f"hardening/profile_compare/{mode}_{i}.wav"; y=load16(p)
+              with torch.no_grad():m=float(mos(torch.from_numpy(y).unsqueeze(0),16000).item())
+              segs,_=asr.transcribe(y,language="en",beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False); hyp=" ".join(s.text.strip() for s in segs)
+              e=emb(y); sim=float(np.dot(anchor,e))
+              rows.append({"mode":mode,"index":i,"utmos":m,"speaker_similarity_to_anchor":sim,"wer":ed(words(text),words(hyp))/max(1,len(words(text))),"asr_text":hyp,"sha256":hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()})
+          summary={}
+          for mode in ["graft","xvector"]:
+            x=[r for r in rows if r["mode"]==mode]
+            summary[mode]={"mean_utmos":float(np.mean([r["utmos"] for r in x])),"worst_utmos":min(r["utmos"] for r in x),"mean_similarity":float(np.mean([r["speaker_similarity_to_anchor"] for r in x])),"worst_similarity":min(r["speaker_similarity_to_anchor"] for r in x),"max_wer":max(r["wer"] for r in x)}
+            summary[mode]["score"]=.58*summary[mode]["mean_utmos"]/5+.32*summary[mode]["mean_similarity"]+.10*(1-summary[mode]["max_wer"])
+          eligible=[m for m,s in summary.items() if s["worst_utmos"]>=4.1 and s["max_wer"]<=.08]
+          if not eligible: raise SystemExit("Neither persistent profile mode passed")
+          selected=max(eligible,key=lambda m:summary[m]["score"])
+          report={"selected_profile_mode":selected,"summary":summary,"records":rows,"selection_basis":"mean/worst naturalness + speaker similarity + ASR, with fail-closed hard floor"}
+          pathlib.Path("hardening/profile_selection.json").write_text(json.dumps(report,indent=2))
+          pathlib.Path("hardening/SELECTED_PROFILE_MODE").write_text(selected+"\n")
+          print(json.dumps(report,indent=2))
+          PY
+
+      - name: Install stable Omega Voice interface and execute full hardening suite
+        run: |
+          cat > hardening/omega_voice.py <<'PY'
+          import argparse, json, pathlib, subprocess, tempfile, wave
+          import numpy as np, soundfile as sf
+
+          PERFORMANCE={
+            "neutral":"",
+            "dry_amusement":"Dry understated amusement. A slight smile in the voice, intelligent timing, restrained and natural rather than playful caricature.",
+            "controlled_irritation":"Controlled irritation. Firmer consonants and contained force, clipped patience, no shouting and no theatrical anger.",
+            "reassuring":"Calm direct reassurance. Grounded warmth and measured pace, steady and clear, never breathy or sentimental.",
+            "focused_urgency":"Focused urgency. Faster purposeful pace, sharper emphasis, controlled intensity, no panic."
+          }
+          def split_text(text,limit=260):
+            import re
+            s=[x.strip() for x in re.split(r'(?<=[.!?])\s+',text.strip()) if x.strip()]
+            out=[];cur=""
+            for x in s:
+              if cur and len(cur)+1+len(x)>limit: out.append(cur);cur=x
+              else:cur=(cur+" "+x).strip()
+            if cur:out.append(cur)
+            return out
+          def render(engine,model,profile,mode,text,performance,out,seed=88000):
+            for p in [engine,model,profile]:
+              if not pathlib.Path(p).exists(): raise FileNotFoundError(p)
+            if performance not in PERFORMANCE: raise ValueError(performance)
+            chunks=split_text(text)
+            arrays=[];sr=None
+            with tempfile.TemporaryDirectory() as td:
+              for i,ch in enumerate(chunks):
+                w=pathlib.Path(td)/f"{i}.wav"
+                flags=["--icl-only"] if mode=="graft" else ["--xvector-only"]
+                cmd=[engine,"-d",model,"--load-voice",profile,*flags,"-l","English","--text",ch,"--seed",str(seed+i),"--temperature","0.42","--top-k","40","--top-p","0.95","--rep-penalty","1.05","-j4","-o",str(w)]
+                instr=PERFORMANCE[performance]
+                if instr: cmd.extend(["--instruct",instr])
+                subprocess.run(cmd,check=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=420)
+                y,r=sf.read(w,dtype="float32"); y=np.asarray(y).reshape(-1); sr=sr or r
+                if r!=sr: raise RuntimeError("sample rate drift")
+                arrays.append(y)
+                if i<len(chunks)-1: arrays.append(np.zeros(int(sr*.12),dtype="float32"))
+            audio=np.concatenate(arrays) if arrays else np.zeros(1,dtype="float32")
+            sf.write(out,audio,sr,subtype="PCM_16")
+            return {"chunks":len(chunks),"sample_rate":sr,"duration_s":len(audio)/sr}
+          def main():
+            ap=argparse.ArgumentParser()
+            ap.add_argument("--engine",required=True);ap.add_argument("--model",required=True);ap.add_argument("--profile",required=True);ap.add_argument("--profile-mode",choices=["graft","xvector"],required=True)
+            ap.add_argument("--text",required=True);ap.add_argument("--performance",choices=PERFORMANCE,default="neutral");ap.add_argument("--output",required=True);ap.add_argument("--seed",type=int,default=88000)
+            a=ap.parse_args(); meta=render(a.engine,a.model,a.profile,a.profile_mode,a.text,a.performance,a.output,a.seed);print(json.dumps(meta))
+          if __name__=="__main__":main()
+          PY
+
+          MODE="$(cat hardening/SELECTED_PROFILE_MODE)"
+          if [ "$MODE" = "graft" ]; then PROFILE="assets/mari_v1.qvoice"; else PROFILE="assets/mari_v1.bin"; fi
+          mkdir -p hardening/final_audio
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          cases=[
+            ("heldout_1","neutral","The map is not wrong. It is answering a different question than the one we are asking."),
+            ("heldout_2","neutral","Start with what changed overnight. If nothing changed, say that plainly and leave the rest alone."),
+            ("heldout_3","neutral","You can keep the elegant explanation. I want the mechanism that actually produced the failure."),
+            ("heldout_4","neutral","There are three possibilities. Two are easy to test, and the third only matters if those fail."),
+            ("heldout_5","neutral","I am not asking whether it is possible in theory. I am asking whether it happened here."),
+            ("heldout_6","neutral","That answer is almost useful. Put the uncertainty next to the claim it belongs to, then try again."),
+            ("perf_amusement","dry_amusement","That is technically an answer. It is also a very creative way to avoid the question."),
+            ("perf_irritation","controlled_irritation","Do not move the goalposts now. We agreed on the test before we saw the result."),
+            ("perf_reassuring","reassuring","You have enough information to take the next step. I will tell you if the situation actually changes."),
+            ("perf_urgent","focused_urgency","Move now. Take the clean route, leave the rest behind, and do not stop to solve a problem we do not have."),
+            ("long_1","neutral","The first report made the incident look simple because it compressed three separate failures into one timeline. The sensor stopped updating, the alerting layer continued to display the last good value, and the handoff procedure assumed the display was live. None of those failures alone explains the delay. Together they created a believable false state. The fix is not a louder alarm. We need the system to represent freshness explicitly, make stale information visible at the point of use, and route uncertainty to the person who can act on it."),
+            ("long_2","neutral","What matters here is not whether the model can produce an impressive answer once. A production system has to survive ordinary variation: longer sentences, interruptions, technical language, emotional pressure, and boring routine dialogue. Identity cannot disappear when the performance changes, and quality cannot depend on one lucky seed. So we test the voice the same way we would test any other persistent component. We hold the speaker constant, vary the conditions, measure what we can measure, and refuse to call a transient success a finished system.")
+          ]
+          mode=open("hardening/SELECTED_PROFILE_MODE").read().strip()
+          profile="assets/mari_v1.qvoice" if mode=="graft" else "assets/mari_v1.bin"
+          rec=[]
+          for i,(cid,perf,text) in enumerate(cases):
+            out=f"hardening/final_audio/{cid}.wav"
+            cmd=["python","hardening/omega_voice.py","--engine","engine/qwen_tts","--model","engine/customvoice-large","--profile",profile,"--profile-mode",mode,"--text",text,"--performance",perf,"--output",out,"--seed",str(88100+i*7)]
+            cp=subprocess.run(cmd,text=True,capture_output=True,check=True,timeout=900)
+            rec.append({"id":cid,"performance":perf,"text":text,"output":out,"command":cmd,"wrapper_stdout":cp.stdout.strip()})
+            pathlib.Path("hardening/final_cases.json").write_text(json.dumps(rec,indent=2))
+          PY
+
+      - name: Evaluate held-out identity, quality, performance, and long-form
+        run: |
+          python -u - <<'PY'
+          import json,re,pathlib,hashlib,numpy as np,soundfile as sf,torch,librosa
+          from math import gcd
+          from scipy.signal import resample_poly
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi,snapshot_download
+          from speechbrain.inference.speaker import EncoderClassifier
+          torch.set_num_threads(4)
+          mos=torch.hub.load("speechmos-evaluator","utmos22_strong",source="local").eval()
+          aid="Systran/faster-whisper-small.en"; rev=HfApi().model_info(aid).sha
+          asr=WhisperModel(snapshot_download(aid,revision=rev),device="cpu",compute_type="int8",cpu_threads=4)
+          spk=EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",savedir="models/ecapa",run_opts={"device":"cpu"})
+          def words(t):return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+            p=list(range(len(b)+1))
+            for i,x in enumerate(a,1):
+              c=[i]
+              for j,y in enumerate(b,1):c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+              p=c
+            return p[-1]
+          def load(p):
+            y,sr=sf.read(p,dtype="float32",always_2d=True);y=y.mean(1);g=gcd(sr,16000);y16=resample_poly(y,16000//g,sr//g).astype("float32");return y,y16,sr
+          def emb(y16):
+            with torch.no_grad():e=spk.encode_batch(torch.from_numpy(y16).float().unsqueeze(0)).squeeze().cpu().numpy()
+            return e/np.linalg.norm(e)
+          _,a16,_=load("assets/mari_anchor.wav"); anchor=emb(a16)
+          selection=json.load(open("assets/anchor_meta.json"))
+          neg_max=selection["selected"]["max_rejected_similarity"]
+          same_ref=[]
+          for r in json.load(open("hardening/profile_selection.json"))["records"]:
+            if r["mode"]==open("hardening/SELECTED_PROFILE_MODE").read().strip(): same_ref.append(r["speaker_similarity_to_anchor"])
+          same_floor=min(same_ref)
+          sim_threshold=max(neg_max+0.06,same_floor-0.12,0.55)
+          cases=json.load(open("hardening/final_cases.json")); rows=[]
+          for case in cases:
+            y,y16,sr=load(case["output"])
+            with torch.no_grad():m=float(mos(torch.from_numpy(y16).unsqueeze(0),16000).item())
+            segs,_=asr.transcribe(y16,language="en",beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False); hyp=" ".join(s.text.strip() for s in segs)
+            e=emb(y16); sim=float(np.dot(anchor,e))
+            f0,_,_=librosa.pyin(y,fmin=70,fmax=350,sr=sr); med=float(np.nanmedian(f0)) if np.isfinite(f0).any() else None
+            rate=len(words(case["text"]))*60/(len(y)/sr)
+            row={**case,"sha256":hashlib.sha256(pathlib.Path(case["output"]).read_bytes()).hexdigest(),"utmos":m,"speaker_similarity":sim,"wer":ed(words(case["text"]),words(hyp))/max(1,len(words(case["text"]))),"asr_text":hyp,"duration_s":len(y)/sr,"f0_median_hz":med,"words_per_minute":rate,"peak_abs":float(np.max(np.abs(y))),"clipped_fraction":float(np.mean(np.abs(y)>=.999))}
+            row["quality_pass"]=bool(m>=4.10 and row["wer"]<=.10 and row["clipped_fraction"]<1e-4)
+            row["identity_pass"]=bool(sim>=sim_threshold)
+            rows.append(row); pathlib.Path("hardening/final_evaluation.json").write_text(json.dumps(rows,indent=2));print(case["id"],m,sim,row["wer"],flush=True)
+          neutral=[r for r in rows if r["id"].startswith("heldout_")]
+          perf=[r for r in rows if r["id"].startswith("perf_")]
+          long=[r for r in rows if r["id"].startswith("long_")]
+          # meaningful variation: at least 3 of 4 performance cases differ >5% in F0 or >8% in speaking rate from neutral median
+          nf=np.median([r["f0_median_hz"] for r in neutral if r["f0_median_hz"]]); nr=np.median([r["words_per_minute"] for r in neutral])
+          varied=0
+          for r in perf:
+            fdelta=abs(r["f0_median_hz"]-nf)/nf if r["f0_median_hz"] else 0
+            rdelta=abs(r["words_per_minute"]-nr)/nr
+            r["performance_acoustically_distinct"]=bool(fdelta>.05 or rdelta>.08)
+            varied+=int(r["performance_acoustically_distinct"])
+          summary={
+            "speaker_similarity_threshold":sim_threshold,
+            "threshold_derivation":{"max_rejected_similarity":neg_max,"selected_profile_same_speaker_floor":same_floor},
+            "neutral_passes":sum(r["quality_pass"] and r["identity_pass"] for r in neutral),
+            "neutral_total":len(neutral),
+            "performance_identity_passes":sum(r["quality_pass"] and r["identity_pass"] for r in perf),
+            "performance_total":len(perf),
+            "performance_acoustically_distinct":varied,
+            "long_form_passes":sum(r["quality_pass"] and r["identity_pass"] for r in long),
+            "long_form_total":len(long),
+            "all_asr_pass":all(r["wer"]<=.10 for r in rows),
+            "all_no_clip":all(r["clipped_fraction"]<1e-4 for r in rows),
+            "mean_utmos":float(np.mean([r["utmos"] for r in rows])),
+            "worst_utmos":min(r["utmos"] for r in rows),
+            "mean_speaker_similarity":float(np.mean([r["speaker_similarity"] for r in rows])),
+            "production_readiness_pass":False
+          }
+          summary["production_readiness_pass"]=bool(summary["neutral_passes"]==6 and summary["performance_identity_passes"]==4 and varied>=3 and summary["long_form_passes"]==2 and summary["all_asr_pass"] and summary["all_no_clip"])
+          pathlib.Path("hardening/final_evaluation.json").write_text(json.dumps(rows,indent=2))
+          pathlib.Path("hardening/hardening_summary.json").write_text(json.dumps(summary,indent=2))
+          if not summary["production_readiness_pass"]: raise SystemExit("Hardening suite did not meet production thresholds")
+          PY
+
+      - name: Package production assets
+        run: |
+          set -euo pipefail
+          MODE="$(cat hardening/SELECTED_PROFILE_MODE)"
+          mkdir -p production
+          cp assets/mari_anchor.wav production/MARI_VOICE_V1_ANCHOR.wav
+          cp assets/anchor_meta.json production/MARI_VOICE_V1_ANCHOR_META.json
+          if [ "$MODE" = "graft" ]; then cp assets/mari_v1.qvoice production/MARI_VOICE_V1_PROFILE.qvoice; else cp assets/mari_v1.bin production/MARI_VOICE_V1_PROFILE.bin; fi
+          cp hardening/omega_voice.py production/omega_voice.py
+          cp hardening/profile_selection.json production/PROFILE_SELECTION.json
+          cp hardening/hardening_summary.json production/HARDENING_SUMMARY.json
+          cp hardening/final_evaluation.json production/FINAL_EVALUATION.json
+          cp hardening/final_cases.json production/FINAL_CASES.json
+          cp assets/revisions.json production/MODEL_REVISIONS.json
+          printf '%s\n' "$QWEN_C_SHA" > production/ENGINE_REVISION.txt
+          printf '%s\n' "$MODE" > production/PROFILE_MODE.txt
+          sha256sum production/* > production/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-voice-v1-production
+          path: |
+            production/
+            hardening/final_audio/
+          retention-days: 14
+          compression-level: 0
+
+  cold-start:
+    needs: [anchor-search,harden]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production
+          path: package
+      - name: Clean-room engine/model reconstruction
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git
+          python -m pip install 'numpy<2' soundfile
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          cd engine
+          CV_REV="${{ needs.anchor-search.outputs.cv_rev }}"
+          sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
+          bash pinned_cv_download.sh --model large --dir customvoice-large
+      - name: Reproduce voice from persisted profile
+        run: |
+          set -euo pipefail
+          MODE="$(cat package/PROFILE_MODE.txt)"
+          if [ "$MODE" = "graft" ]; then PROFILE="package/MARI_VOICE_V1_PROFILE.qvoice"; else PROFILE="package/MARI_VOICE_V1_PROFILE.bin"; fi
+          python package/omega_voice.py --engine engine/qwen_tts --model engine/customvoice-large --profile "$PROFILE" --profile-mode "$MODE" --text "Cold start complete. This sentence was generated in a clean environment from the persisted Mari Voice v1 profile." --performance neutral --output cold_start.wav --seed 99117 > cold_start_meta.json
+          test -s cold_start.wav
+      - name: Verify fail-closed behavior
+        run: |
+          set -euo pipefail
+          MODE="$(cat package/PROFILE_MODE.txt)"
+          set +e
+          python package/omega_voice.py --engine engine/qwen_tts --model engine/customvoice-large --profile package/DOES_NOT_EXIST --profile-mode "$MODE" --text "This must fail." --output should_not_exist.wav > fail_stdout.txt 2> fail_stderr.txt
+          RC=$?
+          set -e
+          test "$RC" -ne 0
+          test ! -e should_not_exist.wav
+          python - <<'PY'
+          import json,hashlib,pathlib
+          p=pathlib.Path("cold_start.wav")
+          out={"cold_start_generated":p.exists() and p.stat().st_size>44,"cold_start_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"missing_profile_exit_nonzero":True,"silent_fallback_output_created":pathlib.Path("should_not_exist.wav").exists(),"status":"PASS"}
+          pathlib.Path("COLD_START_RECEIPT.json").write_text(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-voice-v1-cold-start
+          path: |
+            cold_start.wav
+            cold_start_meta.json
+            COLD_START_RECEIPT.json
+            fail_stderr.txt
+          retention-days: 14
+          compression-level: 0
