@@ -1,0 +1,64 @@
+{
+  "object_id": "MARI_ACOUSTIC_REALIZATION_LAYER_PERSISTENCE_RECEIPT_v1.0_2026-09-18",
+  "status": "PERSISTED_AND_READBACK_VERIFIED",
+  "library_root": "/Mari404/Voice/Acoustic Realization Layer",
+  "selected_state": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18",
+  "current_selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+  "voice_machine_selected_state": "MARI_VOICE_MACHINE_STATE_v0.4_2026-09-18",
+  "readback": {
+    "state": {
+      "expected_sha256": "3372769c7ddec406f304f1d9a9eeeefdd73545ef679f31c97ebc71a995449723",
+      "observed_sha256": "3372769c7ddec406f304f1d9a9eeeefdd73545ef679f31c97ebc71a995449723",
+      "byte_identical": true,
+      "library_file_id": "libfile_2ee2d897be248191afc77de6eef8d06a"
+    },
+    "package": {
+      "expected_sha256": "180f1b7f24f57a39d8793502542f410fae7abd4561ecf8f88bb8149ede0d2626",
+      "observed_sha256": "180f1b7f24f57a39d8793502542f410fae7abd4561ecf8f88bb8149ede0d2626",
+      "byte_identical": true,
+      "library_file_id": "libfile_0279fcf790008191862f602c0b31e6de"
+    },
+    "marl_current_binding": {
+      "expected_sha256": "8ba0184618211973a82f65be5e77c2ec088d09a7a7a08a4d5296077c49536cde",
+      "observed_sha256": "8ba0184618211973a82f65be5e77c2ec088d09a7a7a08a4d5296077c49536cde",
+      "byte_identical": true,
+      "library_file_id": "libfile_eed815df40b88191b652c9a603fc994e",
+      "version_id": "2"
+    },
+    "machine_current_binding": {
+      "expected_sha256": "d79cfb59636c924f55c215584475cb56a68771e3c3e8386a4e59aa3471304a31",
+      "observed_sha256": "d79cfb59636c924f55c215584475cb56a68771e3c3e8386a4e59aa3471304a31",
+      "byte_identical": true,
+      "library_file_id": "libfile_8cffe63915908191af34bd64547fa201",
+      "version_id": "2"
+    }
+  },
+  "verification": {
+    "successor_tests": "23/23 passed",
+    "round1_workflow_run": 35393940703,
+    "round1_artifact_id": 10566423536,
+    "no_fallback_renderer_proof": true
+  },
+  "completion": {
+    "engineering_complete": true,
+    "voice_v1_ready": false,
+    "engineering_missing": [],
+    "voice_missing": [
+      "3 independently judged quality-passing samples",
+      "explicit Carl-accepted neutral acoustic anchor",
+      "satisfy or explicitly supersede current v3.1 basis/generator gate",
+      "6 quality-passing held-out same-subject tests",
+      "4 performance states preserving identity",
+      "2 long-form quality passes",
+      "cold-start reproduction and no-fallback verification"
+    ],
+    "current_phase": "calibrating",
+    "promotion_gate_status": "CLOSED_BY_CURRENT_V3_1_GATE",
+    "accepted_anchor_id": null
+  },
+  "semantic_non_effects": [
+    "no Mari canon movement",
+    "no acoustic anchor acceptance",
+    "current v3.1 promotion gate remains controlling"
+  ]
+}

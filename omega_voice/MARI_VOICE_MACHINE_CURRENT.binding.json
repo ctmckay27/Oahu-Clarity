@@ -1,18 +1,18 @@
 {
   "project_selector": {
     "selector": "MARI_VOICE_MACHINE_STATE@CURRENT",
-    "target": "MARI_VOICE_MACHINE_STATE_v0.3_2026-09-18"
+    "target": "MARI_VOICE_MACHINE_STATE_v0.4_2026-09-18"
   },
   "acoustic_realization_selector": {
     "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
-    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18"
+    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18"
   },
   "architecture_selector": {
     "selector": "MARI_VOICE_MACHINE_ARCHITECTURE@CURRENT",
     "target": "MARI_VOICE_MACHINE_ARCHITECTURE_v0.1_2026-09-15",
-    "status": "PRESERVED_ARCHITECTURE_WITH_MARL_EXTENSION"
+    "status": "PRESERVED_ARCHITECTURE_WITH_MARL_V1_EXTENSION"
   },
-  "latest_execution": "MARL-R1 success; pending Carl listening judgment",
+  "latest_execution": "MARL-R1 success; calibration probes pending Carl qualitative/directional judgment",
   "scope": "implementation/project-state only",
   "semantic_non_effect": "No Mari semantic/canon selector is moved by these implementation selectors."
 }

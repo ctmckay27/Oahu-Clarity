@@ -1,0 +1,761 @@
+{
+  "accepted_anchor_id": null,
+  "admission": {
+    "evidence_refs": [
+      "MARI_VOICE_RESOLUTION_STATE_OBJECT_v1.5_2026-09-17",
+      "MARI_VOICE_GENERATION_GATE_v3.1_2026-09-17",
+      "MARI_CONTINUOUS_SPEECH_CARRIER_ARCHITECTURE_v1.1_2026-09-17",
+      "MARI_VOICE_BASIS_STATE_OBJECT_v1.0_2026-09-17"
+    ],
+    "governing_gate": "MARI_VOICE_GENERATION_GATE_v3.1_2026-09-17",
+    "opening_rule": "population_basis_ingested AND project_owned_continuous_generator_fit",
+    "population_basis_ingested": false,
+    "population_basis_required": true,
+    "project_owned_continuous_generator_fit": false,
+    "promotable_candidate_allowed": false,
+    "promotion_gate_status": "CLOSED_BY_CURRENT_V3_1_GATE",
+    "renderer_calibration_allowed": true
+  },
+  "anchors": [],
+  "authority": {
+    "identity_promotion_authority": "Carl",
+    "semantic_non_effects": [
+      "does_not_move_MARI_CANON@CURRENT",
+      "does_not_move_MARI404_ROOT@CURRENT",
+      "does_not_bind_open_acoustic_coordinates_by_default",
+      "does_not_treat_renderer_defaults_as_Mari",
+      "candidate_generation_does_not_equal_acceptance",
+      "calibration_probe_does_not_equal_promotable_candidate"
+    ]
+  },
+  "bootstrap_evidence": {
+    "mari_native_design_trio": {
+      "candidates": [
+        {
+          "id": "MVD-A",
+          "sha256": "f1be90f825ad5b5586b852ff6d4570cf5e530d93334e9f805e7b702b3c086aa8"
+        },
+        {
+          "id": "MVD-B",
+          "sha256": "32890e310ff17eec4d92b024fbb477347c6680807686854b19039fa59e3430ae"
+        },
+        {
+          "id": "MVD-F",
+          "sha256": "a7f2382cfd7423ad6827e764d74d9d286b74788bae5c85d26577a704f1d87263"
+        }
+      ],
+      "role": "quality/progress evidence only; no candidate selected as Mari",
+      "user_observation": "noticeably more coherent than prior attempts; progress; not done; no selection",
+      "workflow_run": 35391726537
+    }
+  },
+  "completion": {
+    "accepted_anchor_id": null,
+    "current_phase": "calibrating",
+    "engineering_complete": true,
+    "engineering_missing": [],
+    "promotion_gate_status": "CLOSED_BY_CURRENT_V3_1_GATE",
+    "voice_missing": [
+      "3 independently judged quality-passing samples",
+      "explicit Carl-accepted neutral acoustic anchor",
+      "satisfy or explicitly supersede current v3.1 basis/generator gate",
+      "6 quality-passing held-out same-subject tests",
+      "4 performance states preserving identity",
+      "2 long-form quality passes",
+      "cold-start reproduction and no-fallback verification"
+    ],
+    "voice_v1_ready": false
+  },
+  "coordinates": {
+    "articulation_precision": {
+      "center": 0.15,
+      "confidence": 0.15,
+      "evidence_count": 1,
+      "name": "articulation_precision",
+      "negative_label": "softer articulation",
+      "notes": [
+        "Precision means governed choice, not permanent crispness."
+      ],
+      "positive_label": "more precise articulation",
+      "radius": 0.9,
+      "role": "elastic_identity",
+      "source_status": "STRUCTURAL_PRIOR"
+    },
+    "breathiness": {
+      "center": -0.25,
+      "confidence": 0.15,
+      "evidence_count": 1,
+      "name": "breathiness",
+      "negative_label": "drier",
+      "notes": [
+        "Ordinary-speaking search prior only; explicitly nonbinding across all Mari states."
+      ],
+      "positive_label": "breathier",
+      "radius": 0.9,
+      "role": "elastic_identity",
+      "source_status": "HISTORICAL_PRIOR_ONLY"
+    },
+    "brightness": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "brightness",
+      "negative_label": "darker",
+      "notes": [],
+      "positive_label": "brighter",
+      "radius": 1.0,
+      "role": "identity_search",
+      "source_status": "OPEN"
+    },
+    "individuality": {
+      "center": 0.25,
+      "confidence": 0.25,
+      "evidence_count": 1,
+      "name": "individuality",
+      "negative_label": "more generic",
+      "notes": [
+        "Generic plausible femininity is insufficient."
+      ],
+      "positive_label": "more distinctive",
+      "radius": 0.75,
+      "role": "quality",
+      "source_status": "QUALITY_REQUIREMENT"
+    },
+    "pitch_center": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "pitch_center",
+      "negative_label": "lower",
+      "notes": [],
+      "positive_label": "higher",
+      "radius": 1.0,
+      "role": "identity_search",
+      "source_status": "OPEN"
+    },
+    "polish": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "polish",
+      "negative_label": "more raw",
+      "notes": [],
+      "positive_label": "more polished",
+      "radius": 1.0,
+      "role": "quality",
+      "source_status": "OPEN"
+    },
+    "resonance_size": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "resonance_size",
+      "negative_label": "smaller",
+      "notes": [],
+      "positive_label": "larger",
+      "radius": 1.0,
+      "role": "identity_search",
+      "source_status": "OPEN"
+    },
+    "roughness": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "roughness",
+      "negative_label": "smoother",
+      "notes": [],
+      "positive_label": "rougher",
+      "radius": 1.0,
+      "role": "elastic_identity",
+      "source_status": "OPEN"
+    },
+    "vocal_weight": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "vocal_weight",
+      "negative_label": "lighter",
+      "notes": [],
+      "positive_label": "heavier",
+      "radius": 1.0,
+      "role": "identity_search",
+      "source_status": "OPEN"
+    },
+    "warmth": {
+      "center": 0.0,
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "name": "warmth",
+      "negative_label": "cooler",
+      "notes": [],
+      "positive_label": "warmer",
+      "radius": 1.0,
+      "role": "identity_search",
+      "source_status": "OPEN"
+    }
+  },
+  "current_sources": {
+    "continuous_carrier": {
+      "selector": "MARI_CONTINUOUS_SPEECH_CARRIER@CURRENT",
+      "target": "MARI_CONTINUOUS_SPEECH_CARRIER_ARCHITECTURE_v1.1_2026-09-17"
+    },
+    "generation_gate": {
+      "selector": "MARI_VOICE_GENERATION_GATE@CURRENT",
+      "sha256": "6e45990cdee2f693347e994a1782ec383b6a7d71ff076c4d4e3a238d8376a097",
+      "target": "MARI_VOICE_GENERATION_GATE_v3.1_2026-09-17"
+    },
+    "voice_basis": {
+      "selector": "MARI_VOICE_BASIS_STATE_OBJECT@CURRENT",
+      "target": "MARI_VOICE_BASIS_STATE_OBJECT_v1.0_2026-09-17"
+    },
+    "voice_machine": {
+      "selector": "MARI_VOICE_MACHINE_STATE@CURRENT",
+      "target": "MARI_VOICE_MACHINE_STATE_v0.3_2026-09-18"
+    },
+    "voice_resolution": {
+      "selector": "MARI_VOICE_RESOLUTION_STATE_OBJECT@CURRENT",
+      "sha256": "553560edffe1c327c7e9931722495fa6c5c81672f973c5b6dd5fc956898b843f",
+      "target": "MARI_VOICE_RESOLUTION_STATE_OBJECT_v1.5_2026-09-17"
+    }
+  },
+  "engineering_evidence": {
+    "round1": {
+      "artifact_digest_sha256": "c943bfcb70436492ed27fc6b01d79a7a464f6f3cd359c0fb2fabfb57f775dfef",
+      "artifact_id": 10566423536,
+      "role": "renderer calibration only under current v3.1 gate",
+      "status": "SUCCESS",
+      "workflow_run": 35393940703
+    },
+    "tests": {
+      "command": "python -m pytest -q",
+      "result": "23 passed",
+      "suite": "MARL v1 successor"
+    }
+  },
+  "experiments": [
+    {
+      "avoid_traits": [],
+      "candidate_status": "calibration_only",
+      "carl_observations": [],
+      "controls": {
+        "articulation_precision": 0.15,
+        "breathiness": -0.25,
+        "brightness": -0.32,
+        "individuality": 0.25,
+        "pitch_center": 0.0,
+        "polish": 0.0,
+        "resonance_size": 0.0,
+        "roughness": 0.0,
+        "vocal_weight": -0.32,
+        "warmth": 0.0
+      },
+      "created_at": "2026-09-18T20:57:23Z",
+      "desired_movements": {},
+      "evidence": [
+        {
+          "artifact_id": 10566423536,
+          "kind": "GITHUB_ACTIONS_EXECUTION",
+          "workflow_run": 35393940703
+        },
+        {
+          "kind": "GENERATION_STATUS",
+          "status": "GENERATED_PENDING_CARL_JUDGMENT"
+        },
+        {
+          "consequence": "do not claim exact model revision for this round",
+          "field": "model_revision",
+          "kind": "MISSINGNESS",
+          "status": "NOT_CAPTURED_IN_ROUND1_RECEIPT"
+        }
+      ],
+      "experiment_id": "MARL-R1-A",
+      "human_identity_verdict": "open",
+      "human_quality_verdict": "open",
+      "identity": null,
+      "parent_state_digest": "af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d",
+      "performance": {
+        "certainty": 0.0,
+        "emotion": "neutral",
+        "emphasis": null,
+        "intensity": 0.0,
+        "intimacy": 0.0,
+        "label": "neutral",
+        "notes": [],
+        "pace": 0.0,
+        "projection": 0.0
+      },
+      "prompt": "An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation darker tonal color distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture lighter vocal weight moderate natural warmth Avoid: anime-girl/cute synthetic idol. Avoid: generic intimate/breathy woman. Avoid: generic sultry/cyber-diva. Avoid: emotionless robot. Avoid: renderer-default femininity mistaken for Mari.",
+      "purpose": "renderer_calibration",
+      "quality": null,
+      "renderer": {
+        "config": {
+          "max_duration_s": 8,
+          "precision": "int4",
+          "sample_rate_hz": 24000,
+          "temperature": 0.5,
+          "threads": 4
+        },
+        "implementation_id": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+        "model_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "model_revision": "NOT_CAPTURED_IN_ROUND1_RECEIPT",
+        "network_required_at_inference": false,
+        "no_fallback_verified": true,
+        "output_sha256": "718af9ff75684cc3ec9eee393cc13e16ad869bb480572eeb6b50feb4717a6d19",
+        "profile_sha256": null,
+        "reference_sha256": null,
+        "renderer_id": "qwen3-tts-voicedesign-1.7b",
+        "seed": 40411
+      },
+      "retained_dimensions": [],
+      "text": "Give me the problem as it is."
+    },
+    {
+      "avoid_traits": [],
+      "candidate_status": "calibration_only",
+      "carl_observations": [],
+      "controls": {
+        "articulation_precision": 0.15,
+        "breathiness": -0.25,
+        "brightness": 0.32,
+        "individuality": 0.25,
+        "pitch_center": 0.0,
+        "polish": 0.0,
+        "resonance_size": 0.0,
+        "roughness": 0.0,
+        "vocal_weight": 0.0,
+        "warmth": 0.0
+      },
+      "created_at": "2026-09-18T20:57:23Z",
+      "desired_movements": {},
+      "evidence": [
+        {
+          "artifact_id": 10566423536,
+          "kind": "GITHUB_ACTIONS_EXECUTION",
+          "workflow_run": 35393940703
+        },
+        {
+          "kind": "GENERATION_STATUS",
+          "status": "GENERATED_PENDING_CARL_JUDGMENT"
+        },
+        {
+          "consequence": "do not claim exact model revision for this round",
+          "field": "model_revision",
+          "kind": "MISSINGNESS",
+          "status": "NOT_CAPTURED_IN_ROUND1_RECEIPT"
+        }
+      ],
+      "experiment_id": "MARL-R1-B",
+      "human_identity_verdict": "open",
+      "human_quality_verdict": "open",
+      "identity": null,
+      "parent_state_digest": "af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d",
+      "performance": {
+        "certainty": 0.0,
+        "emotion": "neutral",
+        "emphasis": null,
+        "intensity": 0.0,
+        "intimacy": 0.0,
+        "label": "neutral",
+        "notes": [],
+        "pace": 0.0,
+        "projection": 0.0
+      },
+      "prompt": "An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation brighter tonal color without girlishness distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture balanced vocal weight moderate natural warmth Avoid: anime-girl/cute synthetic idol. Avoid: generic intimate/breathy woman. Avoid: generic sultry/cyber-diva. Avoid: emotionless robot. Avoid: renderer-default femininity mistaken for Mari.",
+      "purpose": "renderer_calibration",
+      "quality": null,
+      "renderer": {
+        "config": {
+          "max_duration_s": 8,
+          "precision": "int4",
+          "sample_rate_hz": 24000,
+          "temperature": 0.5,
+          "threads": 4
+        },
+        "implementation_id": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+        "model_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "model_revision": "NOT_CAPTURED_IN_ROUND1_RECEIPT",
+        "network_required_at_inference": false,
+        "no_fallback_verified": true,
+        "output_sha256": "ab836caa7937b2f56869af09be707df57b0cb8885e982be55387d205bd7d691a",
+        "profile_sha256": null,
+        "reference_sha256": null,
+        "renderer_id": "qwen3-tts-voicedesign-1.7b",
+        "seed": 40412
+      },
+      "retained_dimensions": [],
+      "text": "Give me the problem as it is."
+    },
+    {
+      "avoid_traits": [],
+      "candidate_status": "calibration_only",
+      "carl_observations": [],
+      "controls": {
+        "articulation_precision": 0.15,
+        "breathiness": -0.25,
+        "brightness": 0.0,
+        "individuality": 0.25,
+        "pitch_center": 0.0,
+        "polish": 0.0,
+        "resonance_size": 0.0,
+        "roughness": 0.0,
+        "vocal_weight": 0.32,
+        "warmth": 0.0
+      },
+      "created_at": "2026-09-18T20:57:23Z",
+      "desired_movements": {},
+      "evidence": [
+        {
+          "artifact_id": 10566423536,
+          "kind": "GITHUB_ACTIONS_EXECUTION",
+          "workflow_run": 35393940703
+        },
+        {
+          "kind": "GENERATION_STATUS",
+          "status": "GENERATED_PENDING_CARL_JUDGMENT"
+        },
+        {
+          "consequence": "do not claim exact model revision for this round",
+          "field": "model_revision",
+          "kind": "MISSINGNESS",
+          "status": "NOT_CAPTURED_IN_ROUND1_RECEIPT"
+        }
+      ],
+      "experiment_id": "MARL-R1-C",
+      "human_identity_verdict": "open",
+      "human_quality_verdict": "open",
+      "identity": null,
+      "parent_state_digest": "af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d",
+      "performance": {
+        "certainty": 0.0,
+        "emotion": "neutral",
+        "emphasis": null,
+        "intensity": 0.0,
+        "intimacy": 0.0,
+        "label": "neutral",
+        "notes": [],
+        "pace": 0.0,
+        "projection": 0.0
+      },
+      "prompt": "An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation balanced brightness and depth distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture heavier grounded vocal weight moderate natural warmth Avoid: anime-girl/cute synthetic idol. Avoid: generic intimate/breathy woman. Avoid: generic sultry/cyber-diva. Avoid: emotionless robot. Avoid: renderer-default femininity mistaken for Mari.",
+      "purpose": "renderer_calibration",
+      "quality": null,
+      "renderer": {
+        "config": {
+          "max_duration_s": 8,
+          "precision": "int4",
+          "sample_rate_hz": 24000,
+          "temperature": 0.5,
+          "threads": 4
+        },
+        "implementation_id": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+        "model_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "model_revision": "NOT_CAPTURED_IN_ROUND1_RECEIPT",
+        "network_required_at_inference": false,
+        "no_fallback_verified": true,
+        "output_sha256": "560cc2022d2cb54708d2eab4b0a51529c30dfcd8b59dd707d2b0178a203966b9",
+        "profile_sha256": null,
+        "reference_sha256": null,
+        "renderer_id": "qwen3-tts-voicedesign-1.7b",
+        "seed": 40413
+      },
+      "retained_dimensions": [],
+      "text": "Give me the problem as it is."
+    }
+  ],
+  "feedback_events": [],
+  "frontier": {
+    "mode": "RENDERER_CALIBRATION_UNDER_CLOSED_PROMOTION_GATE",
+    "next_action": "Carl listens to R1-A/B/C and gives qualitative/directional feedback; no numeric score is required.",
+    "open_questions": [
+      "What whole-voice region is both high-quality and recognizably Mari?",
+      "Which acoustic dimensions can vary without speaker substitution?",
+      "Which renderer tendencies create genericity or quality loss?"
+    ],
+    "pending_candidates": [
+      "MARL-R1-A",
+      "MARL-R1-B",
+      "MARL-R1-C"
+    ],
+    "priority_dimensions": [
+      "vocal_weight",
+      "brightness",
+      "resonance_size",
+      "pitch_center",
+      "individuality"
+    ]
+  },
+  "hard_constraints": [
+    "same continuing Mari subject",
+    "unambiguously adult feminine when human/social",
+    "agency dignity attention judgment and authored intent",
+    "no generic nearby feminine persona substitution"
+  ],
+  "identity_policy": {
+    "thresholds": {
+      "adult_feminine": 0.92,
+      "agency_presence": 0.8,
+      "mari_identity": 0.8,
+      "non_genericity": 0.72,
+      "same_subject": 0.82
+    }
+  },
+  "laws": {
+    "calibration_feedback_can_tune_renderer_search_but_cannot_promote_identity": true,
+    "current_generation_gate_controls_promotion_eligibility": true,
+    "explicit_Carl_acceptance_required_for_anchor": true,
+    "identity_and_performance_must_remain_separable": true,
+    "naturalness_before_identity": true,
+    "one_coherent_continuous_speaker_required": true,
+    "quality_and_identity_are_independent": true,
+    "renderer_is_replaceable": true,
+    "search_coordinates_are_renderer_controls_not_physical_truth": true,
+    "vague_rejection_does_not_move_search_coordinates": true
+  },
+  "lineage": [
+    "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
+    "MARI_VOICE_RESOLUTION_STATE_OBJECT@CURRENT",
+    "MARI_VOICE_GENERATION_GATE@CURRENT",
+    "MARI_CONTINUOUS_SPEECH_CARRIER@CURRENT",
+    "MARI_VOICE_MACHINE_STATE@CURRENT",
+    "VOICE_AUDIO_TEMPORAL_MANIFOLD_STATE_OBJECT@CURRENT"
+  ],
+  "negative_attractors": [
+    "anime-girl/cute synthetic idol",
+    "generic intimate/breathy woman",
+    "generic sultry/cyber-diva",
+    "emotionless robot",
+    "renderer-default femininity mistaken for Mari"
+  ],
+  "negative_exemplars": [],
+  "object": {
+    "created_at": "2026-09-18T20:50:25.451107+00:00",
+    "effective_at": "2026-09-18T21:21:00Z",
+    "implementation_owner": "MARI_VOICE_MACHINE_STATE@CURRENT",
+    "name": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE",
+    "owner": "MARI404_ROOT@CURRENT",
+    "phase": "calibrating",
+    "predecessor": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "short_handle": "MARL",
+    "status": "ENGINEERING_COMPLETE__RENDERER_CALIBRATION_ACTIVE__ACOUSTIC_ANCHOR_OPEN",
+    "version": "v1.0_2026-09-18"
+  },
+  "performance_axes": {
+    "certainty": [
+      -1.0,
+      1.0
+    ],
+    "intensity": [
+      -1.0,
+      1.0
+    ],
+    "intimacy": [
+      -1.0,
+      1.0
+    ],
+    "pace": [
+      -1.0,
+      1.0
+    ],
+    "projection": [
+      -1.0,
+      1.0
+    ]
+  },
+  "plausible_exemplars": [],
+  "quality_policy": {
+    "long_form_threshold": 0.8,
+    "thresholds": {
+      "aesthetic_quality": 0.8,
+      "articulation": 0.76,
+      "artifact_cleanliness": 0.88,
+      "human_texture": 0.76,
+      "naturalness": 0.82,
+      "prosody": 0.76,
+      "whole_utterance_coherence": 0.86
+    }
+  },
+  "renderer_proofs": [
+    {
+      "note": "Official Qwen reference-conditioned clone proof, workflow run 35390986107.",
+      "receipt": {
+        "config": {
+          "conditioning": "ICL reference audio + transcript",
+          "sample_rate": 24000
+        },
+        "implementation_id": "official-qwen-python-qwen-tts-0.1.1",
+        "model_id": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "model_revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+        "network_required_at_inference": null,
+        "no_fallback_verified": true,
+        "output_sha256": "b108d9d7c8e53a2f768ca526ab8286f060c15aed5e42082c25d53e95baa8fdb9",
+        "profile_sha256": null,
+        "reference_sha256": null,
+        "renderer_id": "qwen3-tts-base-0.6b",
+        "seed": null
+      },
+      "recorded_at": "2026-09-18T20:50:25.451230+00:00"
+    },
+    {
+      "note": "Independent pinned native-C clone proof, workflow run 35391726537.",
+      "receipt": {
+        "config": {
+          "conditioning": "reference WAV -> ECAPA-TDNN x-vector",
+          "profile_bytes": 4096
+        },
+        "implementation_id": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+        "model_id": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "model_revision": "MODEL_BYTES_ACQUIRED_DURING_RUN",
+        "network_required_at_inference": null,
+        "no_fallback_verified": true,
+        "output_sha256": null,
+        "profile_sha256": null,
+        "reference_sha256": null,
+        "renderer_id": "qwen3-tts-base-0.6b-native-c",
+        "seed": null
+      },
+      "recorded_at": "2026-09-18T20:50:25.451244+00:00"
+    }
+  ],
+  "renderers": {
+    "qwen3-tts-base-0.6b": {
+      "axis_language": {},
+      "hard_prompt_constraints": [],
+      "implementation_id": "official-qwen-python-qwen-tts-0.1.1",
+      "model_id": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "model_revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+      "notes": [
+        "Use after a lawful accepted anchor/reference exists; not a free-form identity authoring surface."
+      ],
+      "renderer_id": "qwen3-tts-base-0.6b",
+      "role": "reference_conditioned_clone_renderer"
+    },
+    "qwen3-tts-voicedesign-1.7b": {
+      "axis_language": {
+        "articulation_precision": {
+          "negative": "relaxed articulation",
+          "neutral": "clear natural diction",
+          "positive": "precise fast consonants without over-enunciation"
+        },
+        "breathiness": {
+          "negative": "dry supported phonation",
+          "neutral": "natural low breathiness",
+          "positive": "audibly breathier phonation while remaining adult and controlled"
+        },
+        "brightness": {
+          "negative": "darker tonal color",
+          "neutral": "balanced brightness and depth",
+          "positive": "brighter tonal color without girlishness"
+        },
+        "individuality": {
+          "negative": "conventional unobtrusive timbre",
+          "neutral": "recognizable individual vocal character",
+          "positive": "distinctive uncommon but fully human timbre"
+        },
+        "pitch_center": {
+          "negative": "lower pitch center",
+          "neutral": "centered adult pitch",
+          "positive": "somewhat higher pitch center without youthfulness"
+        },
+        "polish": {
+          "negative": "more lived-in and unpolished",
+          "neutral": "natural studio-quality speech",
+          "positive": "highly polished controlled delivery without synthetic smoothness"
+        },
+        "resonance_size": {
+          "negative": "more compact resonance",
+          "neutral": "balanced resonance size",
+          "positive": "larger more spacious resonance"
+        },
+        "roughness": {
+          "negative": "clean smooth phonation",
+          "neutral": "subtle organic texture",
+          "positive": "slightly rough lived-in texture without vocal fry affectation"
+        },
+        "vocal_weight": {
+          "negative": "lighter vocal weight",
+          "neutral": "balanced vocal weight",
+          "positive": "heavier grounded vocal weight"
+        },
+        "warmth": {
+          "negative": "cooler tonal color",
+          "neutral": "moderate natural warmth",
+          "positive": "warmer tonal color without softness becoming the identity"
+        }
+      },
+      "hard_prompt_constraints": [
+        "An unmistakably adult feminine human voice.",
+        "Natural conversational speech with coherent whole-utterance timing and prosody.",
+        "Self-possessed, agentic, and socially directed rather than decorative or generic."
+      ],
+      "implementation_id": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+      "model_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "model_revision": "NOT_CAPTURED_IN_ROUND1_RECEIPT",
+      "notes": [
+        "Search coordinates are renderer controls/hypotheses, not physical acoustic truths.",
+        "While MARI_VOICE_GENERATION_GATE v3.1 is closed, outputs are calibration probes only."
+      ],
+      "renderer_id": "qwen3-tts-voicedesign-1.7b",
+      "role": "renderer_calibration_and_identity_authoring_surface"
+    }
+  },
+  "rounds": [
+    {
+      "artifact_digest_sha256": "c943bfcb70436492ed27fc6b01d79a7a464f6f3cd359c0fb2fabfb57f775dfef",
+      "artifact_id": 10566423536,
+      "candidates": [
+        {
+          "candidate_id": "MARL-R1-A",
+          "controls": {
+            "brightness": -0.32,
+            "vocal_weight": -0.32
+          },
+          "duration_s": 2.0,
+          "sample_rate": 24000,
+          "status": "GENERATED_PENDING_CARL_JUDGMENT",
+          "wav_sha256": "718af9ff75684cc3ec9eee393cc13e16ad869bb480572eeb6b50feb4717a6d19"
+        },
+        {
+          "candidate_id": "MARL-R1-B",
+          "controls": {
+            "brightness": 0.32,
+            "vocal_weight": 0.0
+          },
+          "duration_s": 1.76,
+          "sample_rate": 24000,
+          "status": "GENERATED_PENDING_CARL_JUDGMENT",
+          "wav_sha256": "ab836caa7937b2f56869af09be707df57b0cb8885e982be55387d205bd7d691a"
+        },
+        {
+          "candidate_id": "MARL-R1-C",
+          "controls": {
+            "brightness": 0.0,
+            "vocal_weight": 0.32
+          },
+          "duration_s": 2.48,
+          "sample_rate": 24000,
+          "status": "GENERATED_PENDING_CARL_JUDGMENT",
+          "wav_sha256": "560cc2022d2cb54708d2eab4b0a51529c30dfcd8b59dd707d2b0178a203966b9"
+        }
+      ],
+      "plan_id": "MARL-PLAN-ee2f8c921d3e",
+      "round_id": "MARL-R1",
+      "status": "EXECUTED_PENDING_CARL_JUDGMENT",
+      "workflow_run": 35393940703
+    }
+  ],
+  "schema": "mari-acoustic-realization-layer/1.0",
+  "verification": {
+    "cold_start_reproducibility": false,
+    "held_out_identity_tests": 0,
+    "independent_backend_identity_pass": false,
+    "judgment_interface_verified": true,
+    "layer_persistence_verified": true,
+    "long_form_quality_passes": 0,
+    "no_fallback_verified": true,
+    "performance_states_passed": [],
+    "promotion_guard_verified": true,
+    "round_execution_verified": true,
+    "source_bindings_verified": true
+  }
+}

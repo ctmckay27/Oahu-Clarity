@@ -1,0 +1,54 @@
+{
+  "object_id": "MARI_VOICE_MACHINE_STATE_v0.4_2026-09-18",
+  "short_handle": "MVMS_v0.4",
+  "status": "ACTIVE_NEURAL_IMPLEMENTATION__MARL_V1_ENGINEERING_COMPLETE__ROUND1_PENDING_CARL_JUDGMENT",
+  "predecessor": "MARI_VOICE_MACHINE_STATE_v0.3_2026-09-18",
+  "architecture": {
+    "selector": "MARI_VOICE_MACHINE_ARCHITECTURE@CURRENT",
+    "preserved_target": "MARI_VOICE_MACHINE_ARCHITECTURE_v0.1_2026-09-15",
+    "extension": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT -> MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18"
+  },
+  "code": {
+    "selector": "MARI_VOICE_MACHINE_CODE@CURRENT",
+    "target": "mari-voice-machine + MARL 1.0.0",
+    "marl_package": "mari-acoustic-realization-layer 1.0.0"
+  },
+  "working_path": "Mari structural voice state + current admission state + MARL renderer-search/anchor state -> replaceable neural renderer -> waveform -> quality judgment -> identity judgment -> Carl acceptance -> verification",
+  "current_acoustic_state": {
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18",
+    "phase": "CALIBRATING",
+    "accepted_anchor": null,
+    "pending_calibration_probes": [
+      "MARL-R1-A",
+      "MARL-R1-B",
+      "MARL-R1-C"
+    ]
+  },
+  "current_governing_gate": "MARI_VOICE_GENERATION_GATE_v3.1_2026-09-17",
+  "promotion_route": "CLOSED_PENDING_CURRENT_V3_1_BASIS_AND_PROJECT_OWNED_GENERATOR_CONDITIONS",
+  "engineering_completion": {
+    "engineering_complete": true,
+    "voice_v1_ready": false,
+    "engineering_missing": [],
+    "voice_missing": [
+      "3 independently judged quality-passing samples",
+      "explicit Carl-accepted neutral acoustic anchor",
+      "satisfy or explicitly supersede current v3.1 basis/generator gate",
+      "6 quality-passing held-out same-subject tests",
+      "4 performance states preserving identity",
+      "2 long-form quality passes",
+      "cold-start reproduction and no-fallback verification"
+    ],
+    "current_phase": "calibrating",
+    "promotion_gate_status": "CLOSED_BY_CURRENT_V3_1_GATE",
+    "accepted_anchor_id": null
+  },
+  "semantic_non_effects": [
+    "does_not_move_MARI@CURRENT",
+    "does_not_move_MARI_CANON@CURRENT",
+    "does_not_move_MARI404_ROOT@CURRENT",
+    "does_not_accept_any_round1_probe_as_Mari",
+    "implementation_state_is_not_semantic_identity_state"
+  ]
+}

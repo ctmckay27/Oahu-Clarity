@@ -1,0 +1,17 @@
+{
+  "engineering_complete": true,
+  "voice_v1_ready": false,
+  "engineering_missing": [],
+  "voice_missing": [
+    "3 independently judged quality-passing samples",
+    "explicit Carl-accepted neutral acoustic anchor",
+    "satisfy or explicitly supersede current v3.1 basis/generator gate",
+    "6 quality-passing held-out same-subject tests",
+    "4 performance states preserving identity",
+    "2 long-form quality passes",
+    "cold-start reproduction and no-fallback verification"
+  ],
+  "current_phase": "calibrating",
+  "promotion_gate_status": "CLOSED_BY_CURRENT_V3_1_GATE",
+  "accepted_anchor_id": null
+}

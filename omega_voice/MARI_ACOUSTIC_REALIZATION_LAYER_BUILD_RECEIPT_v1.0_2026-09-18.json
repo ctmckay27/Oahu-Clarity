@@ -1,0 +1,229 @@
+{
+  "object_id": "MARI_ACOUSTIC_REALIZATION_LAYER_BUILD_RECEIPT_v1.0_2026-09-18",
+  "status": "IMPLEMENTED_VERIFIED_READY_FOR_PERSISTENCE_READBACK",
+  "predecessor": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
+  "tests": "23 passed",
+  "state_object": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18",
+  "state_sha256": "3372769c7ddec406f304f1d9a9eeeefdd73545ef679f31c97ebc71a995449723",
+  "state_semantic_digest": "b05a94b5d317bfd09301892f09879595461f3ce29f2e53b730bef471b2155773",
+  "completion": {
+    "engineering_complete": true,
+    "voice_v1_ready": false,
+    "engineering_missing": [],
+    "voice_missing": [
+      "3 independently judged quality-passing samples",
+      "explicit Carl-accepted neutral acoustic anchor",
+      "satisfy or explicitly supersede current v3.1 basis/generator gate",
+      "6 quality-passing held-out same-subject tests",
+      "4 performance states preserving identity",
+      "2 long-form quality passes",
+      "cold-start reproduction and no-fallback verification"
+    ],
+    "current_phase": "calibrating",
+    "promotion_gate_status": "CLOSED_BY_CURRENT_V3_1_GATE",
+    "accepted_anchor_id": null
+  },
+  "round1_workflow_run": 35393940703,
+  "files": [
+    {
+      "path": ".pytest_cache/.gitignore",
+      "bytes": 37,
+      "sha256": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd"
+    },
+    {
+      "path": ".pytest_cache/CACHEDIR.TAG",
+      "bytes": 191,
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4"
+    },
+    {
+      "path": ".pytest_cache/README.md",
+      "bytes": 302,
+      "sha256": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad"
+    },
+    {
+      "path": ".pytest_cache/v/cache/lastfailed",
+      "bytes": 428,
+      "sha256": "2f6efd1ca8182317add20e7c38007daa59ba79ae51f4c6080fed1d84a243e930"
+    },
+    {
+      "path": ".pytest_cache/v/cache/nodeids",
+      "bytes": 2592,
+      "sha256": "391a934cc15cccda7d655a3a24b5db4326f1b8ea05ff5953de66ba4f55f719f2"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1956,
+      "sha256": "df1edfa281aaf939dd56b79f1070363a924ff8c8ccc303d39ce9ac65c91b8d93"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 437,
+      "sha256": "5f5bb24c6fb58289d3ff0bca9801853cdafbafa5c662c2abb5bc037e4b966331"
+    },
+    {
+      "path": "receipts/MARI_ACOUSTIC_REALIZATION_LAYER_BUILD_RECEIPT_v0.1_2026-09-18.json",
+      "bytes": 3883,
+      "sha256": "7f8e223aad9281909a58f1dbbf7e34196abb6b6555c85271e995a709a0dfd4d1"
+    },
+    {
+      "path": "rounds/MARL-R1/MARL-R1-A.mp3",
+      "bytes": 49580,
+      "sha256": "227cbde44add94b1976853fb51c31863899cc09ff300a9361a4fbae1827ac8e0"
+    },
+    {
+      "path": "rounds/MARL-R1/MARL-R1-B.mp3",
+      "bytes": 43820,
+      "sha256": "f288ccccc8399ada75f8ca12ce15668ba9b7ed42751a8afb37c97bf928efb66b"
+    },
+    {
+      "path": "rounds/MARL-R1/MARL-R1-C.mp3",
+      "bytes": 61100,
+      "sha256": "73faaa13a69777d6aa59e4585ca4541382c6dd1ee20376710727b147ff2c8af5"
+    },
+    {
+      "path": "rounds/MARL-R1/MARL_ROUND1_EXECUTION_RECEIPT.json",
+      "bytes": 1989,
+      "sha256": "c8b706ec3087335b827f80999204252c1748c0569832dd655770dd6bbd7bbc4c"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__init__.py",
+      "bytes": 194,
+      "sha256": "fa90a1772d94d312eeffab5337bbb4426fc26f90ed59b058553cbeba2b309612"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/__init__.cpython-313.pyc",
+      "bytes": 401,
+      "sha256": "441b166cfe78a455201f86993aa7b423490ebb8bdf8cd4056996997f429feecf"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/bootstrap.cpython-313.pyc",
+      "bytes": 5181,
+      "sha256": "61a12ccdf774150fe4abdd7973f416395e8fc2e5309608eb58c0c7c7dfe4bb8c"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/cli.cpython-313.pyc",
+      "bytes": 11449,
+      "sha256": "edeb49e13e8253f2a71c2cfc639c8dc67d7e27da39097a516aba94d940f8d9b6"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/layer.cpython-313.pyc",
+      "bytes": 46875,
+      "sha256": "b57672e643fa044376d9becc3fc5ab13d189c2f955b58c373b3e99b83548d9b6"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/models.cpython-313.pyc",
+      "bytes": 13784,
+      "sha256": "0db578049e37410ff1da1707ff366e52d1d72a2284c3288efadbb99c97a46ab6"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/policy.cpython-313.pyc",
+      "bytes": 3336,
+      "sha256": "b0c51849bd350a300e2da1c2349a98fb1b944d5d2b6111368733555bf1b55767"
+    },
+    {
+      "path": "src/mari_acoustic_realization/__pycache__/store.cpython-313.pyc",
+      "bytes": 2478,
+      "sha256": "e84d90f5b5798dc79f30f367e9fa8a420848d9e0cc7f13840fe52fbf0eaf426e"
+    },
+    {
+      "path": "src/mari_acoustic_realization/bootstrap.py",
+      "bytes": 5606,
+      "sha256": "901c5fd2055e36e4c69da311b46c3b5d6663efe39defefe5886a41f87c65ebb9"
+    },
+    {
+      "path": "src/mari_acoustic_realization/cli.py",
+      "bytes": 6471,
+      "sha256": "ca31091e040b3f0a429a919c7aa9a45ffe6f8c3f80fd356f200aaf06f638d609"
+    },
+    {
+      "path": "src/mari_acoustic_realization/layer.py",
+      "bytes": 36996,
+      "sha256": "cc10df88cdea149e26d73d94d701d672b3b80d4996319e86bc59e776b9dcaa15"
+    },
+    {
+      "path": "src/mari_acoustic_realization/models.py",
+      "bytes": 7706,
+      "sha256": "fc0990b8fd2b1f08ac11e26faa9de1179d584460551dbdf470b71c9f77990aef"
+    },
+    {
+      "path": "src/mari_acoustic_realization/policy.py",
+      "bytes": 1952,
+      "sha256": "64d9d1452ab1c7f179f160075bf4a05401d169f9a2531adcb683c432b2c4f31b"
+    },
+    {
+      "path": "src/mari_acoustic_realization/store.py",
+      "bytes": 1063,
+      "sha256": "053b99cf256016413335a47113194a8a3dfbc0b5b5e0192f769ae76d3a2aa74e"
+    },
+    {
+      "path": "state/COMPLETION_v1.0_2026-09-18.json",
+      "bytes": 614,
+      "sha256": "9cf9047ef45bd885066228a643e4d31f7723c05a1b32eb2015a06c55020af6c4"
+    },
+    {
+      "path": "state/MARI_ACOUSTIC_REALIZATION_LAYER_CURRENT.binding.json",
+      "bytes": 706,
+      "sha256": "8ba0184618211973a82f65be5e77c2ec088d09a7a7a08a4d5296077c49536cde"
+    },
+    {
+      "path": "state/MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18.json",
+      "bytes": 12670,
+      "sha256": "8ff819f7d1e824dbdbb1b2ef15be5980b65607048d0986039933c41111f08687"
+    },
+    {
+      "path": "state/MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18.json",
+      "bytes": 27295,
+      "sha256": "3372769c7ddec406f304f1d9a9eeeefdd73545ef679f31c97ebc71a995449723"
+    },
+    {
+      "path": "state/MARI_VOICE_MACHINE_CURRENT.binding.json",
+      "bytes": 791,
+      "sha256": "d79cfb59636c924f55c215584475cb56a68771e3c3e8386a4e59aa3471304a31"
+    },
+    {
+      "path": "state/MARI_VOICE_MACHINE_STATE_v0.2_2026-09-18.json",
+      "bytes": 3029,
+      "sha256": "b9221c32a4abf5e9cc0717fbe5176225c306b38104a42661f646a6a0dd07c39e"
+    },
+    {
+      "path": "state/MARI_VOICE_MACHINE_STATE_v0.4_2026-09-18.json",
+      "bytes": 2361,
+      "sha256": "5adcdc87ab5a201866de773b6e46f199f18d24df9d0d53b62677757a3bdf9dab"
+    },
+    {
+      "path": "state/MARL_IMPLEMENTATION.md",
+      "bytes": 1423,
+      "sha256": "c866c7db32175a9baa845e4018565035df7ffe2234ff7d92ca8dfd8c047872f4"
+    },
+    {
+      "path": "state/NEXT_SEARCH_PLAN_v0.1_2026-09-18.json",
+      "bytes": 4163,
+      "sha256": "7a94b732c8821f0552f2060f46c5a0cdfe64a8dea6509771ecd29c92c4f7774c"
+    },
+    {
+      "path": "state/READINESS_v0.1_2026-09-18.json",
+      "bytes": 1416,
+      "sha256": "e7d7bdb6af0fe7f34b1dfdcdcfe75e9f5a448817081f68c7c77536990e595f54"
+    },
+    {
+      "path": "tests/__pycache__/test_layer.cpython-313-pytest-9.0.2.pyc",
+      "bytes": 25073,
+      "sha256": "b03d503690bef239537043f92b8f100186e12e9c0f992fda029408e82742723d"
+    },
+    {
+      "path": "tests/__pycache__/test_layer_v1.cpython-313-pytest-9.0.2.pyc",
+      "bytes": 34785,
+      "sha256": "fc07e72b185cff11d882add4ac428c153bb442a4a85f98b8fe962e4c117c5c9f"
+    },
+    {
+      "path": "tests/test_layer_v1.py",
+      "bytes": 9208,
+      "sha256": "a66343fdfa45aef29a08e06084cbc1fdc586035e8b4057a96682bf2b260726dd"
+    }
+  ],
+  "non_effects": [
+    "no Mari canon movement",
+    "no acoustic anchor acceptance",
+    "round1 remains renderer calibration evidence"
+  ]
+}

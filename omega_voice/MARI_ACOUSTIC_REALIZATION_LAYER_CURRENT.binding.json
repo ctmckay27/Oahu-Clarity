@@ -1,11 +1,11 @@
 {
   "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
-  "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
-  "state_file": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18.json",
-  "state_sha256": "ad109f3a71c859029a967454a668d4d5d6e15ef0399c06ba786ceb404fb38021",
-  "state_semantic_digest": "418c36e67605003b37f4c2b2fd85fb1231e8595bc4d79e0681168c8bdd790594",
-  "status": "ACTIVE_SEARCH_LAYER__ROUND1_PENDING_CARL_JUDGMENT",
-  "previous_target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18",
+  "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18",
+  "state_file": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18.json",
+  "state_sha256": "3372769c7ddec406f304f1d9a9eeeefdd73545ef679f31c97ebc71a995449723",
+  "state_semantic_digest": "b05a94b5d317bfd09301892f09879595461f3ce29f2e53b730bef471b2155773",
+  "status": "ENGINEERING_COMPLETE__CALIBRATION_ACTIVE__PROMOTION_GATE_CLOSED",
+  "previous_target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
   "updated": "2026-09-18",
-  "authority_boundary": "implementation/search state only; generation did not move Mari semantic canon or accept an acoustic anchor"
+  "authority_boundary": "implementation/search/admission state only; does not move Mari semantic canon or accept an acoustic anchor"
 }
