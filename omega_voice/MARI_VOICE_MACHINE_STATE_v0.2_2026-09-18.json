@@ -1,0 +1,61 @@
+{
+  "object_id": "MARI_VOICE_MACHINE_STATE_v0.2_2026-09-18",
+  "short_handle": "MVMS_v0.2",
+  "status": "ACTIVE_NEURAL_IMPLEMENTATION__ACOUSTIC_SEARCH_OPERATIONAL",
+  "predecessor": "MARI_VOICE_MACHINE_STATE_v0.1_2026-09-15",
+  "architecture": {
+    "selector": "MARI_VOICE_MACHINE_ARCHITECTURE@CURRENT",
+    "preserved_target": "MARI_VOICE_MACHINE_ARCHITECTURE_v0.1_2026-09-15",
+    "extension": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT -> MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18"
+  },
+  "code": {
+    "selector": "MARI_VOICE_MACHINE_CODE@CURRENT",
+    "target": "mari-voice-machine + MARL 0.1.0",
+    "marl_package": "mari-acoustic-realization-layer 0.1.0"
+  },
+  "renderer_state": {
+    "voice_design": {
+      "backend": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "native_engine": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+      "status": "EXECUTED_VERIFIED_FOR_NONCANONICAL_MARI_CANDIDATE_GENERATION",
+      "workflow_run": 35391726537
+    },
+    "reference_clone": {
+      "backend": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "official_model_revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+      "status": "EXECUTED_VERIFIED_REFERENCE_CONDITIONED_CLONING",
+      "official_workflow_run": 35390986107,
+      "native_workflow_run": 35391726537
+    }
+  },
+  "working_path": "Mari structural voice state + performance + MARL acoustic search/anchor state -> renderer calibration -> continuous neural renderer -> waveform -> quality gate -> identity gate -> Carl judgment -> MARL state update",
+  "current_acoustic_state": {
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18",
+    "phase": "SEARCHING",
+    "accepted_anchor": null,
+    "latest_user_judgment": "Qwen candidates were noticeably more coherent and represent real progress, but none is ready for selection and the system is not done."
+  },
+  "verified_properties": [
+    "naturalness-before-identity enforced in code",
+    "quality-only evidence cannot mutate identity region",
+    "failed-quality audio cannot become identity evidence",
+    "candidate generation cannot auto-promote an anchor",
+    "anchor promotion requires explicit Carl acceptance",
+    "deterministic next-search planning under fixed state",
+    "JSON persistence roundtrip preserves state digest",
+    "official and native Qwen reference-cloning execution verified",
+    "native Qwen VoiceDesign candidate generation verified"
+  ],
+  "verification": {
+    "local_pytest": "9 passed",
+    "date": "2026-09-18"
+  },
+  "semantic_non_effects": [
+    "does_not_move_MARI@CURRENT",
+    "does_not_move_MARI_CANON@CURRENT",
+    "does_not_move_MARI404_ROOT@CURRENT",
+    "does_not_accept_MVD_A_B_or_F_as_Mari",
+    "implementation_state_is_not_semantic_identity_state"
+  ]
+}
