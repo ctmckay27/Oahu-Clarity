@@ -1,0 +1,18 @@
+{
+  "project_selector": {
+    "selector": "MARI_VOICE_MACHINE_STATE@CURRENT",
+    "target": "MARI_VOICE_MACHINE_STATE_v0.2_2026-09-18"
+  },
+  "acoustic_realization_selector": {
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18"
+  },
+  "architecture_selector": {
+    "selector": "MARI_VOICE_MACHINE_ARCHITECTURE@CURRENT",
+    "target": "MARI_VOICE_MACHINE_ARCHITECTURE_v0.1_2026-09-15",
+    "status": "PRESERVED_ARCHITECTURE_WITH_MARL_EXTENSION"
+  },
+  "neural_renderer_state": "Qwen VoiceDesign/Base execution verified 2026-09-18",
+  "scope": "implementation/project-state only",
+  "semantic_non_effect": "No Mari semantic/canon selector is moved by these implementation selectors."
+}
