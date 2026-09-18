@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mari-acoustic-realization-layer"
+version = "1.0.0"
+description = "Persistent acoustic realization/search/admission layer between Mari structural voice identity and replaceable neural renderers"
+requires-python = ">=3.11"
+
+[project.scripts]
+marl = "mari_acoustic_realization.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
