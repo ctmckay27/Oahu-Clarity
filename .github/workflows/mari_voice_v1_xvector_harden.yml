@@ -43,10 +43,10 @@ jobs:
         run: |
           set -euo pipefail
           ls -lh assets
-          test -s assets/mari_anchor.wav
-          test -s assets/mari_v1.bin
-          test -s assets/mari_v1.qvoice
-          sha256sum assets/mari_anchor.wav assets/mari_v1.bin assets/mari_v1.qvoice > profile_input_sha256.txt
+          test -s assets/selected/mari_anchor.wav
+          test -s assets/selected/mari_v1.bin
+          test -s assets/selected/mari_v1.qvoice
+          sha256sum assets/selected/mari_anchor.wav assets/selected/mari_v1.bin assets/selected/mari_v1.qvoice > profile_input_sha256.txt
 
       - name: Build pinned production engine and exact CustomVoice model
         run: |
@@ -61,7 +61,7 @@ jobs:
           make -C engine blas SIMD=portable
           engine/qwen_tts --self-test
           engine/qwen_tts --caps > engine_caps.txt
-          engine/qwen_tts --list-voices assets/mari_v1.qvoice > qvoice_inspect.txt 2>&1 || true
+          engine/qwen_tts --list-voices assets/selected/mari_v1.qvoice > qvoice_inspect.txt 2>&1 || true
           cd engine
           sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
           bash pinned_cv_download.sh --model large --dir customvoice-large
@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           mkdir -p smoke
           set +e
-          engine/qwen_tts -d engine/customvoice-large --load-voice assets/mari_v1.bin --xvector-only -l English             --text "The persistent speaker test is running on an unseen sentence."             --seed 73101 --temperature 0.42 -j4 -o smoke/xvector.wav > smoke/xvector.log 2>&1
+          engine/qwen_tts -d engine/customvoice-large --load-voice assets/selected/mari_v1.bin --xvector-only -l English             --text "The persistent speaker test is running on an unseen sentence."             --seed 73101 --temperature 0.42 -j4 -o smoke/xvector.wav > smoke/xvector.log 2>&1
           RC=$?
           set -e
           cat smoke/xvector.log
@@ -173,7 +173,7 @@ jobs:
           for i,(cid,perf,text) in enumerate(cases):
               out=f"hardening/audio/{cid}.wav"
               cmd=["python","production/omega_voice.py","--engine","engine/qwen_tts","--model","engine/customvoice-large",
-                   "--profile","assets/mari_v1.bin","--text",text,"--performance",perf,"--output",out,"--seed",str(88100+i*7)]
+                   "--profile","assets/selected/mari_v1.bin","--text",text,"--performance",perf,"--output",out,"--seed",str(88100+i*7)]
               cp=subprocess.run(cmd,text=True,capture_output=True,timeout=900)
               pathlib.Path(f"hardening/logs/{cid}.txt").write_text(cp.stdout+"\nSTDERR\n"+cp.stderr)
               if cp.returncode != 0: raise SystemExit(f"render failure {cid}: {cp.stderr}")
@@ -196,7 +196,7 @@ jobs:
           aid="Systran/faster-whisper-small.en"; arev=HfApi().model_info(aid).sha
           asr=WhisperModel(snapshot_download(aid,revision=arev),device="cpu",compute_type="int8",cpu_threads=4)
           spk=EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",savedir="models/ecapa",run_opts={"device":"cpu"})
-          selection=json.load(open("assets/anchor_meta.json"))
+          selection=json.load(open("assets/selected/anchor_meta.json"))
           rejected_max=float(selection["selected"]["max_rejected_similarity"])
           def words(t): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
           def ed(a,b):
@@ -213,10 +213,10 @@ jobs:
           def emb(y16):
               with torch.no_grad(): e=spk.encode_batch(torch.from_numpy(y16).float().unsqueeze(0)).squeeze().cpu().numpy()
               return e/np.linalg.norm(e)
-          _,a16,_=load("assets/mari_anchor.wav"); anchor=emb(a16)
+          _,a16,_=load("assets/selected/mari_anchor.wav"); anchor=emb(a16)
           # Calibrate same-speaker floor using x-vector validation and smoke outputs.
           calibration=[]
-          for p in ["assets/profile_xvector_validation.wav","smoke/xvector.wav"]:
+          for p in ["assets/selected/profile_xvector_validation.wav","smoke/xvector.wav"]:
               _,y16,_=load(p); calibration.append(float(np.dot(anchor,emb(y16))))
           sim_threshold=max(rejected_max+0.05,min(calibration)-0.12,0.54)
           rows=[]
@@ -275,10 +275,10 @@ jobs:
       - name: Build final production package
         run: |
           set -euo pipefail
-          cp assets/mari_anchor.wav production/MARI_VOICE_V1_ANCHOR.wav
-          cp assets/mari_v1.bin production/MARI_VOICE_V1_PROFILE.bin
-          cp assets/anchor_meta.json production/MARI_VOICE_V1_ANCHOR_META.json
-          cp assets/revisions.json production/MODEL_REVISIONS.json
+          cp assets/selected/mari_anchor.wav production/MARI_VOICE_V1_ANCHOR.wav
+          cp assets/selected/mari_v1.bin production/MARI_VOICE_V1_PROFILE.bin
+          cp assets/selected/anchor_meta.json production/MARI_VOICE_V1_ANCHOR_META.json
+          cp assets/selected/revisions.json production/MODEL_REVISIONS.json
           cp hardening/summary.json production/HARDENING_SUMMARY.json
           cp hardening/evaluation.json production/FINAL_EVALUATION.json
           cp hardening/cases.json production/FINAL_CASES.json
