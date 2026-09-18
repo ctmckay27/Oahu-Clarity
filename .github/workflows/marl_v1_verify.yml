@@ -1,0 +1,40 @@
+name: marl-v1-verify
+
+on:
+  push:
+    branches:
+      - mari-acoustic-realization-layer-20260918
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install test dependency
+        run: python -m pip install -q pytest
+      - name: Run MARL v1 tests
+        env:
+          PYTHONPATH: omega_voice/marl_v1/src
+        run: python -m pytest -q omega_voice/marl_v1/tests
+      - name: Verify committed completion state
+        env:
+          PYTHONPATH: omega_voice/marl_v1/src
+        run: |
+          python -m mari_acoustic_realization.cli \
+            --state omega_voice/MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.0_2026-09-18.json \
+            completion > /tmp/completion.json
+          cat /tmp/completion.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/completion.json'))
+          assert x['engineering_complete'] is True
+          assert x['voice_v1_ready'] is False
+          assert x['promotion_gate_status'] == 'CLOSED_BY_CURRENT_V3_1_GATE'
+          PY
