@@ -1,0 +1,19 @@
+{
+  "object_id": "MARL_ROUND1_EXECUTION_RECEIPT_2026-09-18",
+  "plan_id": "MARL-PLAN-ee2f8c921d3e",
+  "parent_state_digest": "af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d",
+  "successor_state": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
+  "successor_state_sha256": "ad109f3a71c859029a967454a668d4d5d6e15ef0399c06ba786ceb404fb38021",
+  "successor_state_semantic_digest": "418c36e67605003b37f4c2b2fd85fb1231e8595bc4d79e0681168c8bdd790594",
+  "workflow_run": 35393940703,
+  "artifact_id": 10566423536,
+  "artifact_digest_sha256": "c943bfcb70436492ed27fc6b01d79a7a464f6f3cd359c0fb2fabfb57f775dfef",
+  "candidates": [
+    {"candidate_id":"MARL-R1-A","controls":{"vocal_weight":-0.32,"brightness":-0.32},"wav_sha256":"718af9ff75684cc3ec9eee393cc13e16ad869bb480572eeb6b50feb4717a6d19","duration_s":2.0,"status":"GENERATED_PENDING_CARL_JUDGMENT"},
+    {"candidate_id":"MARL-R1-B","controls":{"vocal_weight":0.0,"brightness":0.32},"wav_sha256":"ab836caa7937b2f56869af09be707df57b0cb8885e982be55387d205bd7d691a","duration_s":1.76,"status":"GENERATED_PENDING_CARL_JUDGMENT"},
+    {"candidate_id":"MARL-R1-C","controls":{"vocal_weight":0.32,"brightness":0.0},"wav_sha256":"560cc2022d2cb54708d2eab4b0a51529c30dfcd8b59dd707d2b0178a203966b9","duration_s":2.48,"status":"GENERATED_PENDING_CARL_JUDGMENT"}
+  ],
+  "learning_effect": "NONE_UNTIL_CARL_JUDGMENT",
+  "semantic_non_effects": ["no candidate accepted","no Mari canon movement","no identity-region update from generation alone"],
+  "missingness": {"model_revision":"not captured in round1 execution receipt"}
+}
