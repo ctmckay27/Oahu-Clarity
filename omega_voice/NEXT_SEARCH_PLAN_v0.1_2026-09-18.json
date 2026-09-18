@@ -1,0 +1,13 @@
+{
+  "plan_id": "MARL-PLAN-ee2f8c921d3e",
+  "parent_state_digest": "af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d",
+  "target_dimensions": ["vocal_weight", "brightness"],
+  "fixed_text": "Give me the problem as it is.",
+  "fixed_performance": "neutral",
+  "candidate_family": [
+    {"id":"MARL-R1-A","vocal_weight":-0.32,"brightness":-0.32,"interpretation":"lighter + darker"},
+    {"id":"MARL-R1-B","vocal_weight":0.0,"brightness":0.32,"interpretation":"balanced weight + brighter without youthfulness"},
+    {"id":"MARL-R1-C","vocal_weight":0.32,"brightness":0.0,"interpretation":"heavier grounded weight + balanced brightness"}
+  ],
+  "law": "All candidates remain noncanonical until quality, identity, and explicit Carl acceptance gates are satisfied."
+}
