@@ -1,9 +1,6 @@
 name: marl-round1-voice-search
 
 on:
-  push:
-    branches:
-      - mari-acoustic-realization-layer-20260918
   workflow_dispatch:
 
 permissions:
