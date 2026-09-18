@@ -1,0 +1,16 @@
+{
+  "object_id": "MARI_ACOUSTIC_REALIZATION_LAYER_BUILD_RECEIPT_v0.1_2026-09-18",
+  "built_at": "2026-09-18",
+  "status": "IMPLEMENTED_AND_LOCALLY_VERIFIED",
+  "test_result": "9 passed",
+  "state_object": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.1_2026-09-18",
+  "state_file_sha256": "8ff819f7d1e824dbdbb1b2ef15be5980b65607048d0986039933c41111f08687",
+  "state_semantic_digest": "af49b9dbecd317db6606f794149f53d82fa72fa343a8bb3dd8d30fe00d59757d",
+  "bundle_sha256": "b3041021077369a24d7b9e3409ed6f7f0f18d3f6e6be9437eae07b53fabafd13",
+  "non_effects": [
+    "no Mari canon movement",
+    "no acoustic anchor acceptance",
+    "MVD-A/B/F remain noncanonical evidence"
+  ],
+  "next_operational_action": "execute MARL-PLAN-ee2f8c921d3e against Qwen VoiceDesign and collect Carl listening judgments"
+}
