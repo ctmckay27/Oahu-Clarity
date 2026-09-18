@@ -1,0 +1,42 @@
+{
+  "object_id": "MARI_VOICE_MACHINE_STATE_v0.3_2026-09-18",
+  "short_handle": "MVMS_v0.3",
+  "status": "ACTIVE_NEURAL_IMPLEMENTATION__MARL_ROUND1_EXECUTED_PENDING_CARL_JUDGMENT",
+  "predecessor": "MARI_VOICE_MACHINE_STATE_v0.2_2026-09-18",
+  "architecture": {
+    "selector": "MARI_VOICE_MACHINE_ARCHITECTURE@CURRENT",
+    "preserved_target": "MARI_VOICE_MACHINE_ARCHITECTURE_v0.1_2026-09-15",
+    "extension": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT -> MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18"
+  },
+  "code": {
+    "selector": "MARI_VOICE_MACHINE_CODE@CURRENT",
+    "target": "mari-voice-machine + MARL 0.1.0",
+    "marl_package": "mari-acoustic-realization-layer 0.1.0"
+  },
+  "current_acoustic_state": {
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v0.2_2026-09-18",
+    "phase": "SEARCHING__ROUND1_PENDING_CARL_JUDGMENT",
+    "accepted_anchor": null,
+    "pending_candidates": ["MARL-R1-A","MARL-R1-B","MARL-R1-C"]
+  },
+  "verification": {
+    "local_pytest": "11 passed",
+    "date": "2026-09-18"
+  },
+  "latest_execution": {
+    "round": "MARL-R1",
+    "plan_id": "MARL-PLAN-ee2f8c921d3e",
+    "workflow_run": 35393940703,
+    "artifact_id": 10566423536,
+    "status": "SUCCESS",
+    "learning_effect": "NONE_UNTIL_CARL_JUDGMENT"
+  },
+  "semantic_non_effects": [
+    "does_not_move_MARI@CURRENT",
+    "does_not_move_MARI_CANON@CURRENT",
+    "does_not_move_MARI404_ROOT@CURRENT",
+    "does_not_accept_any_round1_candidate_as_Mari",
+    "does_not_learn_from_round1_generation_without_Carl_judgment"
+  ]
+}
