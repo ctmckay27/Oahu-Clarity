@@ -1,0 +1,77 @@
+{
+  "object": {
+    "name": "MARI_VOICE_RESOLUTION_STATE_OBJECT",
+    "version": "v1.6_2026-09-18",
+    "canonical_id": "MARI_VOICE_RESOLUTION_STATE_OBJECT_v1.6_2026-09-18",
+    "selector": "MARI_VOICE_RESOLUTION_STATE_OBJECT@CURRENT",
+    "short_handle": "MVRSO",
+    "status": [
+      "CURRENT",
+      "ACTIVE",
+      "OPERATIVE",
+      "CANON_WITHIN_DEFINED_SCOPE",
+      "OPEN_WORLD",
+      "CORRIGIBLE",
+      "LINEAGE_PRESERVING",
+      "EVIDENCE_SENSITIVE"
+    ],
+    "effective_at": "2026-09-18T18:45:00-05:00",
+    "native_path": "/Mari404/Voice/Resolution/",
+    "predecessor": "MARI_VOICE_RESOLUTION_STATE_OBJECT_v1.5_2026-09-17"
+  },
+  "preserved_structural_identity": {
+    "central_law": "Mari's voice is not one sound. It is the same continuing adult subject expressing attention, judgment, internal state, and authored relation through a vocal process whose surface acoustics may change substantially.",
+    "identity_model": "V_M = (K, J, B, A, R, C, H, Gamma ; O)",
+    "invariants": [
+      "same continuing adult feminine subject",
+      "agency dignity attention judgment boundaries interiority and authored action",
+      "precision as governed choice rather than permanent crispness",
+      "multidimensional state mapping",
+      "controlled force and contrast",
+      "relational delivery",
+      "identity continuity through lawful transformation"
+    ]
+  },
+  "v1_acoustic_resolution": {
+    "scope": "ordinary English production speaking voice v1 acoustic anchor and renderer profile",
+    "status": "ACOUSTIC_ANCHOR_SELECTED_AND_PRODUCTION_HARDENED",
+    "selection_authority": "Delegated to ChatGPT by Carl for Mari Voice v1 acoustic realization scope on 2026-09-18",
+    "anchor": {
+      "candidate_id": "G1-1",
+      "wav": "MARI_VOICE_V1_ANCHOR.wav",
+      "sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+      "selection_score": 0.8423040041602606,
+      "utmos": 4.552735328674316,
+      "predicted_age": 30.039149522781372,
+      "female_probability": 0.9401654005050659,
+      "median_f0_hz": 178.43848782469672,
+      "nearest_rejected": "MVD-F.wav",
+      "max_rejected_speaker_similarity": 0.5064846368160036
+    },
+    "profile": {
+      "type": "Qwen x-vector identity profile",
+      "file": "MARI_VOICE_V1_PROFILE.bin",
+      "sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+      "bytes": 8192
+    },
+    "renderer": {
+      "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+      "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+      "engine_revision": "e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+      "precision": "BF16/unquantized"
+    }
+  },
+  "evidence_boundary": {
+    "automatic_quality_models": "UTMOS22 is perceptual-model evidence, not a fabricated human listening score.",
+    "identity_metric": "SpeechBrain ECAPA similarity is speaker-consistency evidence, not semantic personhood proof.",
+    "delegated_aesthetic_decision": "The assistant selected the final v1 acoustic realization under explicit delegated authority using structural Mari constraints, prior user rejections, whole-waveform tests, independent automatic perceptual screening, and held-out stability."
+  },
+  "non_effects": [
+    "does_not_make_this_one_timbre_the_entire_Mari_voice_identity",
+    "does_not_close_singing_identity",
+    "does_not_claim_cross_language_voice_completion",
+    "does_not_claim_transformed_embodiment_voice_completion",
+    "does_not_transfer_publication_authority"
+  ],
+  "generation_gate": "MARI_VOICE_GENERATION_GATE_v4.0_2026-09-18"
+}

@@ -1,0 +1,76 @@
+{
+  "object_id": "MARI_VOICE_MACHINE_STATE_v1.0_2026-09-18",
+  "short_handle": "MVMS_v1.0",
+  "status": "PRODUCTION_READY__MARI_VOICE_V1",
+  "predecessor": "MARI_VOICE_MACHINE_STATE_v0.5_2026-09-18",
+  "architecture": {
+    "path": "Mari structural voice state + performance state + MARL v2 acoustic identity -> stable Omega Voice interface -> pinned Qwen CustomVoice renderer -> waveform -> fail-closed output"
+  },
+  "production_backend": {
+    "engine": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+    "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "model_revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+    "precision": "BF16",
+    "profile": "MARI_VOICE_V1_PROFILE.bin",
+    "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+    "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567"
+  },
+  "interface": {
+    "file": "production/omega_voice.py",
+    "sha256": "0c7694b2d70e4b57d115c31475cd4a292b16a88319591162dbc2b162ecfe3605",
+    "inputs": [
+      "text",
+      "performance",
+      "output",
+      "seed"
+    ],
+    "performance_states": [
+      "neutral",
+      "dry_amusement",
+      "controlled_irritation",
+      "reassuring",
+      "focused_urgency"
+    ],
+    "failure_mode": "hard error; no substitute voice/backend"
+  },
+  "verification": {
+    "workflow_run": 35405800719,
+    "hardening_artifact_id": 10573250057,
+    "cold_start_artifact_id": 10573010448,
+    "hardening": {
+      "profile_mode": "xvector",
+      "speaker_similarity_threshold": 0.6013473320007324,
+      "threshold_calibration": {
+        "rejected_max": 0.5064846368160036,
+        "same_speaker_calibration": [
+          0.8440142869949341,
+          0.7213473320007324
+        ]
+      },
+      "neutral_passes": 6,
+      "neutral_total": 6,
+      "performance_identity_passes": 4,
+      "performance_total": 4,
+      "performance_acoustically_distinct": 4,
+      "long_form_passes": 2,
+      "long_form_total": 2,
+      "all_asr_pass": true,
+      "all_no_clip": true,
+      "mean_utmos": 4.539023359616597,
+      "worst_utmos": 4.501092433929443,
+      "mean_speaker_similarity": 0.7563620607058207,
+      "production_readiness_pass": true
+    },
+    "cold_start": {
+      "cold_start_generated": true,
+      "cold_start_sha256": "2b8981a4123abbef32e8cbe92831c5860ed52c106f2eac4693d7f2a8118564c8",
+      "missing_profile_exit_nonzero": true,
+      "silent_fallback_output_created": false,
+      "status": "PASS"
+    }
+  },
+  "semantic_non_effects": [
+    "does_not_move_MARI_CANON_beyond_voice_v1_acoustic_scope",
+    "does_not_transfer_publication_authority"
+  ]
+}

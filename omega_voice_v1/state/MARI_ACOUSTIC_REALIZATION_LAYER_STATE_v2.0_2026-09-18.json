@@ -1,0 +1,85 @@
+{
+  "object": {
+    "name": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE",
+    "version": "v2.0_2026-09-18",
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "short_handle": "MARL",
+    "status": "PRODUCTION_READY__ANCHOR_BOUND__X_VECTOR_PROFILE__BF16_RENDERER",
+    "phase": "v1_ready",
+    "predecessor": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v1.1_2026-09-18",
+    "effective_at": "2026-09-18T18:45:00-05:00"
+  },
+  "authority": {
+    "acoustic_selection": "delegated assistant authority within Mari Voice v1 speaking acoustic scope",
+    "publication_authority": "unchanged; Carl"
+  },
+  "selected_region": {
+    "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+    "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+    "profile_mode": "xvector",
+    "production_model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "production_model_revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+    "engine_revision": "e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+    "precision": "BF16",
+    "negative_basis": [
+      "procedural/formant/eSpeak rejection family",
+      "MVD-A",
+      "MVD-B",
+      "MVD-F",
+      "MARL-R1-A",
+      "MARL-R1-B",
+      "MARL-R1-C"
+    ]
+  },
+  "performance_interface": [
+    "neutral",
+    "dry_amusement",
+    "controlled_irritation",
+    "reassuring",
+    "focused_urgency"
+  ],
+  "verification": {
+    "anchor_quality": {
+      "utmos": 4.552735328674316,
+      "wer": 0.0,
+      "female_probability": 0.9401654005050659,
+      "predicted_age": 30.039149522781372
+    },
+    "hardening": {
+      "profile_mode": "xvector",
+      "speaker_similarity_threshold": 0.6013473320007324,
+      "threshold_calibration": {
+        "rejected_max": 0.5064846368160036,
+        "same_speaker_calibration": [
+          0.8440142869949341,
+          0.7213473320007324
+        ]
+      },
+      "neutral_passes": 6,
+      "neutral_total": 6,
+      "performance_identity_passes": 4,
+      "performance_total": 4,
+      "performance_acoustically_distinct": 4,
+      "long_form_passes": 2,
+      "long_form_total": 2,
+      "all_asr_pass": true,
+      "all_no_clip": true,
+      "mean_utmos": 4.539023359616597,
+      "worst_utmos": 4.501092433929443,
+      "mean_speaker_similarity": 0.7563620607058207,
+      "production_readiness_pass": true
+    },
+    "cold_start": {
+      "cold_start_generated": true,
+      "cold_start_sha256": "2b8981a4123abbef32e8cbe92831c5860ed52c106f2eac4693d7f2a8118564c8",
+      "missing_profile_exit_nonzero": true,
+      "silent_fallback_output_created": false,
+      "status": "PASS"
+    },
+    "stable_interface_sha256": "39c7c2dd4b3e7471818073ae36b51cc15b323e5f7c5afeff75f3375def325366",
+    "production_readiness": "PASS"
+  },
+  "failed_alternative": {
+    "graft_qvoice": "Profile creation succeeded but CustomVoice graft invocation failed in first hardening attempt; x-vector route independently passed and was selected. No silent fallback occurred."
+  }
+}

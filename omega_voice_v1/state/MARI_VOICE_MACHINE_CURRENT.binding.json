@@ -1,0 +1,12 @@
+{
+  "project_selector": {
+    "selector": "MARI_VOICE_MACHINE_STATE@CURRENT",
+    "target": "MARI_VOICE_MACHINE_STATE_v1.0_2026-09-18"
+  },
+  "acoustic_realization_selector": {
+    "selector": "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT",
+    "target": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v2.0_2026-09-18"
+  },
+  "status": "PRODUCTION_READY__MARI_VOICE_V1",
+  "effective_at": "2026-09-18T18:45:00-05:00"
+}

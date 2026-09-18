@@ -1,0 +1,171 @@
+{
+  "release": "MARI_VOICE_V1",
+  "created": "2026-09-18T18:45:00-05:00",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1847,
+      "sha256": "fb8b7e684e886f08bb85e22b17261a64af424ded7ebac588abefb7f121259cc4"
+    },
+    {
+      "path": "production/ENGINE_CAPS.txt",
+      "bytes": 1239,
+      "sha256": "2343a00e308d92b498257ba07266add817478ddc6cb5f0f1336e38376cbd2236"
+    },
+    {
+      "path": "production/ENGINE_REVISION.txt",
+      "bytes": 41,
+      "sha256": "7f5ed87d2e31a644bdb31e896d1ab78400dd39bc20d22d578badbe488acc69e7"
+    },
+    {
+      "path": "production/FINAL_CASES.json",
+      "bytes": 20077,
+      "sha256": "38df66e21796f05cc4da70eb6d2d865f356dae650d5dd08eb805bf04c32e050d"
+    },
+    {
+      "path": "production/FINAL_EVALUATION.json",
+      "bytes": 27438,
+      "sha256": "ea94db40052132abca3d37373838b70074a594f53829f63bc4c8213019478b8e"
+    },
+    {
+      "path": "production/HARDENING_SUMMARY.json",
+      "bytes": 652,
+      "sha256": "bccd1dfbbd3932ef8fbf6c5761abcc4f2f9ebe6a10bb80f0df9cdd9733c03453"
+    },
+    {
+      "path": "production/MARI_VOICE_V1_ANCHOR.wav",
+      "bytes": 487724,
+      "sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567"
+    },
+    {
+      "path": "production/MARI_VOICE_V1_ANCHOR_META.json",
+      "bytes": 105333,
+      "sha256": "0fab599d032e265bae0424dd82211f19a805a2266b93e12a9a1762c2e720673a"
+    },
+    {
+      "path": "production/MARI_VOICE_V1_PROFILE.bin",
+      "bytes": 8192,
+      "sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa"
+    },
+    {
+      "path": "production/MODEL_REVISIONS.json",
+      "bytes": 247,
+      "sha256": "99a79a8d6050d27434e8d8d667a158e508c34075b66c10fec0b1c0392f681453"
+    },
+    {
+      "path": "production/PRODUCTION_MODEL_REVISION.txt",
+      "bytes": 41,
+      "sha256": "e9a679c43e1d4b2684305d50086ea8fe6c18002cf63413e06845ff791a008936"
+    },
+    {
+      "path": "production/PROFILE_INPUT_SHA256.txt",
+      "bytes": 289,
+      "sha256": "7a7aa7d5aa6e1b269f555cc295507b33ebcf563139f16c51aa1e79954750a6f4"
+    },
+    {
+      "path": "production/PROFILE_MODE.txt",
+      "bytes": 8,
+      "sha256": "02d76a0fd92ceeb3a61764196c54ca795bd316208b7f58d3c2391ba1b45bf4a8"
+    },
+    {
+      "path": "production/QVOICE_FAILED_ALTERNATIVE_INSPECTION.txt",
+      "bytes": 131,
+      "sha256": "f0f6219f831ad5d6251c20129f60e5ec93b5f34a561ca5e8179fcaa1916706a3"
+    },
+    {
+      "path": "production/SHA256SUMS.txt",
+      "bytes": 1407,
+      "sha256": "396945b3e453b2eafe97178b7e713ea1b54db70be023c22548d9c96c6c764a29"
+    },
+    {
+      "path": "production/bootstrap_runtime.sh",
+      "bytes": 752,
+      "sha256": "29f45fc59d80c5d8e7b1fdde59275ba974a64bc3321721e10f8d1fa8a3c49135"
+    },
+    {
+      "path": "production/omega_voice.py",
+      "bytes": 3280,
+      "sha256": "0c7694b2d70e4b57d115c31475cd4a292b16a88319591162dbc2b162ecfe3605"
+    },
+    {
+      "path": "production/omega_voice_v1.json",
+      "bytes": 752,
+      "sha256": "61bfd1ee52d5c048c423201bf7f0bb503a7bfcaf7667cb56ff13e1df4da87cec"
+    },
+    {
+      "path": "state/MARI_ACOUSTIC_REALIZATION_LAYER_CURRENT.binding.json",
+      "bytes": 207,
+      "sha256": "a3da79d61521547309cdae3af673a2754f4042e402bb66f16eea3607b845c88e"
+    },
+    {
+      "path": "state/MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v2.0_2026-09-18.json",
+      "bytes": 2989,
+      "sha256": "f6960bbc57238606cc9028304dd5a536db697e0c54107eab8f6ada84803026fc"
+    },
+    {
+      "path": "state/MARI_OMEGA_VOICE_SYSTEM_STATE_OBJECT_CURRENT.binding.json",
+      "bytes": 219,
+      "sha256": "1247f7d80945500a889948635c8162f9ec4c2a6ea5fca466b86ead19ab1af0a6"
+    },
+    {
+      "path": "state/MARI_OMEGA_VOICE_SYSTEM_STATE_OBJECT_v2.0_2026-09-18.json",
+      "bytes": 3810,
+      "sha256": "46661434fd827c31fd54378fc4547516eaad59dd51a3b924915d1d29ebb0d7b4"
+    },
+    {
+      "path": "state/MARI_VOICE_GENERATION_GATE_CURRENT.binding.json",
+      "bytes": 182,
+      "sha256": "e05e58149a4e9b0bbde1a8030e851da4ea2649a637d073b711d8a4cc371451f1"
+    },
+    {
+      "path": "state/MARI_VOICE_GENERATION_GATE_v4.0_2026-09-18.json",
+      "bytes": 3938,
+      "sha256": "8d775b02747ffe5fc0b3e6ebe405e593a7ac6fb3817ba6626756e9df55c7c1f2"
+    },
+    {
+      "path": "state/MARI_VOICE_MACHINE_CURRENT.binding.json",
+      "bytes": 405,
+      "sha256": "c1f148e080224e55d6880ef6a84ca5eb120e856b20ef6e36c4ecc170672f4ca4"
+    },
+    {
+      "path": "state/MARI_VOICE_MACHINE_STATE_v1.0_2026-09-18.json",
+      "bytes": 2667,
+      "sha256": "3639427c4af9b4ed81320ada827126319b9fc295fb233cee77a135ee4720e4a0"
+    },
+    {
+      "path": "state/MARI_VOICE_RESOLUTION_STATE_OBJECT_CURRENT.binding.json",
+      "bytes": 242,
+      "sha256": "ecce4ca2ecead262bd9de9655f118fcb2536f1e30af7fe1435079d99e14c3b9d"
+    },
+    {
+      "path": "state/MARI_VOICE_RESOLUTION_STATE_OBJECT_v1.6_2026-09-18.json",
+      "bytes": 3559,
+      "sha256": "db9e44f3b196f1d7408be70137c3d4de0d5f9434dc06cbab949fa32e2733705a"
+    },
+    {
+      "path": "verification/COLD_START_RECEIPT.json",
+      "bytes": 228,
+      "sha256": "fbfce069450d44b0093f65fec36848de7d3218e1a694c1c00ce312aff4e9f462"
+    },
+    {
+      "path": "verification/MARI_VOICE_V1_VERIFICATION_RECEIPT_2026-09-18.json",
+      "bytes": 2669,
+      "sha256": "d23ae5df34178d9de143288c86df1c69b1a2e66bacc4bb26a7158902ff0a26e5"
+    },
+    {
+      "path": "verification/cold_start.wav",
+      "bytes": 322604,
+      "sha256": "2b8981a4123abbef32e8cbe92831c5860ed52c106f2eac4693d7f2a8118564c8"
+    },
+    {
+      "path": "verification/cold_start_meta.json",
+      "bytes": 485,
+      "sha256": "1274b77b936ca1b65cc59ee8d5208facb758bccb6e0d4ecd4489726990c82d18"
+    },
+    {
+      "path": "verification/fail_stderr.txt",
+      "bytes": 705,
+      "sha256": "4cffa210aef772ef6cfa1edd1c6b4e829eb437c21660935bf2f3b01c299534a6"
+    }
+  ]
+}

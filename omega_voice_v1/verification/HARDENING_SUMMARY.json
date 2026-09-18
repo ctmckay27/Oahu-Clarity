@@ -1,0 +1,24 @@
+{
+  "profile_mode": "xvector",
+  "speaker_similarity_threshold": 0.6013473320007324,
+  "threshold_calibration": {
+    "rejected_max": 0.5064846368160036,
+    "same_speaker_calibration": [
+      0.8440142869949341,
+      0.7213473320007324
+    ]
+  },
+  "neutral_passes": 6,
+  "neutral_total": 6,
+  "performance_identity_passes": 4,
+  "performance_total": 4,
+  "performance_acoustically_distinct": 4,
+  "long_form_passes": 2,
+  "long_form_total": 2,
+  "all_asr_pass": true,
+  "all_no_clip": true,
+  "mean_utmos": 4.539023359616597,
+  "worst_utmos": 4.501092433929443,
+  "mean_speaker_similarity": 0.7563620607058207,
+  "production_readiness_pass": true
+}

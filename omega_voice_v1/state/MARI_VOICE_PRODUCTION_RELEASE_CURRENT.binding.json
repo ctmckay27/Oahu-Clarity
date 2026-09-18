@@ -1,0 +1,11 @@
+{
+  "selector": "MARI_VOICE_PRODUCTION_RELEASE@CURRENT",
+  "target": "OMEGA_VOICE_MARI_VOICE_v1.0_2026-09-18",
+  "library_path": "/Mari404/Voice/Production/v1.0_2026-09-18",
+  "release_package": "Omega_Voice_Mari_Voice_v1_2026-09-18.zip",
+  "release_package_sha256": "de442e6c3c3f6a58f3f86de0095bf6c41da00db9bb96b27f420de5ccadb7b245",
+  "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+  "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+  "status": "CURRENT_PRODUCTION_READY",
+  "effective_at": "2026-09-18T18:45:00-05:00"
+}

@@ -1,0 +1,21 @@
+{
+  "release": "Omega Voice / Mari Voice v1",
+  "engine_revision": "e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+  "production_model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "production_model_revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+  "profile": "MARI_VOICE_V1_PROFILE.bin",
+  "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+  "anchor": "MARI_VOICE_V1_ANCHOR.wav",
+  "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+  "performance_states": [
+    "neutral",
+    "dry_amusement",
+    "controlled_irritation",
+    "reassuring",
+    "focused_urgency"
+  ],
+  "default_runtime": {
+    "engine": "runtime/qwen3-tts/qwen_tts",
+    "model": "runtime/qwen3-tts-model"
+  }
+}

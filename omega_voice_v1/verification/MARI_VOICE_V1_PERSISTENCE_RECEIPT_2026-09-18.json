@@ -1,0 +1,47 @@
+{
+  "object_id": "MARI_VOICE_V1_PERSISTENCE_RECEIPT_2026-09-18",
+  "status": "PERSISTED_AND_EXACT_READBACK_VERIFIED",
+  "release_path": "/Mari404/Voice/Production/v1.0_2026-09-18",
+  "release_package": {
+    "library_file_id": "libfile_921fefa67e148191b9a821d96e3e957b",
+    "sha256": "de442e6c3c3f6a58f3f86de0095bf6c41da00db9bb96b27f420de5ccadb7b245",
+    "readback_byte_identical": true
+  },
+  "assets": {
+    "anchor": {
+      "library_file_id": "libfile_23a59a94cc7c819188827cec5d290da3",
+      "sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+      "readback_byte_identical": true
+    },
+    "profile": {
+      "library_file_id": "libfile_f0383380ce208191b9233be6be7a7112",
+      "sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+      "readback_byte_identical": true
+    },
+    "interface": {
+      "library_file_id": "libfile_b7eb8aca5a8481919349abcc400a9187",
+      "sha256": "0c7694b2d70e4b57d115c31475cd4a292b16a88319591162dbc2b162ecfe3605"
+    }
+  },
+  "selected_states": {
+    "MARI_VOICE_GENERATION_GATE@CURRENT": "MARI_VOICE_GENERATION_GATE_v4.0_2026-09-18",
+    "MARI_VOICE_RESOLUTION_STATE_OBJECT@CURRENT": "MARI_VOICE_RESOLUTION_STATE_OBJECT_v1.6_2026-09-18",
+    "MARI_ACOUSTIC_REALIZATION_LAYER@CURRENT": "MARI_ACOUSTIC_REALIZATION_LAYER_STATE_v2.0_2026-09-18",
+    "MARI_VOICE_MACHINE_STATE@CURRENT": "MARI_VOICE_MACHINE_STATE_v1.0_2026-09-18",
+    "MARI_OMEGA_VOICE_SYSTEM_STATE_OBJECT@CURRENT": "MARI_OMEGA_VOICE_SYSTEM_STATE_OBJECT_v2.0_2026-09-18"
+  },
+  "binding_readback": {
+    "generation_gate": true,
+    "voice_resolution": true,
+    "acoustic_realization_layer": true,
+    "voice_machine": true,
+    "omega_voice_system": true
+  },
+  "verification_runs": {
+    "anchor_search": 35404742133,
+    "production_hardening_and_cold_start": 35405800719,
+    "production_artifact_id": 10573250057,
+    "cold_start_artifact_id": 10573010448
+  },
+  "production_complete": true
+}

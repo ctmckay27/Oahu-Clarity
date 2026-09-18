@@ -1,0 +1,61 @@
+{
+  "object_id": "MARI_VOICE_V1_VERIFICATION_RECEIPT_2026-09-18",
+  "status": "PASS_PRODUCTION_READY",
+  "scope": "Mari Voice v1 ordinary English production speaking voice",
+  "selection_authority": "Carl delegated final acoustic technical/aesthetic selection to ChatGPT for this scope.",
+  "implementation_success": true,
+  "renderer_success": true,
+  "acoustic_quality_success": true,
+  "identity_success": true,
+  "persistence_success": true,
+  "production_readiness": true,
+  "evidence": {
+    "selected_anchor": "G1-1",
+    "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+    "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+    "interface_sha256": "0c7694b2d70e4b57d115c31475cd4a292b16a88319591162dbc2b162ecfe3605",
+    "anchor_naturalness_utmos": 4.552735328674316,
+    "hardening": {
+      "profile_mode": "xvector",
+      "speaker_similarity_threshold": 0.6013473320007324,
+      "threshold_calibration": {
+        "rejected_max": 0.5064846368160036,
+        "same_speaker_calibration": [
+          0.8440142869949341,
+          0.7213473320007324
+        ]
+      },
+      "neutral_passes": 6,
+      "neutral_total": 6,
+      "performance_identity_passes": 4,
+      "performance_total": 4,
+      "performance_acoustically_distinct": 4,
+      "long_form_passes": 2,
+      "long_form_total": 2,
+      "all_asr_pass": true,
+      "all_no_clip": true,
+      "mean_utmos": 4.539023359616597,
+      "worst_utmos": 4.501092433929443,
+      "mean_speaker_similarity": 0.7563620607058207,
+      "production_readiness_pass": true
+    },
+    "cold_start": {
+      "cold_start_generated": true,
+      "cold_start_sha256": "2b8981a4123abbef32e8cbe92831c5860ed52c106f2eac4693d7f2a8118564c8",
+      "missing_profile_exit_nonzero": true,
+      "silent_fallback_output_created": false,
+      "status": "PASS"
+    },
+    "workflow_runs": {
+      "anchor_search": 35404742133,
+      "production_hardening_and_cold_start": 35405800719
+    },
+    "artifact_digests": {
+      "anchor_and_profiles": "7205e464566b1e2b41668d68df6f418060fac58e991ba1b0e78a2bec949323fe",
+      "production": "f03b9acb3dec82735ce3a2087ac9b4d99e718bee8569fc3429ba8a72a29a0b2e",
+      "cold_start": "006f09986998dce06929f4b3938c4849c73fd8c534362d8e819bb686c177852f"
+    },
+    "interface_config_sha256": "61bfd1ee52d5c048c423201bf7f0bb503a7bfcaf7667cb56ff13e1df4da87cec"
+  },
+  "truth_boundary": "Automatic perceptual and speaker metrics are evidence, not human listening scores. Final acoustic selection is the assistant's delegated v1 decision, informed by the user's prior rejection evidence and executed whole-waveform tests."
+}

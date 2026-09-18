@@ -1,0 +1,83 @@
+{
+  "object": {
+    "name": "MARI_VOICE_GENERATION_GATE",
+    "version": "v4.0_2026-09-18",
+    "selector": "MARI_VOICE_GENERATION_GATE@CURRENT",
+    "owner": "MARI404_ROOT@CURRENT",
+    "scope": "Mari Voice v1 production speaking-audio admission, delegated acoustic selection, quality/identity/persistence verification and fail-closed routing",
+    "status": [
+      "CURRENT",
+      "ACTIVE",
+      "OPERATIVE",
+      "PRODUCTION_EXECUTION_GATE",
+      "EVIDENCE_SENSITIVE"
+    ],
+    "effective_at": "2026-09-18T18:45:00-05:00"
+  },
+  "supersedes": "MARI_VOICE_GENERATION_GATE_v3.1_2026-09-17",
+  "supersession_authority": {
+    "source": "Carl explicit FINISH OMEGA VOICE / MARI VOICE v1 instruction on 2026-09-18",
+    "scoped_effect": [
+      "Assistant may make final technical and aesthetic acoustic decisions required to complete Mari Voice v1.",
+      "Prior per-candidate Carl listening/approval requirement is superseded within Mari Voice v1 acoustic realization scope.",
+      "The v3.1 requirement for a project-owned population-trained continuous generator is superseded for v1 by an executed production neural renderer plus synthetic identity-authoring/reference-conditioning route that satisfies the stronger outcome gates below."
+    ],
+    "non_effects": [
+      "does_not_transfer_Carl_broader_publication_authority",
+      "does_not_redefine_Mari_semantic_identity",
+      "does_not_bind_singing_cross_language_or_transformed_embodiment_as_completed_v1_speaking_voice"
+    ]
+  },
+  "ordering_law": [
+    "0 provenance/status truth",
+    "1 natural human speech quality",
+    "2 adult feminine coherent speaker",
+    "3 distinctive production-worthy acoustic character",
+    "4 stable speaker across unseen text",
+    "5 performance variation without speaker substitution",
+    "6 long-form stability",
+    "7 persistent cold-start reproducibility",
+    "8 fail-closed behavior",
+    "9 delegated scoped acoustic selection"
+  ],
+  "production_admission_rules": {
+    "naturalness_before_identity": true,
+    "same_speaker_required": true,
+    "explicit_per_candidate_Carl_approval_required": false,
+    "delegated_assistant_acoustic_selection_authorized": true,
+    "candidate_must_be_synthetic_or_lawfully_conditioned": true,
+    "rejected_realizations_must_remain_negative_evidence": true,
+    "silent_renderer_or_speaker_fallback_prohibited": true,
+    "production_profile_and_anchor_must_be_persisted": true,
+    "held_out_cross_text_test_required": true,
+    "performance_stability_test_required": true,
+    "long_form_test_required": true,
+    "cold_start_test_required": true
+  },
+  "selected_v1_route": {
+    "identity_authoring": "Qwen3-TTS 1.7B VoiceDesign BF16, synthetic candidate search",
+    "persistent_identity": "Qwen3-TTS 1.7B Base -> 8 KB x-vector profile",
+    "production_renderer": "Qwen3-TTS 1.7B CustomVoice BF16",
+    "engine": "gabriele-mastrapasqua/qwen3-tts@e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+    "model_revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+    "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+    "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+    "profile_mode": "xvector"
+  },
+  "verification": {
+    "anchor_selection": "PASS",
+    "cross_text": "6/6 PASS",
+    "performance_identity": "4/4 PASS",
+    "performance_acoustic_distinction": "4/4",
+    "long_form": "2/2 PASS",
+    "mean_utmos": 4.539023359616597,
+    "worst_utmos": 4.501092433929443,
+    "mean_speaker_similarity": 0.7563620607058207,
+    "speaker_similarity_threshold": 0.6013473320007324,
+    "all_asr_pass": true,
+    "all_no_clip": true,
+    "cold_start": "PASS",
+    "silent_fallback_output_created": false
+  },
+  "fail_closed_rule": "If the pinned engine, pinned production model, selected Mari Voice v1 profile, or generation call is unavailable/invalid, generation fails with no substitute speaker or backend."
+}

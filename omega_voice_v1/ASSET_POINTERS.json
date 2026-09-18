@@ -1,0 +1,17 @@
+{
+  "release": "Omega Voice / Mari Voice v1",
+  "library_root": "/Mari404/Voice/Production/v1.0_2026-09-18",
+  "release_package": {
+    "library_file_id": "libfile_921fefa67e148191b9a821d96e3e957b",
+    "sha256": "de442e6c3c3f6a58f3f86de0095bf6c41da00db9bb96b27f420de5ccadb7b245"
+  },
+  "anchor": {
+    "library_file_id": "libfile_23a59a94cc7c819188827cec5d290da3",
+    "sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567"
+  },
+  "profile": {
+    "library_file_id": "libfile_f0383380ce208191b9233be6be7a7112",
+    "sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa"
+  },
+  "note": "Binary production assets are persisted in Library; Git stores executable code, selected state, verification, and exact asset identities."
+}

@@ -1,0 +1,7 @@
+{
+  "cold_start_generated": true,
+  "cold_start_sha256": "2b8981a4123abbef32e8cbe92831c5860ed52c106f2eac4693d7f2a8118564c8",
+  "missing_profile_exit_nonzero": true,
+  "silent_fallback_output_created": false,
+  "status": "PASS"
+}
