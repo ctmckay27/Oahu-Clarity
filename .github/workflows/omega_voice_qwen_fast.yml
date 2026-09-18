@@ -1,0 +1,150 @@
+name: omega-voice-qwen-fast
+
+on:
+  push:
+    branches:
+      - omega-voice-qwen-fast-20260918
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clone-proof-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install CPU runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+          python -m pip install "qwen-tts==0.1.1" soundfile huggingface_hub
+      - name: Generate short reference clone
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python - <<'PY'
+          import hashlib, json, os, urllib.request
+          import soundfile as sf
+          import torch
+          from huggingface_hub import HfApi
+          from qwen_tts import Qwen3TTSModel
+
+          repo_id = "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
+          ref_url = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav"
+          ref_path = "out/reference.wav"
+          ref_text = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+          target = "Omega Voice can clone this reference."
+          urllib.request.urlretrieve(ref_url, ref_path)
+
+          model = Qwen3TTSModel.from_pretrained(
+              repo_id, device_map="cpu", dtype=torch.bfloat16, attn_implementation="eager"
+          )
+          prompt = model.create_voice_clone_prompt(
+              ref_audio=ref_path, ref_text=ref_text, x_vector_only_mode=False
+          )
+          wavs, sr = model.generate_voice_clone(
+              text=target, language="English", voice_clone_prompt=prompt, max_new_tokens=384
+          )
+          path = "out/qwen_reference_clone_fast.wav"
+          sf.write(path, wavs[0], sr)
+
+          def sha(p):
+              h=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for c in iter(lambda:f.read(1024*1024),b""): h.update(c)
+              return h.hexdigest()
+
+          m = {
+              "backend": repo_id,
+              "revision": HfApi().model_info(repo_id).sha,
+              "reference_sha256": sha(ref_path),
+              "output": path,
+              "output_sha256": sha(path),
+              "sample_rate": sr,
+              "reference_conditioning": "audio+transcript ICL",
+              "status": "REFERENCE_CONDITIONED_CLONE_PROOF_NOT_MARI_IDENTITY"
+          }
+          open("out/manifest.json","w").write(json.dumps(m,indent=2))
+          print(json.dumps(m,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omega-qwen-reference-clone-fast
+          path: out/
+          compression-level: 0
+          retention-days: 7
+
+  mari-design-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install CPU runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+          python -m pip install "qwen-tts==0.1.1" soundfile huggingface_hub
+      - name: Generate short Mari audition trio
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python - <<'PY'
+          import gc, hashlib, json, os
+          import soundfile as sf
+          import torch
+          from huggingface_hub import HfApi
+          from qwen_tts import Qwen3TTSModel
+
+          repo_id="Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+          text="Give me the problem as it is."
+          specs=[
+            ("MVD-A",40401,"An unmistakably adult woman, low-mid pitch center, clear and controlled, poised, direct, dry studio presence, neutral American English. Intelligent and self-possessed. Not girlish, cute, breathy, seductive, whispery, synthetic, or exaggerated."),
+            ("MVD-B",40402,"An unmistakably adult feminine voice with a centered midrange and slightly dark timbre. Precise articulation, calm authority, understated intensity, natural rhythm, neutral American English. No sultry performance, idol brightness, or synthetic smoothness."),
+            ("MVD-F",40406,"An unmistakably adult feminine voice with a flexible midrange, balanced brightness and depth, grounded breath support, and a subtly unconventional but fully human timbre. Measured confidence with room for irony and force. Neutral American English. Not cute, breathy, sultry, synthetic, or generic.")
+          ]
+          model=Qwen3TTSModel.from_pretrained(
+              repo_id, device_map="cpu", dtype=torch.bfloat16, attn_implementation="eager"
+          )
+          rows=[]
+          for cid,seed,instruct in specs:
+              torch.manual_seed(seed)
+              wavs,sr=model.generate_voice_design(
+                  text=text, language="English", instruct=instruct, max_new_tokens=512
+              )
+              path=f"out/{cid}.wav"
+              sf.write(path,wavs[0],sr)
+              h=hashlib.sha256(open(path,"rb").read()).hexdigest()
+              rows.append({"id":cid,"seed":seed,"instruct":instruct,"path":path,"sha256":h,"sample_rate":sr,"status":"AUDITION_CANDIDATE_NOT_CANON"})
+              gc.collect()
+          manifest={
+              "backend":repo_id,
+              "revision":HfApi().model_info(repo_id).sha,
+              "anchor_text":text,
+              "candidates":rows,
+              "status":"NON_CANONICAL_CANDIDATES_FOR_CARL_SELECTION"
+          }
+          open("out/manifest.json","w").write(json.dumps(manifest,indent=2))
+          print(json.dumps(manifest,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-qwen-voice-design-fast
+          path: out/
+          compression-level: 0
+          retention-days: 7
