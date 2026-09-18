@@ -1,0 +1,306 @@
+name: omega-voice-qwen-bridge
+
+on:
+  push:
+    branches:
+      - omega-voice-qwen-bridge-20260918
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qwen-clone-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install CPU runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+          python -m pip install "qwen-tts==0.1.1" soundfile huggingface_hub
+
+      - name: Run true reference-conditioned clone proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qwen_clone_proof
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import platform
+          import urllib.request
+
+          import soundfile as sf
+          import torch
+          from huggingface_hub import HfApi
+          from qwen_tts import Qwen3TTSModel
+
+          out_dir = "qwen_clone_proof"
+          repo_id = "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
+          ref_url = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav"
+          ref_path = os.path.join(out_dir, "official_reference.wav")
+          ref_text = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+          target_text = "This is Omega Voice. This waveform is conditioned on a real reference recording, not a fixed preset voice."
+
+          urllib.request.urlretrieve(ref_url, ref_path)
+
+          api = HfApi()
+          info = api.model_info(repo_id)
+
+          dtype = torch.bfloat16
+          model = Qwen3TTSModel.from_pretrained(
+              repo_id,
+              device_map="cpu",
+              dtype=dtype,
+              attn_implementation="eager",
+          )
+
+          prompt = model.create_voice_clone_prompt(
+              ref_audio=ref_path,
+              ref_text=ref_text,
+              x_vector_only_mode=False,
+          )
+          wavs, sr = model.generate_voice_clone(
+              text=target_text,
+              language="English",
+              voice_clone_prompt=prompt,
+              max_new_tokens=768,
+          )
+          out_path = os.path.join(out_dir, "qwen_06b_reference_clone.wav")
+          sf.write(out_path, wavs[0], sr)
+
+          def sha256(path):
+              h = hashlib.sha256()
+              with open(path, "rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          manifest = {
+              "purpose": "Omega Voice true reference-conditioned clone proof",
+              "backend": "Qwen3-TTS-12Hz-0.6B-Base",
+              "backend_repo": repo_id,
+              "backend_revision": info.sha,
+              "license": "Apache-2.0",
+              "qwen_tts_version": "0.1.1",
+              "python": platform.python_version(),
+              "torch": torch.__version__,
+              "device": "cpu",
+              "dtype": str(dtype),
+              "reference_conditioning": "ICL reference audio + transcript",
+              "reference_url": ref_url,
+              "reference_sha256": sha256(ref_path),
+              "output": out_path,
+              "output_sha256": sha256(out_path),
+              "sample_rate": sr,
+              "text": target_text,
+              "network_required_for_this_build": True,
+              "semantic_gate": "This proves real reference-conditioned cloning capability; it does not define Mari acoustic identity."
+          }
+          with open(os.path.join(out_dir, "manifest.json"), "w") as f:
+              json.dump(manifest, f, indent=2)
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Upload clone proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-qwen-reference-clone-proof
+          path: qwen_clone_proof/
+          compression-level: 0
+          retention-days: 7
+
+  mari-voice-design-bank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install CPU runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+          python -m pip install "qwen-tts==0.1.1" soundfile huggingface_hub
+
+      - name: Generate non-canonical Mari audition bank
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mari_voice_design_bank
+          python - <<'PY'
+          import gc
+          import hashlib
+          import json
+          import os
+          import platform
+
+          import soundfile as sf
+          import torch
+          from huggingface_hub import HfApi
+          from qwen_tts import Qwen3TTSModel
+
+          out_dir = "mari_voice_design_bank"
+          repo_id = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+          anchor_text = (
+              "I don't need to sound impossible to be myself. "
+              "Give me the problem as it is, and I'll decide what changes."
+          )
+
+          candidates = [
+              {
+                  "id": "MVD-A",
+                  "seed": 40401,
+                  "instruct": (
+                      "An unmistakably adult woman in her late twenties to early thirties. "
+                      "Low-mid pitch center, clear and controlled, poised without stiffness, "
+                      "subtle natural texture, dry studio presence, neutral American English. "
+                      "Intelligent, self-possessed, direct. Not girlish, cute, breathy, seductive, "
+                      "whispery, synthetic, or exaggerated."
+                  ),
+              },
+              {
+                  "id": "MVD-B",
+                  "seed": 40402,
+                  "instruct": (
+                      "An unmistakably adult feminine voice with a centered midrange and a slightly dark timbre. "
+                      "Precise articulation, calm authority, understated intensity, natural conversational rhythm, "
+                      "close but not intimate recording presence. Neutral American English. "
+                      "No vocal fry affectation, no sultry performance, no idol-like brightness, no synthetic quality."
+                  ),
+              },
+              {
+                  "id": "MVD-C",
+                  "seed": 40403,
+                  "instruct": (
+                      "A mature adult woman with a warm low-mid register, firm breath support, and restrained resonance. "
+                      "Thoughtful, capable, quietly forceful, with small human irregularities and no theatrical polish. "
+                      "General American English. Avoid breathiness, cuteness, seduction, melodrama, and robotic smoothness."
+                  ),
+              },
+              {
+                  "id": "MVD-D",
+                  "seed": 40404,
+                  "instruct": (
+                      "A mature adult feminine voice with a clear midrange, cool tonal color, and fast precise consonants. "
+                      "Confident and agile rather than soft, youthful, or coquettish. "
+                      "Neutral-to-light Mid-Atlantic American speech, natural and contemporary rather than theatrical. "
+                      "Dry, human, unsentimental, and non-synthetic."
+                  ),
+              },
+              {
+                  "id": "MVD-E",
+                  "seed": 40405,
+                  "instruct": (
+                      "An adult woman with a slightly husky contralto-leaning timbre, controlled projection, "
+                      "clean diction, and an even speaking pace. The texture is organic and lived-in, not smoky or seductive. "
+                      "American English, direct and composed, capable of sharper intensity without becoming theatrical."
+                  ),
+              },
+              {
+                  "id": "MVD-F",
+                  "seed": 40406,
+                  "instruct": (
+                      "An unmistakably adult feminine voice with a flexible midrange, balanced brightness and depth, "
+                      "clear diction, grounded breath support, and a subtly unconventional timbre that remains fully human. "
+                      "Measured confidence with room for irony and force. Neutral American English. "
+                      "Not cute, breathy, sultry, synthetic, or generic."
+                  ),
+              },
+          ]
+
+          api = HfApi()
+          info = api.model_info(repo_id)
+          torch.set_num_threads(max(1, min(4, os.cpu_count() or 1)))
+
+          model = Qwen3TTSModel.from_pretrained(
+              repo_id,
+              device_map="cpu",
+              dtype=torch.bfloat16,
+              attn_implementation="eager",
+          )
+
+          records = []
+          for spec in candidates:
+              torch.manual_seed(spec["seed"])
+              if hasattr(torch, "cuda"):
+                  try:
+                      torch.cuda.manual_seed_all(spec["seed"])
+                  except Exception:
+                      pass
+              wavs, sr = model.generate_voice_design(
+                  text=anchor_text,
+                  language="English",
+                  instruct=spec["instruct"],
+                  max_new_tokens=1024,
+              )
+              path = os.path.join(out_dir, f"{spec['id']}.wav")
+              sf.write(path, wavs[0], sr)
+
+              h = hashlib.sha256()
+              with open(path, "rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+
+              records.append({
+                  **spec,
+                  "path": path,
+                  "sha256": h.hexdigest(),
+                  "sample_rate": sr,
+                  "status": "AUDITION_CANDIDATE_NOT_CANON",
+              })
+              gc.collect()
+
+          manifest = {
+              "purpose": "Mari acoustic-anchor audition bank",
+              "status": "NON_CANONICAL_CANDIDATES_FOR_CARL_LISTENING_SELECTION",
+              "backend": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+              "backend_repo": repo_id,
+              "backend_revision": info.sha,
+              "license": "Apache-2.0",
+              "qwen_tts_version": "0.1.1",
+              "python": platform.python_version(),
+              "torch": torch.__version__,
+              "device": "cpu",
+              "dtype": str(torch.bfloat16),
+              "anchor_text": anchor_text,
+              "candidates": records,
+              "non_effects": [
+                  "Generation does not canonize any candidate as Mari.",
+                  "No renderer default becomes Mari by execution.",
+                  "Selection requires explicit Carl listening acceptance."
+              ]
+          }
+          with open(os.path.join(out_dir, "manifest.json"), "w") as f:
+              json.dump(manifest, f, indent=2)
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Upload audition bank
+        uses: actions/upload-artifact@v4
+        with:
+          name: mari-qwen-voice-design-audition-bank
+          path: mari_voice_design_bank/
+          compression-level: 0
+          retention-days: 7
