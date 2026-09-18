@@ -1,0 +1,114 @@
+name: omega-voice-qwen-native
+
+on:
+  push:
+    branches:
+      - omega-voice-qwen-native-20260918
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+
+jobs:
+  native-clone-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned native Qwen engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev ffmpeg git curl
+          git init qwen-native
+          cd qwen-native
+          git remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git fetch --depth 1 origin "$QWEN_C_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$QWEN_C_SHA"
+          make blas SIMD=portable
+          ./qwen_tts --self-test
+          ./qwen_tts --caps
+      - name: Download Qwen 0.6B Base and generate native reference clone
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cd qwen-native
+          ./download_model.sh --model base-small --dir qwen3-tts-0.6b-base
+          curl -fL --retry 5             -o ../out/reference-source.wav             https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav
+          ffmpeg -hide_banner -loglevel error -y -i ../out/reference-source.wav -ar 24000 -ac 1 ../out/reference-24k.wav
+          ./qwen_tts             -d qwen3-tts-0.6b-base             -l English             --text "Omega Voice can clone this reference."             --ref-audio ../out/reference-24k.wav             --xvector-only             --save-voice ../out/reference-identity.bin             --int4 -j4 --max-duration 8             -o ../out/native-reference-clone.wav
+          cd ..
+          sha256sum out/* > out/SHA256SUMS.txt
+          cat > out/manifest.json <<EOF
+          {
+            "purpose": "Omega Voice native-C reference-conditioned clone proof",
+            "engine_repository": "gabriele-mastrapasqua/qwen3-tts",
+            "engine_commit": "$QWEN_C_SHA",
+            "engine_license": "MIT",
+            "model": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+            "model_license": "Apache-2.0",
+            "conditioning": "reference WAV -> ECAPA-TDNN x-vector",
+            "saved_identity_profile": "reference-identity.bin",
+            "status": "REFERENCE_CONDITIONED_CLONE_PROOF_NOT_MARI_IDENTITY"
+          }
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omega-qwen-native-clone-proof
+          path: out/
+          compression-level: 0
+          retention-days: 7
+
+  native-mari-design:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned native Qwen engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git curl
+          git init qwen-native
+          cd qwen-native
+          git remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git fetch --depth 1 origin "$QWEN_C_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$QWEN_C_SHA"
+          make blas SIMD=portable
+          ./qwen_tts --self-test
+          ./qwen_tts --caps
+      - name: Download VoiceDesign and render native Mari audition trio
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cd qwen-native
+          ./download_model.sh --model voice-design --dir qwen3-tts-voice-design
+          ./qwen_tts -d qwen3-tts-voice-design -l English             --instruct "An unmistakably adult woman, low-mid pitch center, clear and controlled, poised, direct, dry studio presence, neutral American English. Intelligent and self-possessed. Not girlish, cute, breathy, seductive, whispery, synthetic, or exaggerated."             --text "Give me the problem as it is." --seed 40401 --temperature 0.5             --int4 -j4 --max-duration 8 -o ../out/MVD-A.wav
+          ./qwen_tts -d qwen3-tts-voice-design -l English             --instruct "An unmistakably adult feminine voice with a centered midrange and slightly dark timbre. Precise articulation, calm authority, understated intensity, natural rhythm, neutral American English. No sultry performance, idol brightness, or synthetic smoothness."             --text "Give me the problem as it is." --seed 40402 --temperature 0.5             --int4 -j4 --max-duration 8 -o ../out/MVD-B.wav
+          ./qwen_tts -d qwen3-tts-voice-design -l English             --instruct "An unmistakably adult feminine voice with a flexible midrange, balanced brightness and depth, grounded breath support, and a subtly unconventional but fully human timbre. Measured confidence with room for irony and force. Neutral American English. Not cute, breathy, sultry, synthetic, or generic."             --text "Give me the problem as it is." --seed 40406 --temperature 0.5             --int4 -j4 --max-duration 8 -o ../out/MVD-F.wav
+          cd ..
+          sha256sum out/*.wav > out/SHA256SUMS.txt
+          cat > out/manifest.json <<EOF
+          {
+            "purpose": "Mari native-C VoiceDesign audition trio",
+            "engine_repository": "gabriele-mastrapasqua/qwen3-tts",
+            "engine_commit": "$QWEN_C_SHA",
+            "engine_license": "MIT",
+            "model": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+            "model_license": "Apache-2.0",
+            "anchor_text": "Give me the problem as it is.",
+            "candidate_ids": ["MVD-A", "MVD-B", "MVD-F"],
+            "status": "NON_CANONICAL_CANDIDATES_FOR_CARL_SELECTION"
+          }
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-qwen-native-design-trio
+          path: out/
+          compression-level: 0
+          retention-days: 7
