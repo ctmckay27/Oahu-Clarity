@@ -1,0 +1,116 @@
+name: marl-independent-audio-audit
+on:
+  push:
+    branches: [mari-acoustic-realization-layer-20260918]
+    paths: [.github/workflows/marl_independent_audio_audit.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marl-independent-audio-audit
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-qwen-voice-design-audition-bank
+          github-token: ${{ github.token }}
+          run-id: 35390986107
+          path: inputs/official_full
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-qwen-voice-design-fast
+          github-token: ${{ github.token }}
+          run-id: 35391492581
+          path: inputs/official_short
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-qwen-native-design-trio
+          github-token: ${{ github.token }}
+          run-id: 35391726537
+          path: inputs/native_short
+      - uses: actions/download-artifact@v4
+        with:
+          name: marl-round1-audition
+          github-token: ${{ github.token }}
+          run-id: 35393940703
+          path: inputs/marl_round1
+      - name: Install independent recognizer
+        run: python -m pip install 'faster-whisper==1.2.1' soundfile scipy numpy
+      - name: Audit real waveforms without fabricated listener scores
+        run: |
+          mkdir -p audit
+          python -u - <<'PY'
+          import hashlib, json, re, platform, importlib.metadata
+          from pathlib import Path
+          import numpy as np
+          import soundfile as sf
+          from scipy.signal import resample_poly
+          from math import gcd
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi, snapshot_download
+
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          def words(s): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?", s.lower().replace('\u2019', "'"))
+          def edit_distance(a, b):
+              prev = list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  curr=[i]
+                  for j,y in enumerate(b,1):
+                      curr.append(min(curr[-1]+1,prev[j]+1,prev[j-1]+(x!=y)))
+                  prev=curr
+              return prev[-1]
+
+          mid='Systran/faster-whisper-small.en'
+          revision=HfApi().model_info(mid).sha
+          local=snapshot_download(mid, revision=revision)
+          model=WhisperModel(local, device='cpu', compute_type='int8', cpu_threads=4)
+          rows=[]
+          for group in ['official_full','official_short','native_short','marl_round1']:
+              folder=Path('inputs')/group
+              manifest=json.loads((folder/'manifest.json').read_text())
+              text=manifest.get('anchor_text',manifest.get('fixed_text','Give me the problem as it is.'))
+              paths=sorted(folder.glob('*.wav'))
+              if not paths: raise RuntimeError('No WAV files: '+group)
+              for p in paths:
+                  x,sr=sf.read(p,dtype='float32',always_2d=True)
+                  y=x.mean(axis=1)
+                  if not len(y) or not np.isfinite(y).all(): raise ValueError('invalid PCM '+str(p))
+                  g=gcd(sr,16000)
+                  a=resample_poly(y,16000//g,sr//g).astype('float32')
+                  segs,info=model.transcribe(a,language='en',beam_size=5,temperature=0.0,condition_on_previous_text=False,vad_filter=False,word_timestamps=True)
+                  segs=list(segs)
+                  transcript=' '.join(s.text.strip() for s in segs)
+                  ref=words(text); hyp=words(transcript)
+                  win=max(1,int(sr*.02)); blocks=y[:len(y)//win*win].reshape(-1,win)
+                  rms=np.sqrt(np.mean(blocks**2,axis=1))
+                  peak=float(np.max(np.abs(y)))
+                  cutoff=max(.003,float(np.max(rms))*.05)
+                  voiced=np.flatnonzero(rms>cutoff)
+                  active_start=float(voiced[0]*.02) if len(voiced) else None
+                  active_end=float((voiced[-1]+1)*.02) if len(voiced) else None
+                  row={'group':group,'file':p.name,'sha256':sha(p),'reference_text':text,'transcript':transcript,'word_error_rate':edit_distance(ref,hyp)/max(1,len(ref)),'sample_rate':sr,'channels':x.shape[1],'duration_s':len(y)/sr,'peak_abs':peak,'clipped_fraction':float(np.mean(np.abs(y)>=.999)),'rms_dbfs':float(20*np.log10(max(float(np.sqrt(np.mean(y*y))),1e-12))),'leading_quiet_s':active_start,'trailing_quiet_s':len(y)/sr-active_end if active_end is not None else None,'expected_words_per_minute':len(ref)*60/(len(y)/sr),'asr_segments':[{'start':s.start,'end':s.end,'text':s.text,'avg_logprob':s.avg_logprob,'no_speech_prob':s.no_speech_prob} for s in segs],'human_aesthetic_quality':None,'mari_identity':None}
+                  rows.append(row)
+                  print(json.dumps(row),flush=True)
+                  Path('audit/measurements.json').write_text(json.dumps(rows,indent=2))
+          report={'status':'EXECUTED_OBJECTIVE_AUDIT','recognizer':{'model':mid,'revision':revision,'compute_type':'int8','language':'en'},'python':platform.python_version(),'packages':{n:importlib.metadata.version(n) for n in ['faster-whisper','ctranslate2','soundfile','numpy','scipy','huggingface-hub']},'limitations':['ASR is fallible and measures content intelligibility, not aesthetic quality.','No aesthetic, Mari-identity, or human-listening acceptance is inferred.','Legacy groups differ in prompts, seeds, temperature, precision and text length; group comparisons do not isolate causality.','Native and Python implementations share the Qwen model family; this is not independent architecture identity validation.'],'records':rows}
+          Path('audit/report.json').write_text(json.dumps(report,indent=2))
+          Path('audit/SHA256SUMS.txt').write_text('\n'.join(sha(p)+'  '+str(p) for p in sorted(Path('inputs').rglob('*.wav')))+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marl-independent-audio-audit
+          path: audit/
+          if-no-files-found: warn
+          retention-days: 7
