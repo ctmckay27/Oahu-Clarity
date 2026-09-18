@@ -1,0 +1,125 @@
+name: marl-matched-quality-ablation
+on:
+  push:
+    branches: [mari-acoustic-realization-layer-20260918]
+    paths: [.github/workflows/marl_matched_quality_ablation.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: marl-matched-quality-ablation
+  cancel-in-progress: true
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+      MODEL_REV: 5ecdb67327fd37bb2e042aab12ff7391903235d3
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build pinned native engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          engine/qwen_tts --self-test
+          engine/qwen_tts --caps
+      - name: Acquire exact previously observed model revision
+        run: |
+          set -euo pipefail
+          cd engine
+          sed "s|/resolve/main|/resolve/$MODEL_REV|g" download_model.sh > pinned_download.sh
+          bash pinned_download.sh --model voice-design --dir model
+      - name: Execute crossed prompt and precision test
+        run: |
+          mkdir -p results/audio results/logs
+          python -u - <<'PY'
+          import hashlib, itertools, json, os, pathlib, subprocess, time, wave
+          out=pathlib.Path('results')
+          text="I thought the door was locked. No, wait. That's a different sound. Stay here while I check."
+          prompts={
+            'sparse':'An adult woman speaking conversational American English, recorded clearly in a quiet studio.',
+            'legacy':'An unmistakably adult feminine human voice. Natural conversational speech with coherent whole-utterance timing and prosody. Self-possessed, agentic, and socially directed rather than decorative or generic. clear natural diction dry supported phonation balanced brightness and depth distinctive uncommon but fully human timbre centered adult pitch natural studio-quality speech balanced resonance size subtle organic texture heavier grounded vocal weight moderate natural warmth. Avoid anime-girl or cute synthetic idol behavior; avoid generic intimate breathy woman; avoid generic sultry cyber-diva; avoid emotionless robot; avoid renderer-default femininity mistaken for identity.'
+          }
+          def sha(p):
+              h=hashlib.sha256()
+              with open(p,'rb') as f:
+                  for c in iter(lambda:f.read(1024*1024),b''):h.update(c)
+              return h.hexdigest()
+          model_files={str(p.relative_to('engine/model')):sha(p) for p in pathlib.Path('engine/model').rglob('*') if p.is_file()}
+          records=[]
+          for seed,prompt_kind,precision in itertools.product([40421,40422],['sparse','legacy'],['bf16','int4']):
+              cid=f'{prompt_kind}_{precision}_{seed}'
+              wav=out/'audio'/f'{cid}.wav'
+              args=['engine/qwen_tts','-d','engine/model','-l','English','--text',text,'--instruct',prompts[prompt_kind],'--seed',str(seed),'--temperature','0.5','-j4','--max-duration','15','-o',str(wav)]
+              if precision=='int4':args.append('--int4')
+              start=time.monotonic()
+              with open(out/'logs'/f'{cid}.txt','w') as log:
+                  subprocess.run(args,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=300)
+              with wave.open(str(wav),'rb') as w: duration=w.getnframes()/w.getframerate(); sr=w.getframerate()
+              rec={'id':cid,'seed':seed,'prompt_kind':prompt_kind,'precision_requested':precision,'text':text,'actual_prompt':prompts[prompt_kind],'actual_argv':args,'wav':str(wav),'sha256':sha(wav),'sample_rate':sr,'duration_s':duration,'wall_seconds':time.monotonic()-start,'possible_duration_cap':duration>=14.9,'status':'DIAGNOSTIC_ONLY_NOT_MARI_IDENTITY'}
+              records.append(rec)
+              (out/'renders.json').write_text(json.dumps(records,indent=2))
+              print(cid,round(duration,2),flush=True)
+          manifest={'engine_commit':os.environ['QWEN_C_SHA'],'engine_sha256':sha('engine/qwen_tts'),'model_id':'Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign','model_revision':os.environ['MODEL_REV'],'model_files':model_files,'design':'2 prompt formulations x 2 precision modes x 2 matched seeds; fixed utterance, language, temperature, duration cap and engine','limitations':['This tests whole prompt formulations, not independent physical timbre axes.','Matched seeds reduce one nuisance variable; they do not preserve speaker identity across prompts.','Two repetitions cannot establish general performance.','bf16 denotes native default weight path; exact runtime flags and logs are retained.'],'renders':records}
+          (out/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Install independent content and naturalness evaluators
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.5.1' 'torchaudio==2.5.1'
+          python -m pip install 'faster-whisper==1.2.1' 'numpy<2' scipy soundfile
+          git clone --depth 1 --branch v1.2.0 https://github.com/tarepan/SpeechMOS.git speechmos-evaluator
+      - name: Evaluate waveforms, not prompt wording
+        run: |
+          python -u - <<'PY'
+          import hashlib, json, re, subprocess
+          from pathlib import Path
+          from math import gcd
+          import numpy as np
+          import soundfile as sf
+          import torch
+          from scipy.signal import resample_poly
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi, snapshot_download
+          torch.set_num_threads(4)
+          predictor=torch.hub.load('speechmos-evaluator','utmos22_strong',source='local').eval()
+          mid='Systran/faster-whisper-small.en'; rev=HfApi().model_info(mid).sha
+          recognizer=WhisperModel(snapshot_download(mid,revision=rev),device='cpu',compute_type='int8',cpu_threads=4)
+          def words(t):return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower().replace('\u2019',"'"))
+          def distance(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1):c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+          rows=[]
+          for rec in json.loads(Path('results/renders.json').read_text()):
+              y,sr=sf.read(rec['wav'],dtype='float32');g=gcd(sr,16000)
+              y16=resample_poly(y,16000//g,sr//g).astype('float32')
+              with torch.inference_mode():score=float(predictor(torch.from_numpy(y16).unsqueeze(0),16000).item())
+              segs,_=recognizer.transcribe(y16,language='en',beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+              hypothesis=' '.join(s.text.strip() for s in segs)
+              r={**rec,'asr_text':hypothesis,'word_error_rate':distance(words(rec['text']),words(hypothesis))/len(words(rec['text'])),'utmos22_predicted_naturalness':score,'clipped_fraction':float(np.mean(np.abs(y)>=.999)),'peak_abs':float(np.max(np.abs(y))),'human_quality_acceptance':None,'mari_identity_acceptance':None}
+              rows.append(r);Path('results/evaluation.json').write_text(json.dumps(rows,indent=2));print(r['id'],score,hypothesis,flush=True)
+          metadata={'asr_model':mid,'asr_revision':rev,'speechmos_commit':subprocess.check_output(['git','-C','speechmos-evaluator','rev-parse','HEAD'],text=True).strip(),'mos_predictor':'UTMOS22 strong, SpeechMOS v1.2.0','mos_interpretation':'Automatic naturalness proxy; not a human rating, taste model, identity verifier, or shipping-quality certificate.','selection_scope':'Engineering evidence only; no acoustic anchor promotion.'}
+          Path('results/evaluation_metadata.json').write_text(json.dumps(metadata,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marl-matched-quality-ablation
+          path: results/
+          retention-days: 7
+          compression-level: 0
