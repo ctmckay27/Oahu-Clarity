@@ -1,0 +1,84 @@
+{
+  "object_id": "OMEGA_VOICE_QWEN_EXECUTION_RECEIPT_2026-09-18",
+  "status": "BACKEND_EXECUTION_VERIFIED_IDENTITY_SELECTION_OPEN",
+  "repository": "ctmckay27/Oahu-Clarity",
+  "branch": "omega-voice-qwen-native-20260918",
+  "parent_lineage": [
+    "omega-voice-model-bridge-20260917",
+    "omega-voice-qwen-bridge-20260918",
+    "omega-voice-qwen-fast-20260918",
+    "omega-voice-qwen-native-20260918"
+  ],
+  "verified_paths": {
+    "official_python_reference_clone": {
+      "workflow_run_id": 35390986107,
+      "job_id": 105749037598,
+      "conclusion": "success",
+      "backend": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "resolved_revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+      "conditioning": "ICL reference audio + transcript",
+      "output_sha256": "b108d9d7c8e53a2f768ca526ab8286f060c15aed5e42082c25d53e95baa8fdb9",
+      "sample_rate_hz": 24000,
+      "semantic_effect": "proves true reference-conditioned cloning; does not define Mari identity"
+    },
+    "native_c_reference_clone": {
+      "workflow_run_id": 35391726537,
+      "job_id": 105751390053,
+      "conclusion": "success",
+      "engine_repository": "gabriele-mastrapasqua/qwen3-tts",
+      "pinned_engine_commit": "e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+      "backend": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "conditioning": "reference WAV -> ECAPA-TDNN x-vector",
+      "reusable_profile_bytes": 4096,
+      "semantic_effect": "cross-implementation clone proof; profile belongs to proof reference, not Mari"
+    },
+    "native_mari_voice_design_trio": {
+      "workflow_run_id": 35391726537,
+      "job_id": 105751389767,
+      "conclusion": "success",
+      "backend": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "anchor_text": "Give me the problem as it is.",
+      "candidates": [
+        {
+          "id": "MVD-A",
+          "wav_sha256": "f1be90f825ad5b5586b852ff6d4570cf5e530d93334e9f805e7b702b3c086aa8",
+          "status": "AUDITION_CANDIDATE_NOT_CANON"
+        },
+        {
+          "id": "MVD-B",
+          "wav_sha256": "32890e310ff17eec4d92b024fbb477347c6680807686854b19039fa59e3430ae",
+          "status": "AUDITION_CANDIDATE_NOT_CANON"
+        },
+        {
+          "id": "MVD-F",
+          "wav_sha256": "a7f2382cfd7423ad6827e764d74d9d286b74788bae5c85d26577a704f1d87263",
+          "status": "AUDITION_CANDIDATE_NOT_CANON"
+        }
+      ]
+    }
+  },
+  "closed_frontier": [
+    "real pretrained neural backend acquisition",
+    "official reference-conditioned cloning execution",
+    "independent native reference-conditioned cloning execution",
+    "non-canonical Mari VoiceDesign candidate generation"
+  ],
+  "open_gate": {
+    "id": "MARI_ACOUSTIC_ANCHOR_SELECTION",
+    "authority": "Carl",
+    "allowed_outcomes": [
+      "MVD-A",
+      "MVD-B",
+      "MVD-F",
+      "NONE"
+    ],
+    "rule": "Candidate generation is not selection. No candidate moves Mari semantic/canon selectors without explicit Carl acceptance."
+  },
+  "post_selection_execution": [
+    "convert accepted designed WAV into persistent Qwen Base Mari identity profile",
+    "wire selected profile behind existing Omega Voice interface",
+    "render held-out neutral/performance test set",
+    "verify identity continuity and no fallback/substitution",
+    "only then designate a production Mari acoustic anchor"
+  ]
+}
