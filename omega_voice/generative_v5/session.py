@@ -226,7 +226,8 @@ class PerformanceSession:
     prominent=target/'prominence.wav';prominence_receipt=emphasize(carrier,prominent,prominence_plan,self.prominence_calibration)
     receipt['prominence']=prominence_receipt
     quality=self.evaluator.evaluate(prominent,text)
-    if not quality['quality_screen_pass'] or quality['wer']!=0:raise UnresolvedRealization('scoped prominence quality gate failed')
+    lexical_verified=self._verify_lexical_quality(prominent,text,quality,prominence_receipt['mapped_timeline'])
+    if not lexical_verified:raise UnresolvedRealization('scoped prominence quality gate failed')
     observed_prominence=self.aligner.align(self.evaluator.load(prominent),text,sha(prominent),True)
     clock_error=max(abs(a[k]-b[k]) for a,b in zip(prominence_receipt['mapped_timeline']['words'],observed_prominence['words']) for k in ['start','end'])
     receipt['prominence_evaluation']={'quality':quality,'alignment':observed_prominence,'clock_error_s':clock_error}
@@ -253,9 +254,10 @@ class PerformanceSession:
     articulation_receipt=articulate(body_output,audio,precision_plan)
    result=self.evaluator.evaluate(audio,text)
    if result['audio']['frames']!=expected_frames:raise UnresolvedRealization('physical mechanism changed the measured clock')
-   observed=self.aligner.align(self.evaluator.load(audio),text,sha(audio),result['wer']==0)
+   lexical_verified=self._verify_lexical_quality(audio,text,result,dict(timeline,source_audio_sha256=sha(audio)))
+   observed=self.aligner.align(self.evaluator.load(audio),text,sha(audio),lexical_verified)
    error=max(abs(a[k]-b[k]) for a,b in zip(timeline['words'],observed['words']) for k in ['start','end'])
-   admitted=result['quality_screen_pass'] and result['wer']==0 and error<=.08
+   admitted=lexical_verified and error<=.08
    unresolved=set(unresolved_channels(plan))-{'phonatory_tension','attack_softness','gain_db'}
    if self.articulation and 'precision' in unresolved:
     unresolved.remove('precision');unresolved.add('perceived_articulatory_precision')
@@ -282,3 +284,19 @@ class PerformanceSession:
   # durable journal, so recovery can finish once without a changed hash.
   self.commit(previous,saved,target/'receipt.json',receipt)
   return receipt
+
+ def _verify_lexical_quality(self,audio,text,quality,timeline):
+  """Keep raw ASR visible; resolve context errors with full clause coverage.
+
+  The original full-audio identity/WER<=.12 screen remains mandatory. The
+  supplementary strict transcription gate requires WER0 either on the whole
+  utterance or on every measured clause, covering all samples and all words.
+  """
+  if not quality['quality_screen_pass']:return False
+  if quality['wer']==0:return True
+  from .clause_asr import verify_clauses
+  try:report=verify_clauses(audio,text,timeline,self.evaluator)
+  except ValueError as error:
+   quality['clause_ASR_verification']={'admitted':False,'error':str(error)};return False
+  quality['clause_ASR_verification']=report
+  return bool(report['admitted']and report['all_samples_covered_once']and report['all_words_covered_once'])
