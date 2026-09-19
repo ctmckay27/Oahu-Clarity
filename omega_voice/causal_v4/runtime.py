@@ -162,12 +162,15 @@ def apply_event(s,e):
         elif mode=="withholding":s["subtext"]["disclosure"]=.1
     elif k=="knowledge":
         status=e["status"];prop=e["proposition"]
-        if status not in {"known","beliefs","suspicions"} or not prop:raise ValueError("bad knowledge event")
+        if status not in {"known","beliefs","suspicions","unresolved"} or not prop:raise ValueError("bad knowledge event")
         confidence=float(e["confidence"])
         if not 0<=confidence<=1:raise ValueError("bad confidence")
-        s["knowledge_state"][status][prop]={"confidence":confidence,"source":e["source"]}
-        s["knowledge_state"]["certainty"]=confidence
-        if prop in s["knowledge_state"]["unresolved"]:s["knowledge_state"]["unresolved"].remove(prop)
+        if status=='unresolved':
+            if prop not in s['knowledge_state']['unresolved']:s['knowledge_state']['unresolved'].append(prop)
+        else:
+            s["knowledge_state"]["certainty"]=confidence
+            s["knowledge_state"][status][prop]={"confidence":confidence,"source":e["source"]}
+            if prop in s["knowledge_state"]["unresolved"]:s["knowledge_state"]["unresolved"].remove(prop)
     elif k=="action":
         if e["tactic"] not in TACTICS:raise ValueError("unknown tactic")
         s["objective"]={"action":e.get("objective",e["tactic"]),"target":e["target"]}
@@ -274,8 +277,18 @@ def realize_state(s,at_word,active_causes):
             "causes":list(active_causes),"controls":constraints,"microbehavior":copy.deepcopy(micro),
             "state_hash":digest(s)}
 
-def compile_scene(text,scene=None,prior=None,timeline=None):
+def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
     if not isinstance(text,str) or not words(text):raise ValueError("spoken text required")
+    if policy not in {None,'bounded_thought_recovery_v1'}:raise ValueError('unknown temporal policy')
+    def evolve(state,dt,speaking=True):
+        advance(state,dt,speaking)
+        if policy and state['mental_state']['thought'] in {'realizing','correcting'}:
+            # Resolved cognition has a brief integration phase. Knowledge and
+            # relational residue persist independently after that phase ends.
+            # Time constant is an explicit engineering hypothesis, not a
+            # measurement of Mari's cognitive physiology.
+            state['mental_state']['load']*=math.exp(-dt/.4)
+            if dt>0 and state['mental_state']['load']<.05:state['mental_state']['thought']='known'
     # Native renderer interprets these as directives, so raw input cannot smuggle them.
     if re.search(r"[\[\]<>]",text):raise ValueError("renderer markup is not spoken text")
     scene=copy.deepcopy(scene or {})
@@ -289,7 +302,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None):
         raise ValueError("listener changes require explicit listener event")
     elapsed=scene.get("elapsed_s",0.0)
     if not isinstance(elapsed,(int,float)) or not math.isfinite(elapsed) or not 0<=elapsed<=3600:raise ValueError("invalid elapsed time")
-    advance(s,elapsed,speaking=False)
+    evolve(s,elapsed,speaking=False)
     events=scene.get("events",[])+[compile_direction(x["text"],x.get("at_word",0)) for x in scene.get("directions",[])]
     n=len(words(text));ids=set()
     if timeline is not None:
@@ -320,19 +333,28 @@ def compile_scene(text,scene=None,prior=None,timeline=None):
     for i in range(n+1):
         for e in grouped.get(i,[]):
             before=digest(s);apply_event(s,e);active.append(e["id"])
+            if policy and e['kind']=='thought' and e.get('mode') in {'realizing','correcting'}:
+                s['mental_state']['load']=max(.12,s['mental_state']['load'])
             row={"event":e,"before":before,"after":digest(s),"parent":head}
             row["hash"]=digest(row);head=row["hash"];journal.append(row)
         knot=realize_state(s,i,active)
+        if policy and not any(e['kind'] in {'thought','mask','feedback','resume'} for e in grouped.get(i,[])):
+            # A searching state can persist, but entering it is one event. Do
+            # not schedule another onset hesitation at each subsequent word.
+            knot['controls']['onset_delay_s']=0.
+            knot['microbehavior']=[x for x in knot['microbehavior'] if x['kind']!='decision_latency']
+            s['prosody']['onset_delay_s']=0.;s['microbehavior']=copy.deepcopy(knot['microbehavior'])
+            knot['state_hash']=digest(s)
         knots.append(knot)
         if i in grouped or i==0 or i==n:state_samples.append({"at_word":i,"state":copy.deepcopy(s)})
         if i<n:
             speaking=s["interaction_state"]["phase"]=="speaking"
-            if timeline is None:advance(s,.30/knot["controls"]["rate"],speaking=speaking)
+            if timeline is None:evolve(s,.30/knot["controls"]["rate"],speaking=speaking)
             else:
                 clock=timeline['words'][i]
-                advance(s,clock['end']-clock['start'],speaking=speaking)
+                evolve(s,clock['end']-clock['start'],speaking=speaking)
                 next_start=timeline['words'][i+1]['start'] if i+1<n else timeline['duration_s']
-                advance(s,max(0,next_start-clock['end']),speaking=False)
+                evolve(s,max(0,next_start-clock['end']),speaking=False)
     s["turn"]+=1
     s["previous_vocal_state"]=copy.deepcopy(original["vocal_configuration"])
     s["temporal_trajectory"]=[{"at_word":k["at_word"],"thought":k["thought"],"state_hash":k["state_hash"]} for k in knots]
@@ -345,6 +367,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None):
           "acoustic_identity_frozen":True}
     if timeline is not None:
         plan.update(schema='mari-causal-performance/1.1',realization_timeline=copy.deepcopy(timeline))
+    if policy:plan.update(schema='mari-causal-performance/1.2',temporal_policy=policy)
     plan["plan_hash"]=digest(plan)
     return plan
 
@@ -354,6 +377,6 @@ def replay(text,scene,prior=None):
 def verify_plan(plan):
     bare={k:v for k,v in plan.items() if k!="plan_hash"}
     if digest(bare)!=plan.get("plan_hash"):raise ValueError("plan hash mismatch")
-    if compile_scene(plan["text"],plan["scene"],plan["initial_state"],timeline=plan.get('realization_timeline'))!=plan:
+    if compile_scene(plan["text"],plan["scene"],plan["initial_state"],timeline=plan.get('realization_timeline'),policy=plan.get('temporal_policy'))!=plan:
         raise ValueError("plan replay mismatch")
     return True
