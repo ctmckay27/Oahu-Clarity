@@ -37,7 +37,7 @@ def unresolved_channels(plan):
  return sorted(channels)
 
 class PerformanceSession:
- def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent',articulation=False,cold_start='profile_only',respiration=False,prominence=False,prominence_calibration=None):
+ def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent',articulation=False,cold_start='profile_only',respiration=False,prominence=False,prominence_calibration=None,lexical_recovery=False):
   self.root=pathlib.Path(root);self.directory=pathlib.Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
   if mode not in ['native','physical']:raise ValueError('unknown realization mechanism')
   if mode=='physical' and aligner is None:raise ValueError('physical session requires independently qualified alignment')
@@ -46,6 +46,8 @@ class PerformanceSession:
   if conditioning not in {'independent','previous_carrier','selected_anchor'}:raise ValueError('unknown conditioning policy')
   if conditioning=='previous_carrier' and mode!='physical':raise ValueError('previous-carrier context qualified only for physical diagnostic sessions')
   self.conditioning=conditioning
+  if type(lexical_recovery)is not bool or (lexical_recovery and(mode!='physical'or conditioning!='selected_anchor')):raise ValueError('bounded lexical recovery requires physical selected-anchor route')
+  self.lexical_recovery=lexical_recovery
   if articulation and mode!='physical':raise ValueError('consonant precision requires physical mechanism')
   self.articulation=bool(articulation)
   if respiration and (mode!='physical' or temporal_policy not in {'respiratory_budget_v5','listener_causal_v6','contrast_focus_v7'}):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5 or successor')
@@ -122,6 +124,9 @@ class PerformanceSession:
    reference={'audio':str(prior_audio),'text':parent['delivered_plan']['text'],'sha256':sha(prior_audio),'source_carrier_sha256':ANCHOR,
     'role':'preceding verified native carrier; physical state carried separately to avoid repeated physical processing'}
   request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy,'conditioning':self.conditioning,'reference':reference,'consonant_precision':self.articulation,'cold_start':self.cold_start,'respiration':self.respiration,'prominence':self.prominence,'prominence_calibration_sha256':sha(self.prominence_calibration) if self.prominence else None})
+  if self.lexical_recovery:
+   from .lexical_recovery import POLICY
+   request_hash=digest({'prior_request_hash':request_hash,'lexical_recovery_policy':POLICY})
   target=self.directory/request_id
   if target.exists():raise FileExistsError('request already exists; inspect its persisted receipt rather than regenerate or double-commit')
   target.mkdir();draft=self.compile(text,scene,prior)
@@ -129,6 +134,9 @@ class PerformanceSession:
   carrier=target/'carrier.wav';render(self.root,text,carrier,seed,reference=reference)
   base=self.evaluator.evaluate(carrier,text)
   durable_json(target/'carrier.evaluation.json',base)
+  if self.lexical_recovery:
+   from .lexical_recovery import attempt
+   carrier,base=attempt(self.root,text,carrier,base,seed,reference,self.evaluator,self.aligner,target)
   if not base['quality_screen_pass']:
    durable_json(target/'receipt.json',{'request_id':request_id,'request_hash':request_hash,'parent_state_hash':digest(prior) if prior else None,
      'role':'rejected diagnostic carrier','quality_admitted':False,'state_committed':False,'full_completion':False,
