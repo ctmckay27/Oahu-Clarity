@@ -69,7 +69,7 @@ def concealment(token):
 class ExplicitSceneCompiler:
  def __init__(self,nlp,policy='bounded_thought_recovery_v1'):
   self.nlp=nlp
-  if policy not in {'bounded_thought_recovery_v1','epistemic_focus_v2','embodied_continuity_v3'}:raise ValueError('unknown scene temporal policy')
+  if policy not in {'bounded_thought_recovery_v1','epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4'}:raise ValueError('unknown scene temporal policy')
   self.temporal_policy=policy
   if nlp.meta.get('version')!='3.8.0' or nlp.meta.get('lang')!='en' or importlib.metadata.version('spacy')!='3.8.7':raise ValueError('unselected dependency parser version')
   self.provenance={'spacy':'3.8.7','model':'en_core_web_sm','version':'3.8.0',
@@ -81,7 +81,7 @@ class ExplicitSceneCompiler:
   if set(context)-{'assertion'}:raise ValueError('unknown conversational context field')
   assertion=context.get('assertion')
   if assertion:
-   if self.temporal_policy not in {'epistemic_focus_v2','embodied_continuity_v3'}:raise ValueError('claim context requires epistemic_focus_v2 or successor')
+   if self.temporal_policy not in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4'}:raise ValueError('claim context requires epistemic_focus_v2 or successor')
    if set(assertion)-{'proposition','mode','confidence','source'}:raise ValueError('unknown assertion context field')
    if not isinstance(assertion.get('source'),dict) or not assertion['source'].get('text'):raise ValueError('assertion context needs source')
    events.append(dict(assertion,id='claim-'+digest(assertion)[:16],at_word=0,kind='assertion'))

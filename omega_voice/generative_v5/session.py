@@ -43,7 +43,7 @@ class PerformanceSession:
   if mode=='physical' and aligner is None:raise ValueError('physical session requires independently qualified alignment')
   self.evaluator=evaluator;self.mode=mode;self.aligner=aligner;self.temporal_policy=temporal_policy
   self.scene_compiler=scene_compiler
-  if conditioning not in {'independent','previous_carrier'}:raise ValueError('unknown conditioning policy')
+  if conditioning not in {'independent','previous_carrier','selected_anchor'}:raise ValueError('unknown conditioning policy')
   if conditioning=='previous_carrier' and mode!='physical':raise ValueError('previous-carrier context qualified only for physical diagnostic sessions')
   self.conditioning=conditioning
   if articulation and mode!='physical':raise ValueError('consonant precision requires physical mechanism')
@@ -102,7 +102,7 @@ class PerformanceSession:
    if not scene_record['admitted']:raise UnresolvedRealization('unresolved scene reality: '+json.dumps(scene_record['unresolved']))
    scene=scene_record['scene']
   reference=None
-  if not previous and self.cold_start=='selected_anchor_icl':
+  if self.conditioning=='selected_anchor' or (not previous and self.cold_start=='selected_anchor_icl'):
    from .native import anchor_reference
    reference=anchor_reference(self.root)
   if previous and self.conditioning=='previous_carrier':
