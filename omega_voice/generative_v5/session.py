@@ -90,6 +90,10 @@ class PerformanceSession:
    try:return self._render_turn(request_id,text,scene,seed,diagnostic)
    finally:fcntl.flock(lock,fcntl.LOCK_UN)
 
+ def render_acknowledgment(self,request_id,event,continuation,aligner,seed=88000,diagnostic=False):
+  from .acknowledgment_clock import render_session_episode
+  return render_session_episode(self,request_id,event,continuation,aligner,seed,diagnostic)
+
  def _render_turn(self,request_id,text,scene=None,seed=88000,diagnostic=False):
   if not diagnostic:raise UnresolvedRealization('nineteen-condition ordinary-English completion admission is not yet satisfied')
   if not request_id or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-' for c in request_id):raise ValueError('invalid request id')

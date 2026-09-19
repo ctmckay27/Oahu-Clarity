@@ -1,0 +1,22 @@
+"""Cold-opened listening, direct verification, then agreement with retained history."""
+import argparse,pathlib,json,copy
+from .session import PerformanceSession,durable_json
+from .alignment import ForcedAligner
+from .mms_alignment import MMSAligner
+from ..causal_v4.evaluate import Evaluator
+from ..causal_v4.runtime import digest
+
+def main():
+ ap=argparse.ArgumentParser();ap.add_argument('root');a=ap.parse_args();r=pathlib.Path(a.root);d=r/'continuation/acknowledgment_session';d.mkdir(exist_ok=True);ev=Evaluator(r/'models/whisper',r/'models/ecapa',r/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav');al=ForcedAligner('/tmp/mari-alignment-large',r/'continuation/FORCED_ALIGNMENT_LARGE_DEPENDENCIES.json');mms=MMSAligner(r/'continuation/alignment_padding/MMS_DEPENDENCIES.json');prop='The side door is open.';source={'kind':'authored_scene','listener_id':'Rowan','text':'Rowan says that the side door is open; Mari signals that she heard the report.'};event={'id':'hear-door','behavior':'acknowledgment','intent':'receipt','proposition':prop,'source':source};durable_json(d/'PREDECLARED.json',{'sequence':['receive report without agreeing','independently check door and state observation','agree with previously checked report'],'heldout_ack_continuation':'I heard you. Let me check the door.','cold_open_each_turn':True,'no_Carl_tuning':True,'gates':['exact actual state clock','no agreement before evidence','listener and knowledge continuity','native phonetic class and lexical suffix','identity and technical quality'],'full_completion':False});results=[]
+ def session():return PerformanceSession(r,d/'session',ev,mode='physical',aligner=al,temporal_policy='contrast_focus_v7',conditioning='selected_anchor',articulation=True,respiration=True)
+ try:
+  s=session();denied=False
+  try:s.render_acknowledgment('unsupported_agreement',dict(event,intent='agreement'),'I heard you.',mms,seed=98200,diagnostic=True)
+  except ValueError:denied=True
+  if not denied:raise ValueError('unsupported agreement admitted')
+  one=s.render_acknowledgment('heard',event,'I heard you. Let me check the door.',mms,seed=98200,diagnostic=True);results.append({'id':'heard','receipt':one,'full_completion':False});durable_json(d/'RESULTS.json',results);print('heard',one['observation']['quality']['speaker_similarity'],flush=True)
+  source2={'kind':'authored_scene','text':'Mari directly inspects the side door and sees that it is open.'};scene={'events':[{'id':'checked-door','at_word':0,'kind':'knowledge','status':'known','proposition':prop,'confidence':.95,'source':source2}]};two=session().render_turn('checked','I checked the side door. It is open.',scene,seed=98201,diagnostic=True);results.append({'id':'checked','receipt':two,'full_completion':False});durable_json(d/'RESULTS.json',results);print('checked',two['quality_admitted'],flush=True)
+  agreed=dict(event,id='agree-door',intent='agreement',source={'kind':'authored_scene','listener_id':'Rowan','text':'Rowan repeats that the side door is open; Mari has directly checked and agrees.'});three=session().render_acknowledgment('agreed',agreed,'That is what I found. We can use it.',mms,seed=98202,diagnostic=True);results.append({'id':'agreed','receipt':three,'full_completion':False});durable_json(d/'RESULTS.json',results);print('agreed',three['observation']['quality']['speaker_similarity'],flush=True)
+  saved=json.loads((d/'session/session_state.json').read_text());state=saved['state'];duration=one['observation']['quality']['audio']['duration_s']+two['delivered_plan']['final_state']['time_s']-two['delivered_plan']['initial_state']['time_s']+three['observation']['quality']['audio']['duration_s'];checks={'agreement_without_evidence_rejected':denied,'actual_clock_conserved':abs(state['time_s']-duration)<1e-7,'listener_retained':state['listener_model']['id']=='Rowan','knowledge_retained':state['knowledge_state']['known'][prop]['confidence']==.95,'heard_report_retained':prop in state['listener_model']['heard_propositions'],'three_turns':state['turn']==3};durable_json(d/'ASSESSMENT.json',{'checks':checks,'diagnostic_continuity_pass':all(checks.values()),'perceived_meaning_and_character_unverified':True,'full_completion':False})
+ except Exception as e:durable_json(d/'ASSESSMENT.json',{'diagnostic_continuity_pass':False,'error':repr(e),'completed_turns':len(results),'full_completion':False});print('FAIL',repr(e),flush=True)
+if __name__=='__main__':main()

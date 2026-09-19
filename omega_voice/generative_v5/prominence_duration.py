@@ -21,7 +21,7 @@ def deterministic_overlap_add(manipulation,local_pcm):
   audio=call(manipulation,'Get resynthesis (overlap-add)').values[0].copy()
  return audio,seed
 
-def realize(source,out,plan,calibration):
+def realize(source,out,plan,calibration,gesture=None,gesture_sha256=None):
  source=pathlib.Path(source);out=pathlib.Path(out);calibration=pathlib.Path(calibration)
  if out.exists():raise FileExistsError(out)
  if not verify_plan(plan) or plan.get('temporal_policy')!='contrast_focus_v7':raise ValueError('verified semantic contrast required')
@@ -30,6 +30,11 @@ def realize(source,out,plan,calibration):
  if sha(calibration)!='cc38d2a2d23689ab735a92e5076e8dbd7a11466dac83fd8c66e03de3b8c888c3':raise ValueError('calibration bytes differ from selected matched-reference evidence')
  evidence=json.loads(calibration.read_text());g=evidence['geometry']['duration_ratio']
  if evidence['pairs']!=16 or evidence['admitted_clocks']!=16:raise ValueError('unselected matched calibration')
+ coupled=None
+ if gesture is not None:
+  from .coupled_gesture import load
+  coupled=load(gesture,gesture_sha256)
+ elif gesture_sha256 is not None:raise ValueError('unused gesture hash')
  # Fixed reference-strength mapping, declared before observing Mari outputs.
  reference_strength=.55;median=g['median'];cap=g['q75'];windows=[]
  y,sr=sf.read(source,dtype='int16')
@@ -49,8 +54,15 @@ def realize(source,out,plan,calibration):
   start=(a-lo)/sr;end=(b-lo)/sr;length=end-start;ramp=min(.025,length*.1);height=1+(extra/sr)/(length-ramp)
   knots=[(0.,1.),(start,1.),(start+ramp,height),(end-ramp,height),(end,1.),(sound.xmax,1.)]
   for t,v in sorted(set(knots)):call(duration,'Add point',t,v)
-  call([duration,manipulation],'Replace duration tier');z,seed=deterministic_overlap_add(manipulation,y[lo:hi]);w['resynthesis_seed']=seed;target_length=b-a+extra;offset=a-lo;segment=z[offset:offset+target_length]
+  call([duration,manipulation],'Replace duration tier')
+  if coupled is not None:
+   from .coupled_gesture import install_pitch
+   w['coupled_gesture']=install_pitch(manipulation,start,end,w['strength'],coupled)
+  z,seed=deterministic_overlap_add(manipulation,y[lo:hi]);w['resynthesis_seed']=seed;target_length=b-a+extra;offset=a-lo;segment=z[offset:offset+target_length]
   if len(segment)!=target_length:raise ValueError('duration resynthesis lost requested lexical unit')
+  if coupled is not None:
+   from .coupled_gesture import apply_level
+   segment=apply_level(segment,w['strength'],coupled)
   fade=min(round(.012*sr),len(word)//8);alpha=np.linspace(0,1,fade,endpoint=False)
   # These blends stay inside the changed word; no past/future source sample
   # is repainted. Start/end preserve the existing captured boundary phase.
@@ -63,4 +75,6 @@ def realize(source,out,plan,calibration):
  for i,t in enumerate(mapped['words']):
   before=sum(w['extra_samples']for w in windows if w['word']<i)/sr;own=sum(w['extra_samples']for w in windows if w['word']==i)/sr;t['start']+=before;t['end']+=before+own
  mapped['duration_s']+=total_extra/sr;mapped['source_audio_sha256']=sha(out)
- receipt={'role':'scoped contrast duration diagnostic','input_sha256':sha(source),'output_sha256':sha(out),'implementation_sha256':sha(__file__),'calibration_sha256':sha(calibration),'calibration_source':'fixed matched synthetic speech, two texts/all four voices; not Mari identity or human physiology','reference_strength':reference_strength,'median_ratio':median,'cap_ratio':cap,'windows':mapping,'added_samples':total_extra,'mapped_timeline':mapped,'untouched_source_samples_preserved_in_order':True,'random_pauses_added':False,'full_completion':False};out.with_suffix('.duration.json').write_text(json.dumps(receipt,indent=2)+'\n');return receipt
+ receipt={'role':'scoped contrast duration diagnostic','input_sha256':sha(source),'output_sha256':sha(out),'implementation_sha256':sha(__file__),'calibration_sha256':sha(calibration),'calibration_source':'fixed matched synthetic speech, two texts/all four voices; not Mari identity or human physiology','reference_strength':reference_strength,'median_ratio':median,'cap_ratio':cap,'windows':mapping,'added_samples':total_extra,'mapped_timeline':mapped,'untouched_source_samples_preserved_in_order':True,'random_pauses_added':False,'full_completion':False}
+ if coupled is not None:receipt.update(role='coupled local prominence gesture diagnostic',coupled_gesture_sha256=gesture_sha256,coupled_gesture_implementation_sha256=sha(pathlib.Path(__file__).with_name('coupled_gesture.py')))
+ out.with_suffix('.duration.json').write_text(json.dumps(receipt,indent=2)+'\n');return receipt
