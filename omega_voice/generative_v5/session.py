@@ -37,7 +37,7 @@ def unresolved_channels(plan):
  return sorted(channels)
 
 class PerformanceSession:
- def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent',articulation=False,cold_start='profile_only'):
+ def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent',articulation=False,cold_start='profile_only',respiration=False):
   self.root=pathlib.Path(root);self.directory=pathlib.Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
   if mode not in ['native','physical']:raise ValueError('unknown realization mechanism')
   if mode=='physical' and aligner is None:raise ValueError('physical session requires independently qualified alignment')
@@ -48,6 +48,8 @@ class PerformanceSession:
   self.conditioning=conditioning
   if articulation and mode!='physical':raise ValueError('consonant precision requires physical mechanism')
   self.articulation=bool(articulation)
+  if respiration and (mode!='physical' or temporal_policy!='respiratory_budget_v5'):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5')
+  self.respiration=bool(respiration)
   if cold_start not in {'profile_only','selected_anchor_icl'}:raise ValueError('unknown cold-start conditioning')
   self.cold_start=cold_start
   self.bank_path=pathlib.Path(bank) if bank else None
@@ -111,7 +113,7 @@ class PerformanceSession:
    if prior['interaction_state']['phase']=='interrupted' and parent.get('delivery',{}).get('kind')!='verified_interrupted_native_stream':raise UnresolvedRealization('full prior carrier must not condition recovery after partial delivery')
    reference={'audio':str(prior_audio),'text':parent['delivered_plan']['text'],'sha256':sha(prior_audio),'source_carrier_sha256':ANCHOR,
     'role':'preceding verified native carrier; physical state carried separately to avoid repeated physical processing'}
-  request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy,'conditioning':self.conditioning,'reference':reference,'consonant_precision':self.articulation,'cold_start':self.cold_start})
+  request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy,'conditioning':self.conditioning,'reference':reference,'consonant_precision':self.articulation,'cold_start':self.cold_start,'respiration':self.respiration})
   target=self.directory/request_id
   if target.exists():raise FileExistsError('request already exists; inspect its persisted receipt rather than regenerate or double-commit')
   target.mkdir();draft=self.compile(text,scene,prior)
@@ -206,12 +208,21 @@ class PerformanceSession:
   from .alignment import AlignmentRejected
   receipt={'request_id':request_id,'request_hash':request_hash,'parent_state_hash':digest(prior) if prior else None,
    'role':'diagnostic stateful physical realization, not completed Mari performance','mechanism':'sample-aligned physical',
-   'full_completion':False,'quality_admitted':False,'baseline':base,'scene_compilation':scene_record,
+   'full_completion':False,'quality_admitted':False,'baseline':base,'scene_compilation':scene_record,'requested_scene':copy.deepcopy(scene or {}),
    'conditioning_policy':self.conditioning,'native_carrier_receipt_sha256':sha(carrier.with_suffix('.receipt.json'))}
   try:
    alignment=self.aligner.align(self.evaluator.load(carrier),text,sha(carrier),base['wer']==0)
    aligned=dict(base,asr_alignment=base['alignment'],alignment=alignment)
-   timeline=timeline_from_evaluation(aligned);plan=self.compile(text,scene,prior,timeline=timeline)
+   timeline=timeline_from_evaluation(aligned);respiratory_receipt=None
+   expected_frames=base['audio']['frames']
+   if self.respiration:
+    from .respiration import realize as breathe
+    respiratory_carrier=target/'respiratory_carrier.wav'
+    respiratory_receipt=breathe(carrier,respiratory_carrier,text,scene,prior,timeline)
+    receipt['respiration']=respiratory_receipt
+    carrier=respiratory_carrier;timeline=respiratory_receipt['delivered_timeline'];scene=respiratory_receipt['delivered_scene']
+    expected_frames+=respiratory_receipt['added_samples']
+   plan=self.compile(text,scene,prior,timeline=timeline)
    contour=target/'contour.wav';contour_receipt=finality(carrier,contour,plan)
    # Both physical mechanisms preserve sample count. Rebind provenance, never
    # alter a measured boundary to make a failed alignment test pass.
@@ -224,13 +235,15 @@ class PerformanceSession:
     precision_plan=self.compile(text,scene,prior,timeline=dict(timeline,source_audio_sha256=sha(body_output)))
     articulation_receipt=articulate(body_output,audio,precision_plan)
    result=self.evaluator.evaluate(audio,text)
-   if result['audio']['frames']!=base['audio']['frames']:raise UnresolvedRealization('physical mechanism changed the measured clock')
+   if result['audio']['frames']!=expected_frames:raise UnresolvedRealization('physical mechanism changed the measured clock')
    observed=self.aligner.align(self.evaluator.load(audio),text,sha(audio),result['wer']==0)
-   error=max(abs(a[k]-b[k]) for a,b in zip(alignment['words'],observed['words']) for k in ['start','end'])
+   error=max(abs(a[k]-b[k]) for a,b in zip(timeline['words'],observed['words']) for k in ['start','end'])
    admitted=result['quality_screen_pass'] and result['wer']==0 and error<=.08
    unresolved=set(unresolved_channels(plan))-{'phonatory_tension','attack_softness','gain_db'}
    if self.articulation and 'precision' in unresolved:
     unresolved.remove('precision');unresolved.add('perceived_articulatory_precision')
+   if respiratory_receipt:
+    unresolved.discard('support');unresolved.add('respiratory_physiology_and_perceived_timing')
    receipt.update(quality_admitted=bool(admitted),unresolved_channels=sorted(unresolved),alignment=alignment,
     trials=[{'audio':str(audio),'evaluation':result,'alignment_error_s':error,'observed_alignment':observed,
              'finality':contour_receipt,'body':body_receipt,'consonant_precision':articulation_receipt}])

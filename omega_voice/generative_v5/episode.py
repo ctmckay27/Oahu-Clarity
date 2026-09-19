@@ -25,7 +25,7 @@ def realize(session,units,directory):
    item=saved[i];receipt_path=session.directory/unit['id']/'receipt.json'
    if item['id']!=unit['id'] or sha(receipt_path)!=item['receipt_sha256']:raise ValueError('completed episode unit provenance changed')
    receipt=json.loads(receipt_path.read_text())
-   if not receipt['quality_admitted'] or receipt['delivered_plan']['text']!=unit['text'] or receipt['delivered_plan']['scene']!=unit.get('scene',{}):raise ValueError('completed unit meaning changed')
+   if not receipt['quality_admitted'] or receipt['delivered_plan']['text']!=unit['text'] or receipt.get('requested_scene',receipt['delivered_plan']['scene'])!=unit.get('scene',{}):raise ValueError('completed unit meaning changed')
   else:receipt=session.render_turn(unit['id'],unit['text'],unit.get('scene'),unit.get('seed',88000+i),diagnostic=True)
   audio=pathlib.Path(receipt['trials'][-1]['audio']);y,sr=sf.read(audio,dtype='int16')
   if sr!=24000 or y.ndim!=1:raise ValueError('unqualified episode audio format')
