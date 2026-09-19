@@ -48,7 +48,7 @@ class PerformanceSession:
   self.conditioning=conditioning
   if articulation and mode!='physical':raise ValueError('consonant precision requires physical mechanism')
   self.articulation=bool(articulation)
-  if respiration and (mode!='physical' or temporal_policy not in {'respiratory_budget_v5','listener_causal_v6'}):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5 or successor')
+  if respiration and (mode!='physical' or temporal_policy not in {'respiratory_budget_v5','listener_causal_v6','contrast_focus_v7'}):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5 or successor')
   self.respiration=bool(respiration)
   if cold_start not in {'profile_only','selected_anchor_icl'}:raise ValueError('unknown cold-start conditioning')
   self.cold_start=cold_start

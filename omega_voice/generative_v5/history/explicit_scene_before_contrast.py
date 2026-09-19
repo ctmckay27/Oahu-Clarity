@@ -76,7 +76,7 @@ class ExplicitSceneCompiler:
    'source_sha256':hashlib.sha256(pathlib.Path(__file__).read_bytes()).hexdigest(),
    'pipeline_sha256':hashlib.sha256(nlp.to_bytes()).hexdigest(),'temporal_policy':policy}
  def compile(self,scene,text,prior=None,context=None):
-  events=[];audit=[];unresolved=[];principal='mari';pending_expectation=None
+  events=[];audit=[];unresolved=[];principal='mari'
   context=context or {}
   if set(context)-{'assertion'}:raise ValueError('unknown conversational context field')
   assertion=context.get('assertion')
@@ -104,23 +104,12 @@ class ExplicitSceneCompiler:
       if parent in sent:used.add(parent.i)
     def add(token,key,value=True):
      facts.append({'key':key,'value':value,'source':sentence,'predicate':token.text,'predicate_offset':token.idx});mark(token)
-    def finite_fact(token):
-     complements=[c for c in token.children if c.dep_=='ccomp']
-     if len(complements)!=1:return None
-     return ' '.join(x.text for x in complements[0].subtree if not (x.dep_=='mark' and x.lower_=='that'))
     # Explicit concealment is a relation between internal and displayed state.
     # It does not license inferred reassurance, protection or boundary tactics.
     concealed={t.i:concealment(t) for t in tokens if is_mari(t) and not nonasserted(t)}
     concealed={k:v for k,v in concealed.items() if v}
     for token in tokens:
      if token.pos_ not in {'VERB','ADJ','AUX'}:continue
-     if self.temporal_policy=='contrast_focus_v7' and token.lemma_.lower()=='expect' and (is_mari(token) or is_listener(token)):
-      fact=finite_fact(token)
-      if negative(token) or nonasserted(token):
-       unresolved.append({'at_word':at,'source':sentence,'reason':'negated or hypothetical expectation cannot license a positive contrast'});mark(token)
-      elif fact:add(token,'expectation_listener' if is_listener(token) else 'expectation_self',fact)
-      else:unresolved.append({'at_word':at,'source':sentence,'reason':'expectation requires an explicit finite proposition'});mark(token)
-      continue
      if self.temporal_policy in {'listener_causal_v6','contrast_focus_v7'} and is_listener(token):
       dimension='worry' if token.lower_ in {'worried','anxious','afraid','frightened','scared','panicked'} else 'confusion' if token.lower_ in {'confused','uncertain'} else None
       if dimension:
@@ -152,7 +141,6 @@ class ExplicitSceneCompiler:
      if lemma=='search' or (lemma=='look' and 'for' in subtree and any(x in subtree for x in ['word','name'])):add(token,'thought','remembering' if 'memory' in subtree else 'searching')
      elif lemma in THOUGHT:
       if lemma!='correct' or any(x in subtree for x in ['herself','her earlier','her previous']):add(token,'thought',THOUGHT[lemma])
-      elif self.temporal_policy=='contrast_focus_v7' and any(c.dep_=='dobj' and c.lower_ in {'listener','them','you'} for c in token.children):add(token,'action','correct')
       if self.temporal_policy in {'listener_causal_v6','contrast_focus_v7'} and lemma in {'realize','remember'}:
        # An asserted finite factive complement supplies an epistemic result.
        # Deciding, imagining, conditional or negated cognition does not.
@@ -170,9 +158,7 @@ class ExplicitSceneCompiler:
        if complements:
         prop=' '.join(x.text for c in complements for x in c.subtree if not (self.temporal_policy in {'listener_causal_v6','contrast_focus_v7'} and c.dep_=='ccomp' and x.dep_=='mark' and x.lower_=='that'))
         add(token,'knowledge',prop)
-     elif lemma in {'spot','notice','see'}:
-      add(token,'observation',sentence)
-      if self.temporal_policy=='contrast_focus_v7' and finite_fact(token):add(token,'knowledge',finite_fact(token))
+     elif lemma in {'spot','notice','see'}:add(token,'observation',sentence)
      elif lemma in {'run','sprint','climb'}:add(token,'body_state.exertion',.75)
      elif token.lower_ in {'exhausted','weary','tired','fatigued'}:add(token,'body_state.fatigue',.8)
      elif token.lower_=='short' and 'breath' in subtree:add(token,'body_state.breath_reserve',.3)
@@ -209,8 +195,6 @@ class ExplicitSceneCompiler:
      if key[8:] not in masks:emit('set',quote,values={'emotional_state.'+key[8:]:value})
     elif key.startswith('listener_condition.'):emit('listener_condition',quote,values={key.split('.',1)[1]:value})
     elif '.' in key:emit('set',quote,values={key:value})
-    elif key.startswith('expectation_'):
-     pending_expectation={'proposition':value,'perspective':key.split('_',1)[1],'source':quote,'at_word':at}
     elif key=='thought':emit('thought',quote,mode=value)
     elif key=='action':emit('action',quote,tactic=value,target='current listener')
     elif key=='knowledge':
@@ -218,14 +202,6 @@ class ExplicitSceneCompiler:
      # Other world facts retain their own proposition and cannot change it.
      proposition=assertion['proposition'] if assertion and value.strip().lower()=='the answer' else value
      emit('knowledge',quote,status='known',confidence=.95,proposition=proposition)
-     if self.temporal_policy=='contrast_focus_v7' and pending_expectation:
-      from ..causal_v4.contrast import resolve_contrast
-      candidate={'at_word':at,'expected':pending_expectation['proposition'],'observed':proposition,'perspective':pending_expectation['perspective']}
-      try:resolve_contrast(text,candidate)
-      except ValueError as error:unresolved.append({'at_word':at,'source':quote,'reason':'unresolved contrast: '+str(error)})
-      else:
-       emit('contrast',pending_expectation['source']+' '+quote,expected=candidate['expected'],observed=proposition,perspective=candidate['perspective'])
-      pending_expectation=None
      if observed:emit('thought',quote,mode='realizing')
     elif key=='unknown':emit('knowledge',quote,status='unresolved',confidence=0.,proposition=value)
    # Observation without an explicit epistemic result licenses observation,

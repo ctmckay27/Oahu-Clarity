@@ -49,25 +49,19 @@ class ConversionProbe:
   load(model.style_encoder,torch.load(self.models/'speaker/campplus_cn_common.bin',map_location='cpu',weights_only=True),'reference_encoder')
   model.vocoder.remove_weight_norm();self.model=model
   self.provenance={'upstream_revision':self.revision,'model_manifest':self.manifest,'loads':loaded,'ar_enabled':False,'style_conversion':False,'anonymization':False,'target_anchor_sha256':sha(self.anchor),'dtype':'float32','device':'cpu','source_sha256':sha(__file__),'role':'isolated diagnostic; not production or completed voice'}
- def render(self,source,destination,seed=93800,heard_prefix=None):
+ def render(self,source,destination,seed=93800):
   import librosa
   torch=self.torch;m=self.model;p=pathlib.Path(destination)
   if p.exists():raise FileExistsError(p)
   source=pathlib.Path(source);sr=m.sr;start=time.monotonic();torch.manual_seed(seed)
-  x=librosa.load(source,sr=sr)[0];anchor_wave=librosa.load(self.anchor,sr=sr)[0];ref=anchor_wave
-  prefix_record=None
-  if heard_prefix is not None:
-   heard_prefix=pathlib.Path(heard_prefix);prefix=librosa.load(heard_prefix,sr=sr)[0]
-   if not .15<=len(prefix)/sr<=8 or not np.all(np.isfinite(prefix)):raise ValueError('invalid already-heard context')
-   ref=np.concatenate([anchor_wave,prefix])
-   prefix_record={'path':str(heard_prefix),'sha256':sha(heard_prefix),'seconds':len(prefix)/sr,'role':'already delivered Mari context; does not change selected acoustic anchor'}
+  x=librosa.load(source,sr=sr)[0];ref=librosa.load(self.anchor,sr=sr)[0]
   if x.ndim!=1 or not np.all(np.isfinite(x))or not .15<=len(x)/sr<=15:raise ValueError('unsupported diagnostic input')
   sx=librosa.resample(x,orig_sr=sr,target_sr=16000);sy=librosa.resample(ref,orig_sr=sr,target_sr=16000)
   with torch.inference_mode():
    tx=torch.from_numpy(x)[None];ty=torch.from_numpy(ref)[None];xx=torch.from_numpy(sx)[None];yy=torch.from_numpy(sy)[None]
    xm=m.mel_fn(tx);ym=m.mel_fn(ty)
    _,xc,_=m.content_extractor_wide(xx,[len(sx)]);_,yc,_=m.content_extractor_wide(yy,[len(sy)])
-   style=m.compute_style(torch.from_numpy(librosa.resample(anchor_wave,orig_sr=sr,target_sr=16000))[None])
+   style=m.compute_style(yy)
    content,_=m.cfm_length_regulator(xc,ylens=torch.tensor([xm.shape[-1]]));reference,_=m.cfm_length_regulator(yc,ylens=torch.tensor([ym.shape[-1]]))
    joined=torch.cat([reference,content],1)
    mel=m.cfm.inference(joined,torch.tensor([joined.shape[1]]),ym,style,25,inference_cfg_rate=[.7,.7],random_voice=False)
@@ -82,7 +76,7 @@ class ConversionProbe:
   # explicit. Never relax the production waveform validator for this probe.
   decoded,_=sf.read(native,dtype='float64');delivered=resample_poly(decoded,160,147)
   sf.write(p,delivered,24000,subtype='PCM_16')
-  receipt={'source':str(source),'source_sha256':sha(source),'output_sha256':sha(p),'native22k_sha256':sha(native),'resampling':'scipy.signal.resample_poly 160/147 after PCM16 decoder capture','heard_prefix':prefix_record,'source_seconds':len(x)/sr,'output_seconds':len(delivered)/24000,'peak':float(np.max(np.abs(delivered))),'seed':seed,'diffusion_steps':25,'cfg':[.7,.7],'source_content_frames':int(xc.shape[-1]),'target_content_frames':int(yc.shape[-1]),'elapsed_seconds':time.monotonic()-start,'provenance':self.provenance,'quality_and_identity_admitted':False}
+  receipt={'source':str(source),'source_sha256':sha(source),'output_sha256':sha(p),'native22k_sha256':sha(native),'resampling':'scipy.signal.resample_poly 160/147 after PCM16 decoder capture','source_seconds':len(x)/sr,'output_seconds':len(delivered)/24000,'peak':float(np.max(np.abs(delivered))),'seed':seed,'diffusion_steps':25,'cfg':[.7,.7],'source_content_frames':int(xc.shape[-1]),'target_content_frames':int(yc.shape[-1]),'elapsed_seconds':time.monotonic()-start,'provenance':self.provenance,'quality_and_identity_admitted':False}
   p.with_suffix('.receipt.json').write_text(json.dumps(receipt,indent=2)+'\n');print(json.dumps({k:v for k,v in receipt.items()if k!='provenance'}),flush=True);return receipt
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('root');ap.add_argument('source');ap.add_argument('output');a=ap.parse_args();probe=ConversionProbe(a.root);probe.render(a.source,a.output)

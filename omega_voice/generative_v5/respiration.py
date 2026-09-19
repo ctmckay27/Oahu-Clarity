@@ -33,7 +33,7 @@ def quiet_boundary(y,sr,clock,index):
  return int(candidates[j])
 
 def realize(source,out,text,scene,prior,timeline,policy=POLICY):
- if policy not in {POLICY,'listener_causal_v6'}:raise ValueError('unsupported respiratory policy')
+ if policy not in {POLICY,'listener_causal_v6','contrast_focus_v7'}:raise ValueError('unsupported respiratory policy')
  source=pathlib.Path(source);out=pathlib.Path(out)
  if out.exists():raise FileExistsError(out)
  if sha(source)!=timeline['source_audio_sha256']:raise ValueError('respiratory clock belongs to another recording')
