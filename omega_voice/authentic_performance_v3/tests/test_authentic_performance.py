@@ -22,7 +22,7 @@ def test_emotion_not_assigned_as_task():
 
 def test_single_throughline_across_sentences():
     b=coach("Wait. I see it now. That's clever. Don't do it again.")
-    assert "continuous thought" in b.renderer_instruction.lower()
+    assert "keep the thought continuous" in b.renderer_instruction.lower()
     assert "do not restart at sentence boundaries" in b.renderer_instruction.lower()
 
 def test_given_circumstances_are_preserved():
