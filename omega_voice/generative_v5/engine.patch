@@ -1,0 +1,63 @@
+diff --git a/qwen_tts.c b/qwen_tts.c
+index abbca11..03cfd2a 100644
+--- a/qwen_tts.c
++++ b/qwen_tts.c
+@@ -1059,7 +1059,10 @@ static void lookup_codec_embed(qwen_tts_ctx_t *ctx, int token_id, float *out) {
+     qwen_bf16_to_f32_vec(out, emb, h);
+ }
+ 
++#include "mari_native_controls.h"
++
+ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples, int *out_n_samples) {
++    if (mari_trajectory_init(ctx) != 0) return -1;
+     qwen_exec_budget_engine_owned("cli");
+     double t_start = time_ms();
+     int h = ctx->config.hidden_size;
+@@ -1870,6 +1873,7 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
+                 ctx->ml_steer_w_eff = ctx->ml_steer_weight * powf(g, (float)frame);
+             }
+         }
++        mari_trajectory_step(ctx, frame);
+         double t_step_start = time_ms();
+         if (qwen_talker_step(ctx, step_embed, last_hidden) != 0) {
+             free(step_embed); free(last_hidden);
+diff --git a/qwen_tts_talker.c b/qwen_tts_talker.c
+index 3b49880..8e96f9e 100644
+--- a/qwen_tts_talker.c
++++ b/qwen_tts_talker.c
+@@ -18,6 +18,7 @@
+ #define QWEN_HAVE_MADVISE 1
+ #endif
+ 
++static FILE *g_mari_seq = NULL;
+ static const char *g_actmap_path   = NULL;
+ static double    **g_actmap_acc    = NULL;
+ static int         g_actmap_layers = 0;
+@@ -26,6 +27,7 @@ static long        g_actmap_frames = 0;
+ static int         g_actmap_probed = 0;
+ 
+ static void actmap_dump(void) {
++    if(g_mari_seq){int failed=fflush(g_mari_seq)!=0 || ferror(g_mari_seq); if(fclose(g_mari_seq)!=0)failed=1; g_mari_seq=NULL; if(failed){perror("MARI capture flush");_Exit(72);}}
+     if (!g_actmap_path || g_actmap_frames <= 0 || !g_actmap_acc) return;
+     FILE *f = fopen(g_actmap_path, "wb");
+     if (!f) return;
+@@ -53,11 +55,19 @@ static void actmap_init(int num_layers, int h) {
+     g_actmap_acc    = (double **)calloc(g_actmap_layers, sizeof(double *));
+     if (!g_actmap_acc) { g_actmap_path = NULL; return; }
+     for (int l = 0; l < g_actmap_layers; l++) g_actmap_acc[l] = (double *)calloc(h, sizeof(double));
++    const char *seq=getenv("MARI_ACT_SEQUENCE");
++    if(seq && *seq) {
++        g_mari_seq=fopen(seq,"wb");
++        if(!g_mari_seq){perror("MARI_ACT_SEQUENCE");exit(72);}
++        uint32_t header[3]={0x3151534d,(uint32_t)g_actmap_layers,(uint32_t)g_actmap_dim};
++        if(fwrite(header,4,3,g_mari_seq)!=3)exit(72);
++    }
+     atexit(actmap_dump);
+ }
+ 
+ static inline void actmap_accum(int layer, const float *x, int h) {
+     if (!g_actmap_path || !g_actmap_acc) return;
++    if(g_mari_seq && fwrite(x,sizeof(float),h,g_mari_seq)!=(size_t)h)exit(72);
+     double *a = g_actmap_acc[layer];
+     for (int i = 0; i < h; i++) a[i] += (double)x[i];
+ }

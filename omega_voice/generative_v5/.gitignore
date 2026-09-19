@@ -1,0 +1,6 @@
+__pycache__/
+*.wav
+*.qseq
+*.qamp
+*.mtraj
+models/
