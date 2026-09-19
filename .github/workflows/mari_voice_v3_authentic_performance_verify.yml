@@ -1,0 +1,39 @@
+name: mari-voice-v3-authentic-performance-verify
+
+on:
+  push:
+    branches: [mari-voice-v3-authentic-performance-20260918]
+    paths:
+      - 'omega_voice/authentic_performance_v3/**'
+      - '.github/workflows/mari_voice_v3_authentic_performance_verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-authentic-performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run acting-coach tests
+        run: |
+          python -m pip install -q pytest
+          python -m pytest -q omega_voice/authentic_performance_v3/tests
+      - name: Verify coach output is scene direction, not sound direction
+        run: |
+          cd omega_voice/authentic_performance_v3
+          python omega_voice_v3.py             --engine /tmp/not-used             --model /tmp/not-used             --profile /tmp/not-used             --text "Wait. I see what happened now. That's actually kind of clever, but don't do it again."             --coach-only > /tmp/brief.json
+          python - <<'PY'
+          import json
+          b=json.load(open('/tmp/brief.json'))
+          i=b['renderer_instruction'].lower()
+          forbidden=['pitch','breathy','consonant','projection','cadence','faster','slower','pause density','timbre','resonance']
+          assert not any(x in i for x in forbidden), i
+          assert 'playable_action' in b and b['playable_action']
+          assert 'do not demonstrate an emotion' in i
+          assert 'do not restart at sentence boundaries' in i
+          PY
