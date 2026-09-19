@@ -9,6 +9,17 @@ from scipy.signal import resample_poly
 from .renderer import inspect_audio,sha
 
 def normalized(text):return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",text.lower().replace("’","'"))
+def intelligibility_tokens(text):
+    """Resolve one acoustically indistinguishable orthographic variant.
+
+    Keep word alignment strict: a merged ASR token supplies no measured boundary
+    between 'all' and 'right'. Do not invent that boundary for actuation.
+    """
+    tokens=normalized(text);result=[];i=0
+    while i<len(tokens):
+        if tokens[i:i+2]==['all','right']:result.append('alright');i+=2
+        else:result.append(tokens[i]);i+=1
+    return result
 def distance(a,b):
     p=list(range(len(b)+1))
     for i,x in enumerate(a,1):
@@ -46,7 +57,8 @@ class Evaluator:
                                       condition_on_previous_text=False,vad_filter=False,word_timestamps=True)
         segments=list(segments);hyp=" ".join(s.text.strip() for s in segments)
         sim=float(np.dot(self.anchor,self.embedding(path)))
-        wer=distance(normalized(text),normalized(hyp))/max(1,len(normalized(text)))
+        raw_wer=distance(normalized(text),normalized(hyp))/max(1,len(normalized(text)))
+        wer=distance(intelligibility_tokens(text),intelligibility_tokens(hyp))/max(1,len(intelligibility_tokens(text)))
         timings=[]
         for s in segments:
             for w in s.words or []:
@@ -56,7 +68,8 @@ class Evaluator:
         alignment={"source_sha256":info["sha256"],"words":timings,"asr_text":hyp,
                    "exact_words":normalized(text)==[x["word"] for x in timings],
                    "method":"faster-whisper word timestamps; exact transcript required for actuation"}
-        return {"audio":info,"speaker_similarity":sim,"wer":wer,"asr_text":hyp,
+        return {"audio":info,"speaker_similarity":sim,"wer":wer,"raw_wer":raw_wer,"asr_text":hyp,
+                "wer_normalization":"case, punctuation, and all right/alright only; timing remains exact-token gated",
                 "identity_pass":sim>=.6013473320007324,"intelligibility_pass":wer<=.12,
                 "quality_screen_pass":sim>=.6013473320007324 and wer<=.12,
                 "alignment":alignment,

@@ -4,18 +4,21 @@ import numpy as np
 from .native import render,write_trajectory
 from ..causal_v4.renderer import sha
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('root');a=ap.parse_args();root=pathlib.Path(a.root);d=root/'continuation/native_integrity';d.mkdir(exist_ok=True)
+ ap=argparse.ArgumentParser();ap.add_argument('root');ap.add_argument('--output');a=ap.parse_args();root=pathlib.Path(a.root);d=pathlib.Path(a.output) if a.output else root/'continuation/native_integrity';d.mkdir(exist_ok=True)
  text='I understand what happened. Give me a moment to check the sequence.'
  base=render(root,text,d/'cold.wav')
  zero=d/'zero.mtraj';write_trajectory(zero,np.zeros((1,29,2048)),np.zeros((100,1)))
  identical=render(root,text,d/'zero.wav',trajectory=zero)
+ zero2=d/'zero_onset.mtraj';write_trajectory(zero2,np.zeros((1,29,2048)),np.zeros((100,1)),onset=np.zeros(1))
+ initial=render(root,text,d/'zero_onset.wav',trajectory=zero2)
  expected='063a844698d830af35e868d8daba0f8d228410eed786c60410eed9698a05ba10'
- parity=base['audio']['sha256']==identical['audio']['sha256']==expected
+ parity=base['audio']['sha256']==identical['audio']['sha256']==initial['audio']['sha256']==expected
  command=base['command'];records=[]
  payload=bytearray(zero.read_bytes())
  variants={'nan':payload[:],'truncated':payload[:-4],'wrong_model':payload[:]}
  struct.pack_into('<I',variants['nan'],20,0x7fc00000)
  struct.pack_into('<I',variants['wrong_model'],8,28)
+ variants['nan_onset']=bytearray(zero2.read_bytes());struct.pack_into('<I',variants['nan_onset'],20+29*2048*4,0x7fc00000)
  for name,data in variants.items():
   p=d/(name+'.mtraj');p.write_bytes(data);out=d/(name+'.wav');cmd=command[:-1]+[str(out)]
   env={k:v for k,v in os.environ.items() if not k.startswith(('MARI_','QWEN_'))};env['MARI_TRAJECTORY']=str(p)

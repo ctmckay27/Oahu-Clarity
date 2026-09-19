@@ -16,13 +16,18 @@ def read_sequence(path):
  if not np.isfinite(x).all():raise ValueError('nonfinite activation capture')
  return x.reshape(-1,l,d)
 
-def write_trajectory(path,banks,weights):
+def write_trajectory(path,banks,weights,onset=None):
  b=np.asarray(banks,dtype='<f4');w=np.asarray(weights,dtype='<f4')
  if b.ndim!=3 or w.ndim!=2 or b.shape[0]!=w.shape[1]:raise ValueError('trajectory shape mismatch')
  if not np.isfinite(b).all() or not np.isfinite(w).all() or not b.size or not w.size or np.abs(w).max()>2 or np.abs(b).max()>100:raise ValueError('invalid trajectory')
  if b.shape[1:]!=(29,2048) or not 0<len(b)<=16 or not 0<len(w)<=8192:raise ValueError('wrong model shape')
+ o=None if onset is None else np.asarray(onset,dtype='<f4')
+ if o is not None and (o.shape!=(len(b),) or not np.isfinite(o).all() or np.abs(o).max()>2):raise ValueError('invalid onset trajectory')
  p=Path(path);p.parent.mkdir(parents=True,exist_ok=True)
- with p.open('wb') as f:f.write(struct.pack('<5I',0x3152544d,*b.shape,len(w)));f.write(b.tobytes());f.write(w.tobytes())
+ with p.open('wb') as f:
+  f.write(struct.pack('<5I',0x3152544d if o is None else 0x3252544d,*b.shape,len(w)));f.write(b.tobytes())
+  if o is not None:f.write(o.tobytes())
+  f.write(w.tobytes())
  return {'path':str(p),'sha256':sha(p),'banks':len(b),'frames':len(w),'layers':29,'dim':2048}
 
 def verify_runtime(root):
@@ -39,7 +44,7 @@ def verify_runtime(root):
   if sha(model/rel)!=h:raise ValueError('model bytes changed: '+rel)
  return {'build':receipt,'model':prov}
 
-def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None):
+def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None):
  root=Path(root);out=Path(out);out.parent.mkdir(parents=True,exist_ok=True)
  if out.exists():raise FileExistsError(out)
  if not text.strip() or re.search(r'[\[\]<>]',text):raise ValueError('invalid spoken text')
@@ -48,6 +53,17 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
  if sha(production/'MARI_VOICE_V1_PROFILE.bin')!=PROFILE or sha(production/'MARI_VOICE_V1_ANCHOR.wav')!=ANCHOR:raise ValueError('identity asset mismatch')
  lock=verify_runtime(root);receipt=lock['build']
  cmd=[str(engine/'qwen_tts'),'-d',str(model),'--load-voice',str(production/'MARI_VOICE_V1_PROFILE.bin'),'--xvector-only','-l','English','--text',text,'--seed',str(seed),'--temperature','.42','--top-k','40','--top-p','.95','--rep-penalty','1.05','-j4','-o',str(out)]
+ reference_record=None
+ if reference:
+  # This route uses the selected speaker embedding unchanged and places only
+  # an explicitly hash-bound diagnostic recording in the acoustic prefix.
+  if teacher_codes:raise ValueError('reference conditioning and forced reconstruction are separate routes')
+  if set(reference)!={'audio','text','sha256','source_carrier_sha256','role'}:raise ValueError('incomplete reference provenance')
+  ref=Path(reference['audio']);_,refsr,refinfo=inspect_audio(ref)
+  if sha(ref)!=reference['sha256'] or reference['source_carrier_sha256']!=ANCHOR:raise ValueError('reference lineage/hash mismatch')
+  if refsr!=24000 or not reference['text'].strip() or re.search(r'[\[\]<>]',reference['text']):raise ValueError('invalid reference format or transcript')
+  cmd.extend(['--emo-ref',str(ref),'--emo-ref-text',reference['text']])
+  reference_record=dict(reference,audio_info=refinfo)
  env={k:v for k,v in os.environ.items() if not k.startswith(('QWEN_','MARI_'))}
  if trajectory:env['MARI_TRAJECTORY']=str(Path(trajectory).resolve())
  if teacher_codes:
@@ -61,6 +77,8 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
  out.with_suffix('.log').write_text(r.stdout+r.stderr)
  if r.returncode:raise RuntimeError('native renderer failure: '+r.stderr[-1500:])
  if trajectory and 'MARI_NATIVE_TRAJECTORY' not in r.stderr:raise RuntimeError('trajectory did not enter native renderer')
+ if reference and ('Emotion-by-example:' not in r.stderr or not re.search(r'icl_codes=[1-9][0-9]*',r.stderr)):
+  raise RuntimeError('reference conditioning did not enter native renderer; output is not admitted')
  if teacher_codes and f'teacher-forcing replay: {len(codes)} reference frames' not in r.stderr:raise RuntimeError('teacher forcing did not enter renderer')
  _,_,audio=inspect_audio(out)
  capture_info=None
@@ -70,7 +88,7 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   if len(seq)!=expected:raise RuntimeError('capture/frame count mismatch')
   capture_info={'frames':len(seq),'sha256':sha(out.with_suffix('.qseq'))}
  record={'role':'native generative diagnostic','command':cmd,'explicit_environment':{k:v for k,v in env.items() if k.startswith(('QWEN_','MARI_'))},'audio':audio,'text':text,'seed':seed,'elapsed_wall_s':time.monotonic()-start,'binary_sha256':receipt['binary_sha256'],'prose_instructions':False,'trajectory_sha256':sha(trajectory) if trajectory else None}
- record.update(runtime_lock=lock,capture=capture_info)
+ record.update(runtime_lock=lock,capture=capture_info,reference=reference_record)
  if teacher_codes:
   if round(audio['duration_s']/.08)!=len(codes):raise RuntimeError('teacher-forcing replay length mismatch')
   record.update(role='teacher-forced calibration reconstruction; not free generation',teacher_codes_sha256=sha(teacher_codes))
