@@ -101,6 +101,11 @@ class EntailmentCompiler(FactCompiler):
  A fixed .90 admission threshold is declared before qualification. Borderline
  facts are recorded as unresolved, not converted into confident state changes.
  """
+ def __init__(self,model,tokenizer):
+  self.model=model;self.tokenizer=tokenizer
+  # DeBERTa pools position zero. Autoregressive left-padding would pool PAD
+  # instead of CLS on shorter examples and silently corrupt the judgment.
+  tokenizer.padding_side='right'
  def query(self,scene,batch_size=8):
   premise=re.sub(r'\b[Ss]he\b','Mari',scene)
   rows=[]
