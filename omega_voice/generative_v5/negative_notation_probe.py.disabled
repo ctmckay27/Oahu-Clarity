@@ -1,0 +1,22 @@
+"""Source-caused phonetic notation probes, never unqualified admitted gestures."""
+import argparse,pathlib
+from .native import render,anchor_reference
+from .session import durable_json
+from .vocal_event_evaluator import VocalEventEvaluator
+from ..causal_v4.evaluate import Evaluator
+from ..causal_v4.runtime import compile_scene
+
+def main():
+ ap=argparse.ArgumentParser();ap.add_argument('root');a=ap.parse_args();r=pathlib.Path(a.root);d=r/'continuation/nonlexical_notation';d.mkdir(exist_ok=True)
+ ev=VocalEventEvaluator('/tmp/mari-ast',r/'continuation/vocal_event_evaluator/MODEL_PROVENANCE.json')
+ speech=Evaluator(r/'models/whisper',r/'models/ecapa',r/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav');rows=[]
+ cases=[('acknowledgment','Mm-hmm.','Mari has heard and understood the listener; she acknowledges without taking the floor.'),
+  ('laugh','Ha ha.','An unexpected shared joke resolves and Mari briefly laughs before answering.'),
+  ('sigh','Ah.','After the immediate difficulty is resolved, Mari releases held respiratory pressure.')]
+ for i,(kind,notation,cause) in enumerate(cases):
+  plan=compile_scene('I understand.',{'events':[{'id':'situated-response','kind':'nonlexical','at_word':0,'behavior':kind,'source':{'text':cause}}]},policy='embodied_continuity_v3')
+  p=d/(kind+'.wav');receipt=render(r,notation,p,95300+i,reference=anchor_reference(r));q=ev.evaluate(p);transcript=speech.evaluate(p,notation)
+  row={'requested_behavior':kind,'source_cause':cause,'plan':plan,'phonetic_notation':notation,'renderer':receipt,'audio_event_predictions':q,'speech_screen':transcript,
+    'admitted':False,'scope':'test whether ordinary phonetic notation realizes the requested nonlexical action; acoustic class and identity require separate qualification','full_completion':False}
+  rows.append(row);durable_json(d/'RESULTS.json',rows);print(kind,q['top'][:3],transcript['asr_text'],transcript['speaker_similarity'],flush=True)
+if __name__=='__main__':main()

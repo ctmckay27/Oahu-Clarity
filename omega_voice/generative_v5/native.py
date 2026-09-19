@@ -5,6 +5,23 @@ import numpy as np
 from ..causal_v4.renderer import inspect_audio,sha
 from ..causal_v4.runtime import ANCHOR,PROFILE
 
+def anchor_reference(root):
+ """The frozen G1-1 recording as ICL, without a new identity or style prompt."""
+ audio=Path(root)/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav'
+ if sha(audio)!=ANCHOR:raise ValueError('selected anchor changed')
+ return {'audio':str(audio),'text':'I understand the problem. Give me the facts in the order they happened, not the order they were explained later. Then we can decide what actually matters.',
+   'sha256':ANCHOR,'source_carrier_sha256':ANCHOR,'role':'frozen selected G1-1 acoustic identity context; transcript from production anchor metadata in package de442e6c3c3f6a58f3f86de0095bf6c41da00db9bb96b27f420de5ccadb7b245'}
+
+def verify_graft_log(log):
+ # Cached codec frames exclude the codec BOS position; prefill includes it.
+ checks={'reference_frames':'ICL: using 127 cached ref frames from .qvoice' in log,
+         'prefill_positions':bool(re.search(r'icl_codes=128\b',log)),
+         'source_embeddings':'Loaded source tts_pad/bos/eos embeddings' in log,
+         'source_projection':'Loaded source model weights (24.0 MB)' in log,
+         'no_prose':bool(re.search(r'Prefill: \d+ positions \(instruct=0,',log))}
+ if not all(checks.values()):raise RuntimeError('selected graft route evidence incomplete: '+str(checks))
+ return checks
+
 def read_sequence(path):
  with open(path,'rb') as f:
   head=f.read(12)
@@ -44,7 +61,7 @@ def verify_runtime(root):
   if sha(model/rel)!=h:raise ValueError('model bytes changed: '+rel)
  return {'build':receipt,'model':prov}
 
-def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None,incremental_text=False,text_release=None):
+def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None,incremental_text=False,text_release=None,profile_mode='xvector'):
  root=Path(root);out=Path(out);out.parent.mkdir(parents=True,exist_ok=True)
  if out.exists():raise FileExistsError(out)
  if not text.strip() or re.search(r'[\[\]<>]',text):raise ValueError('invalid spoken text')
@@ -52,7 +69,14 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
  production=root/'recovered/production_release/production'
  if sha(production/'MARI_VOICE_V1_PROFILE.bin')!=PROFILE or sha(production/'MARI_VOICE_V1_ANCHOR.wav')!=ANCHOR:raise ValueError('identity asset mismatch')
  lock=verify_runtime(root);receipt=lock['build']
- cmd=[str(engine/'qwen_tts'),'-d',str(model),'--load-voice',str(production/'MARI_VOICE_V1_PROFILE.bin'),'--xvector-only','-l','English','--text',text,'--seed',str(seed),'--temperature','.42','--top-k','40','--top-p','.95','--rep-penalty','1.05','-j4','-o',str(out)]
+ profile=production/'MARI_VOICE_V1_PROFILE.bin';profile_flag='--xvector-only'
+ if profile_mode=='expressive_graft':
+  profile=root/'continuation/graft_recovery/assets/Mari404/Voice/Production/v2.0_2026-09-18/MARI_VOICE_V1_EXPRESSIVE_GRAFT.qvoice'
+  if sha(profile)!='fee566c1bc44a31896cd0414905bbcd8ef47731ccad46d42a35b3063e5a744ab':raise ValueError('unselected graft bytes')
+  profile_flag='--icl-only'
+  if reference or incremental_text or text_release:raise ValueError('graft combined conditioning is not yet qualified')
+ elif profile_mode!='xvector':raise ValueError('unknown explicit profile mode')
+ cmd=[str(engine/'qwen_tts'),'-d',str(model),'--load-voice',str(profile),profile_flag,'-l','English','--text',text,'--seed',str(seed),'--temperature','.42','--top-k','40','--top-p','.95','--rep-penalty','1.05','-j4','-o',str(out)]
  reference_record=None
  if reference:
   # This route uses the selected speaker embedding unchanged and places only
@@ -89,6 +113,7 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
  if incremental_text and not re.search(r'stream_common=\d+, trailing_text=[1-9][0-9]*',r.stderr):raise RuntimeError('incremental text layout did not enter native renderer')
  if reference and ('Emotion-by-example:' not in r.stderr or not re.search(r'icl_codes=[1-9][0-9]*',r.stderr)):
   raise RuntimeError('reference conditioning did not enter native renderer; output is not admitted')
+ if profile_mode=='expressive_graft':verify_graft_log(r.stderr)
  if teacher_codes and f'teacher-forcing replay: {len(codes)} reference frames' not in r.stderr:raise RuntimeError('teacher forcing did not enter renderer')
  _,_,audio=inspect_audio(out)
  capture_info=None
@@ -98,7 +123,7 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   if len(seq)!=expected:raise RuntimeError('capture/frame count mismatch')
   capture_info={'frames':len(seq),'sha256':sha(out.with_suffix('.qseq'))}
  record={'role':'native generative diagnostic','command':cmd,'explicit_environment':{k:v for k,v in env.items() if k.startswith(('QWEN_','MARI_'))},'audio':audio,'text':text,'seed':seed,'elapsed_wall_s':time.monotonic()-start,'binary_sha256':receipt['binary_sha256'],'prose_instructions':False,'trajectory_sha256':sha(trajectory) if trajectory else None}
- record.update(runtime_lock=lock,capture=capture_info,reference=reference_record)
+ record.update(runtime_lock=lock,capture=capture_info,reference=reference_record,profile_mode=profile_mode,profile_file_sha256=sha(profile))
  if incremental_text:
   codes=out.with_suffix('.code0.txt')
   if not codes.is_file() or not codes.stat().st_size:raise RuntimeError('incremental token evidence absent')

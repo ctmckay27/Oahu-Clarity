@@ -172,11 +172,11 @@ def apply_event(s,e,policy=None):
             s["knowledge_state"]["certainty"]=confidence
             s["knowledge_state"][status][prop]={"confidence":confidence,"source":e["source"]}
             if prop in s["knowledge_state"]["unresolved"]:s["knowledge_state"]["unresolved"].remove(prop)
-        if policy=='epistemic_focus_v2' and prop!=s['knowledge_state'].get('assertion',{}).get('proposition'):
+        if policy in {'epistemic_focus_v2','embodied_continuity_v3'} and prop!=s['knowledge_state'].get('assertion',{}).get('proposition'):
             # Knowing an unrelated fact does not strengthen this assertion.
             s['knowledge_state']['certainty']=old_certainty
     elif k=='assertion':
-        if policy!='epistemic_focus_v2':raise ValueError('assertion focus requires epistemic_focus_v2')
+        if policy not in {'epistemic_focus_v2','embodied_continuity_v3'}:raise ValueError('assertion focus requires epistemic_focus_v2 or successor')
         prop=e.get('proposition');mode=e.get('mode','assert')
         if not isinstance(prop,str) or not prop.strip() or mode not in {'assert','admit_unknown','ask'}:raise ValueError('invalid assertion focus')
         confidence=e.get('confidence')
@@ -237,13 +237,13 @@ def apply_event(s,e,policy=None):
         if e["behavior"] not in {"laugh","sigh","acknowledgment"}:raise ValueError("unsupported nonlexical event")
         s["nonlexical_behavior"].append({"behavior":e["behavior"],"cause":e["id"],"at_word":e["at_word"]})
     else:raise ValueError("unknown event kind: "+str(k))
-    if policy=='epistemic_focus_v2' and k=='thought' and e.get('mode') in {'realizing','correcting'}:
+    if policy in {'epistemic_focus_v2','embodied_continuity_v3'} and k=='thought' and e.get('mode') in {'realizing','correcting'}:
         # Completing a thought may reveal uncertainty or an error. Its
         # epistemic result must come from evidence, not the operation label.
         s['knowledge_state']['certainty']=old_certainty
     validate_state(s)
 
-def advance(s,dt,speaking=True):
+def advance(s,dt,speaking=True,respiratory_rest=True):
     b=s["body_state"];em=s["emotional_state"];m=s["mask"]
     # Residue is time-dependent and does not reset at each synthesis call.
     for k,tau in {"fear":25,"anger":45,"amusement":14,"shame":60,"relief":25}.items():
@@ -251,8 +251,8 @@ def advance(s,dt,speaking=True):
     b["suppression_effort"]=m["effort"] if m["active"] else b["suppression_effort"]*math.exp(-dt/2)
     desired=clamp(.08+.35*em["fear"]+.30*em["anger"]+.25*b["suppression_effort"]+.15*b["exertion"])
     b["tension"]+=(desired-b["tension"])*(1-math.exp(-dt/1.2))
-    b["breath_reserve"]=clamp(b["breath_reserve"]+dt*((-.025-.03*b["exertion"]) if speaking else .20))
-    b["fatigue"]=clamp(b["fatigue"]+dt*(.0007 if speaking else -.004))
+    b["breath_reserve"]=clamp(b["breath_reserve"]+dt*((-.025-.03*b["exertion"]) if speaking else (.20 if respiratory_rest else 0.)))
+    b["fatigue"]=clamp(b["fatigue"]+dt*(.0007 if speaking else (-.004 if respiratory_rest else 0.)))
     s["time_s"]+=dt
 
 def realize_state(s,at_word,active_causes):
@@ -299,9 +299,9 @@ def realize_state(s,at_word,active_causes):
 
 def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
     if not isinstance(text,str) or not words(text):raise ValueError("spoken text required")
-    if policy not in {None,'bounded_thought_recovery_v1','epistemic_focus_v2'}:raise ValueError('unknown temporal policy')
-    def evolve(state,dt,speaking=True):
-        advance(state,dt,speaking)
+    if policy not in {None,'bounded_thought_recovery_v1','epistemic_focus_v2','embodied_continuity_v3'}:raise ValueError('unknown temporal policy')
+    def evolve(state,dt,speaking=True,respiratory_rest=True):
+        advance(state,dt,speaking,respiratory_rest=respiratory_rest)
         if policy and state['mental_state']['thought'] in {'realizing','correcting'}:
             # Resolved cognition has a brief integration phase. Knowledge and
             # relational residue persist independently after that phase ends.
@@ -338,7 +338,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
             if not last_end<=t['start']<t['end']<=duration+.001:
                 raise ValueError('nonmonotonic word clock')
             last_end=t['end']
-        advance(s,timeline['words'][0]['start'],speaking=False)
+        advance(s,timeline['words'][0]['start'],speaking=False,respiratory_rest=policy!='embodied_continuity_v3')
     for e in events:
         if not isinstance(e.get("at_word"),int) or not 0<=e["at_word"]<=n:raise ValueError("event boundary out of range")
         if not e.get("id") or e["id"] in ids:raise ValueError("missing/duplicate event id")
@@ -374,7 +374,9 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
                 clock=timeline['words'][i]
                 evolve(s,clock['end']-clock['start'],speaking=speaking)
                 next_start=timeline['words'][i+1]['start'] if i+1<n else timeline['duration_s']
-                evolve(s,max(0,next_start-clock['end']),speaking=False)
+                # CTC gaps include closures, coarticulation and alignment
+                # blanks. They are not observations of an inhalation or rest.
+                evolve(s,max(0,next_start-clock['end']),speaking=False,respiratory_rest=policy!='embodied_continuity_v3')
     s["turn"]+=1
     s["previous_vocal_state"]=copy.deepcopy(original["vocal_configuration"])
     s["temporal_trajectory"]=[{"at_word":k["at_word"],"thought":k["thought"],"state_hash":k["state_hash"]} for k in knots]
