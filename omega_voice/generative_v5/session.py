@@ -4,9 +4,9 @@ The current numeric actuator covers boundary contour only. This implementation
 can execute diagnostic stateful turns; ordinary-English completion admission
 remains closed until the separate nineteen-condition assessment actually passes.
 """
-import copy,json,pathlib,fcntl,os
+import copy,json,pathlib,fcntl,os,shutil
 import numpy as np
-from ..causal_v4.runtime import compile_scene,digest
+from ..causal_v4.runtime import compile_scene,digest,ANCHOR
 from ..causal_v4.renderer import sha,UnresolvedRealization
 from .native import render,write_trajectory
 from .trajectory import compile_finality,alignment_error
@@ -37,12 +37,15 @@ def unresolved_channels(plan):
  return sorted(channels)
 
 class PerformanceSession:
- def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None):
+ def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent'):
   self.root=pathlib.Path(root);self.directory=pathlib.Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
   if mode not in ['native','physical']:raise ValueError('unknown realization mechanism')
   if mode=='physical' and aligner is None:raise ValueError('physical session requires independently qualified alignment')
   self.evaluator=evaluator;self.mode=mode;self.aligner=aligner;self.temporal_policy=temporal_policy
   self.scene_compiler=scene_compiler
+  if conditioning not in {'independent','previous_carrier'}:raise ValueError('unknown conditioning policy')
+  if conditioning=='previous_carrier' and mode!='physical':raise ValueError('previous-carrier context qualified only for physical diagnostic sessions')
+  self.conditioning=conditioning
   self.bank_path=pathlib.Path(bank) if bank else None
   if mode=='native':
    if not self.bank_path or sha(self.bank_path)!=bank_sha256:raise ValueError('unselected control-bank bytes')
@@ -85,18 +88,28 @@ class PerformanceSession:
   if previous and sha(self.directory/previous['receipt'])!=previous['receipt_sha256']:raise RuntimeError('committed session evidence changed')
   prior=previous['state'] if previous else None
   source_scene=scene;scene_record=None
-  if isinstance(scene,str):
+  if isinstance(scene,str) or (isinstance(scene,dict) and 'direction' in scene):
    if self.scene_compiler is None:raise ValueError('natural-language scene requires an explicit selected compiler')
-   if self.temporal_policy!='bounded_thought_recovery_v1':raise ValueError('scene compiler requires its declared temporal policy')
-   scene_record=self.scene_compiler.compile(scene,text,prior)
+   if self.temporal_policy!=self.scene_compiler.temporal_policy:raise ValueError('scene compiler requires its declared temporal policy')
+   if isinstance(scene,dict):
+    if set(scene)-{'direction','context'}:raise ValueError('unknown directed scene field')
+    scene_record=self.scene_compiler.compile(scene['direction'],text,prior,context=scene.get('context'))
+   else:scene_record=self.scene_compiler.compile(scene,text,prior)
    if not scene_record['admitted']:raise UnresolvedRealization('unresolved scene reality: '+json.dumps(scene_record['unresolved']))
    scene=scene_record['scene']
-  request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy})
+  reference=None
+  if previous and self.conditioning=='previous_carrier':
+   parent_path=self.directory/previous['receipt'];parent=json.loads(parent_path.read_text());prior_audio=parent_path.parent/'carrier.wav'
+   if not parent.get('quality_admitted') or 'baseline' not in parent or not prior_audio.exists() or sha(prior_audio)!=parent['baseline']['audio']['sha256']:raise UnresolvedRealization('previous native carrier context cannot be verified')
+   if prior['interaction_state']['phase']=='interrupted' and parent.get('delivery',{}).get('kind')!='verified_interrupted_native_stream':raise UnresolvedRealization('full prior carrier must not condition recovery after partial delivery')
+   reference={'audio':str(prior_audio),'text':parent['delivered_plan']['text'],'sha256':sha(prior_audio),'source_carrier_sha256':ANCHOR,
+    'role':'preceding verified native carrier; physical state carried separately to avoid repeated physical processing'}
+  request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy,'conditioning':self.conditioning,'reference':reference})
   target=self.directory/request_id
   if target.exists():raise FileExistsError('request already exists; inspect its persisted receipt rather than regenerate or double-commit')
   target.mkdir();draft=self.compile(text,scene,prior)
   if scene_record:durable_json(target/'scene_compilation.json',scene_record)
-  carrier=target/'carrier.wav';render(self.root,text,carrier,seed)
+  carrier=target/'carrier.wav';render(self.root,text,carrier,seed,reference=reference)
   base=self.evaluator.evaluate(carrier,text)
   if not base['quality_screen_pass']:raise UnresolvedRealization('carrier quality gate failed')
   if self.mode=='physical':return self._render_physical(request_id,request_hash,target,carrier,base,text,scene,prior,previous,scene_record)
@@ -129,13 +142,60 @@ class PerformanceSession:
   if not admitted:raise UnresolvedRealization('native diagnostic quality/alignment gate failed; state not committed')
   return receipt
 
+ def admit_interrupted_delivery(self,request_id,plan,audio,stream_receipt,heard_words,diagnostic=False):
+  """Commit only an independently verified prefix delivered by StreamingTurn.
+
+  The original intention is retained in the receipt. It cannot enter the
+  acoustic reference or advance events beyond the delivered prefix.
+  """
+  from .interaction import commit_interrupted_prefix
+  from ..causal_v4.runtime import verify_plan
+  if not diagnostic:raise UnresolvedRealization('ordinary-English completion admission remains closed')
+  if self.mode!='physical' or self.aligner is None:raise ValueError('interrupted admission requires verified physical-session alignment')
+  if not request_id or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-' for c in request_id):raise ValueError('invalid request id')
+  with (self.directory/'session.lock').open('a') as lock:
+   try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+   except BlockingIOError:raise RuntimeError('session already rendering')
+   try:
+    self.recover_commit();previous=json.loads(self.state_path.read_text()) if self.state_path.exists() else None
+    prior=previous['state'] if previous else None
+    if previous and sha(self.directory/previous['receipt'])!=previous['receipt_sha256']:raise RuntimeError('committed evidence changed')
+    if not verify_plan(plan) or plan['temporal_policy']!=self.temporal_policy:raise ValueError('unverified source plan or policy')
+    expected=self.compile(plan['text'],plan['scene'],prior)
+    if expected['initial_state']!=plan['initial_state']:raise ValueError('interruption belongs to a different session state')
+    audio=pathlib.Path(audio);stream_receipt=pathlib.Path(stream_receipt);stream=json.loads(stream_receipt.read_text())
+    if not stream.get('interruption') or stream['audio_sha256']!=sha(audio) or stream['delivered_samples_after_interrupt']!=0:raise ValueError('unverified interruption boundary')
+    command=stream['command']
+    if command[command.index('--text')+1]!=plan['text']:raise ValueError('streamed text differs from source plan')
+    from ..causal_v4.runtime import words
+    if not 1<=heard_words<=len(plan['words']):raise ValueError('invalid delivered word count')
+    prefix=plan['text'][:words(plan['text'])[heard_words-1].end()]
+    result=self.evaluator.evaluate(audio,prefix)
+    if not result['quality_screen_pass'] or result['wer']!=0:raise UnresolvedRealization('interrupted prefix failed independent quality/transcription')
+    if result['audio']['frames']!=stream['delivered_samples'] or stream['interruption']['heard_samples']!=stream['delivered_samples']:raise ValueError('delivered sample boundary mismatch')
+    alignment=self.aligner.align(self.evaluator.load(audio),prefix,sha(audio),True)
+    delivered=commit_interrupted_prefix(plan,heard_words,timeline_from_evaluation(dict(result,alignment=alignment)),stream['interruption']['source'])
+    target=self.directory/request_id
+    if target.exists():raise FileExistsError('interruption request already exists')
+    target.mkdir();shutil.copyfile(audio,target/'carrier.wav');shutil.copyfile(stream_receipt,target/'stream.receipt.json')
+    receipt={'request_id':request_id,'role':'diagnostic actual interrupted delivery','full_completion':False,
+      'quality_admitted':True,'parent_state_hash':digest(prior) if prior else None,'baseline':result,'alignment':alignment,
+      'intended_plan':plan,'delivered_plan':delivered,'unresolved_channels':unresolved_channels(delivered),
+      'delivery':{'kind':'verified_interrupted_native_stream','source_receipt_sha256':sha(stream_receipt),
+                  'heard_words':heard_words,'delivered_samples':stream['delivered_samples'],'future_reference_excluded':True}}
+    saved={'scope':'diagnostic interrupted session continuity','last_request':request_id,'state':delivered['final_state'],
+      'audio_sha256':sha(audio),'parent_record_hash':digest(previous) if previous else None}
+    self.commit(previous,saved,target/'receipt.json',receipt);return receipt
+   finally:fcntl.flock(lock,fcntl.LOCK_UN)
+
  def _render_physical(self,request_id,request_hash,target,carrier,base,text,scene,prior,previous,scene_record=None):
   from .physical_finality import realize as finality
   from .physical import realize as body
   from .alignment import AlignmentRejected
   receipt={'request_id':request_id,'request_hash':request_hash,'parent_state_hash':digest(prior) if prior else None,
    'role':'diagnostic stateful physical realization, not completed Mari performance','mechanism':'sample-aligned physical',
-   'full_completion':False,'quality_admitted':False,'baseline':base,'scene_compilation':scene_record}
+   'full_completion':False,'quality_admitted':False,'baseline':base,'scene_compilation':scene_record,
+   'conditioning_policy':self.conditioning,'native_carrier_receipt_sha256':sha(carrier.with_suffix('.receipt.json'))}
   try:
    alignment=self.aligner.align(self.evaluator.load(carrier),text,sha(carrier),base['wer']==0)
    aligned=dict(base,asr_alignment=base['alignment'],alignment=alignment)

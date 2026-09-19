@@ -32,3 +32,13 @@ def test_focus_requires_evidence_and_new_policy_is_explicit():
  with pytest.raises(ValueError,match='requires epistemic_focus_v2'):compile_scene(TEXT,{'events':[focus]})
  p=compile_scene(TEXT,{'events':[event('knowledge',proposition='unrelated',confidence=.99,status='known')]},policy='bounded_thought_recovery_v1')
  assert p['trajectory'][0]['controls']['finality']==.99 and verify_plan(p)
+
+def test_interrupted_prefix_preserves_policy_and_excludes_future_fact():
+ from omega_voice.generative_v5.interaction import commit_interrupted_prefix
+ focus=event('assertion',proposition='package location',confidence=.2)
+ future=dict(event('knowledge',proposition='package location',confidence=.98,status='known'),at_word=4)
+ p=plan([focus,future]);clock={'source_audio_sha256':'observed-prefix','duration_s':.8,'words':[{'start':0.,'end':.2},{'start':.2,'end':.7}]}
+ q=commit_interrupted_prefix(p,2,clock,{'text':'Listener interrupts after the second word.'})
+ assert q['temporal_policy']==POLICY and verify_plan(q)
+ assert q['final_state']['knowledge_state']['certainty']==.2
+ assert 'package location' not in q['final_state']['knowledge_state']['known']

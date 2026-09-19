@@ -62,5 +62,5 @@ def commit_interrupted_prefix(plan,heard_words,timeline,source):
  scene=copy.deepcopy(plan['scene']);scene['events']=[e for e in scene.get('events',[]) if e['at_word']<heard_words]
  scene['directions']=[e for e in scene.get('directions',[]) if e.get('at_word',0)<heard_words]
  scene['events'].append({'id':'delivery-interruption','at_word':heard_words,'kind':'interrupt','source':source})
- result=compile_scene(prefix,scene,plan['initial_state'],timeline=timeline)
+ result=compile_scene(prefix,scene,plan['initial_state'],timeline=timeline,policy=plan.get('temporal_policy'))
  return result

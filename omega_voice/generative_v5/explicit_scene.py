@@ -67,14 +67,24 @@ def concealment(token):
  return next(iter(dimensions)),{x.i for x in scoped}
 
 class ExplicitSceneCompiler:
- def __init__(self,nlp):
+ def __init__(self,nlp,policy='bounded_thought_recovery_v1'):
   self.nlp=nlp
+  if policy not in {'bounded_thought_recovery_v1','epistemic_focus_v2'}:raise ValueError('unknown scene temporal policy')
+  self.temporal_policy=policy
   if nlp.meta.get('version')!='3.8.0' or nlp.meta.get('lang')!='en' or importlib.metadata.version('spacy')!='3.8.7':raise ValueError('unselected dependency parser version')
   self.provenance={'spacy':'3.8.7','model':'en_core_web_sm','version':'3.8.0',
    'source_sha256':hashlib.sha256(pathlib.Path(__file__).read_bytes()).hexdigest(),
-   'pipeline_sha256':hashlib.sha256(nlp.to_bytes()).hexdigest()}
- def compile(self,scene,text,prior=None):
+   'pipeline_sha256':hashlib.sha256(nlp.to_bytes()).hexdigest(),'temporal_policy':policy}
+ def compile(self,scene,text,prior=None,context=None):
   events=[];audit=[];unresolved=[];principal='mari'
+  context=context or {}
+  if set(context)-{'assertion'}:raise ValueError('unknown conversational context field')
+  assertion=context.get('assertion')
+  if assertion:
+   if self.temporal_policy!='epistemic_focus_v2':raise ValueError('claim context requires epistemic_focus_v2')
+   if set(assertion)-{'proposition','mode','confidence','source'}:raise ValueError('unknown assertion context field')
+   if not isinstance(assertion.get('source'),dict) or not assertion['source'].get('text'):raise ValueError('assertion context needs source')
+   events.append(dict(assertion,id='claim-'+digest(assertion)[:16],at_word=0,kind='assertion'))
   for at,source in strata(scene):
    doc=self.nlp(source);facts=[]
    for sent in doc.sents:
@@ -165,7 +175,10 @@ class ExplicitSceneCompiler:
     elif key=='thought':emit('thought',quote,mode=value)
     elif key=='action':emit('action',quote,tactic=value,target='current listener')
     elif key=='knowledge':
-     emit('knowledge',quote,status='known',confidence=.95,proposition=value)
+     # A definite answer can refer to the explicitly supplied current claim.
+     # Other world facts retain their own proposition and cannot change it.
+     proposition=assertion['proposition'] if assertion and value.strip().lower()=='the answer' else value
+     emit('knowledge',quote,status='known',confidence=.95,proposition=proposition)
      if observed:emit('thought',quote,mode='realizing')
     elif key=='unknown':emit('knowledge',quote,status='unresolved',confidence=0.,proposition=value)
    # Observation without an explicit epistemic result licenses observation,
@@ -173,7 +186,7 @@ class ExplicitSceneCompiler:
    if observed and not any(f['key']=='knowledge' for f in facts):
     emit('thought',next(f['source'] for f in facts if f['key']=='observation'),mode='observing')
   resolved={'events':events}
-  return {'scene':resolved,'plan':compile_scene(text,resolved,prior,policy='bounded_thought_recovery_v1'),
+  return {'scene':resolved,'plan':compile_scene(text,resolved,prior,policy=self.temporal_policy),'conversational_context':context,
    'audit':audit,'unresolved':unresolved,'admitted':not unresolved,
    'provenance':self.provenance,
    'scope':'explicit licensed English predicates; unsupported material statements block admission; no pragmatic objective inference'}
