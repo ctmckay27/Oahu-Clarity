@@ -274,7 +274,7 @@ def realize_state(s,at_word,active_causes):
             "causes":list(active_causes),"controls":constraints,"microbehavior":copy.deepcopy(micro),
             "state_hash":digest(s)}
 
-def compile_scene(text,scene=None,prior=None):
+def compile_scene(text,scene=None,prior=None,timeline=None):
     if not isinstance(text,str) or not words(text):raise ValueError("spoken text required")
     # Native renderer interprets these as directives, so raw input cannot smuggle them.
     if re.search(r"[\[\]<>]",text):raise ValueError("renderer markup is not spoken text")
@@ -292,6 +292,20 @@ def compile_scene(text,scene=None,prior=None):
     advance(s,elapsed,speaking=False)
     events=scene.get("events",[])+[compile_direction(x["text"],x.get("at_word",0)) for x in scene.get("directions",[])]
     n=len(words(text));ids=set()
+    if timeline is not None:
+        if set(timeline)!={'words','duration_s','source_audio_sha256'} or len(timeline['words'])!=n or not timeline['source_audio_sha256']:
+            raise ValueError('incomplete realization timeline')
+        duration=timeline['duration_s']
+        if not isinstance(duration,(int,float)) or not math.isfinite(duration) or duration<=0:
+            raise ValueError('invalid realized duration')
+        last_end=0.0
+        for t in timeline['words']:
+            if set(t)!={'start','end'} or any(not isinstance(t[k],(int,float)) or not math.isfinite(t[k]) for k in t):
+                raise ValueError('invalid word clock')
+            if not last_end<=t['start']<t['end']<=duration+.001:
+                raise ValueError('nonmonotonic word clock')
+            last_end=t['end']
+        advance(s,timeline['words'][0]['start'],speaking=False)
     for e in events:
         if not isinstance(e.get("at_word"),int) or not 0<=e["at_word"]<=n:raise ValueError("event boundary out of range")
         if not e.get("id") or e["id"] in ids:raise ValueError("missing/duplicate event id")
@@ -311,7 +325,14 @@ def compile_scene(text,scene=None,prior=None):
         knot=realize_state(s,i,active)
         knots.append(knot)
         if i in grouped or i==0 or i==n:state_samples.append({"at_word":i,"state":copy.deepcopy(s)})
-        if i<n:advance(s,.30/knot["controls"]["rate"],speaking=s["interaction_state"]["phase"]=="speaking")
+        if i<n:
+            speaking=s["interaction_state"]["phase"]=="speaking"
+            if timeline is None:advance(s,.30/knot["controls"]["rate"],speaking=speaking)
+            else:
+                clock=timeline['words'][i]
+                advance(s,clock['end']-clock['start'],speaking=speaking)
+                next_start=timeline['words'][i+1]['start'] if i+1<n else timeline['duration_s']
+                advance(s,max(0,next_start-clock['end']),speaking=False)
     s["turn"]+=1
     s["previous_vocal_state"]=copy.deepcopy(original["vocal_configuration"])
     s["temporal_trajectory"]=[{"at_word":k["at_word"],"thought":k["thought"],"state_hash":k["state_hash"]} for k in knots]
@@ -322,6 +343,8 @@ def compile_scene(text,scene=None,prior=None):
           "state_samples":state_samples,"journal":journal,"event_count":len(events),
           "renderer_instruction":None,"coefficient_status":"bounded_engineering_hypotheses",
           "acoustic_identity_frozen":True}
+    if timeline is not None:
+        plan.update(schema='mari-causal-performance/1.1',realization_timeline=copy.deepcopy(timeline))
     plan["plan_hash"]=digest(plan)
     return plan
 
@@ -331,6 +354,6 @@ def replay(text,scene,prior=None):
 def verify_plan(plan):
     bare={k:v for k,v in plan.items() if k!="plan_hash"}
     if digest(bare)!=plan.get("plan_hash"):raise ValueError("plan hash mismatch")
-    if compile_scene(plan["text"],plan["scene"],plan["initial_state"])!=plan:
+    if compile_scene(plan["text"],plan["scene"],plan["initial_state"],timeline=plan.get('realization_timeline'))!=plan:
         raise ValueError("plan replay mismatch")
     return True

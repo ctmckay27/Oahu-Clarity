@@ -47,3 +47,31 @@ def test_prior_turn_knowledge_reaches_next_native_trajectory():
 def test_alignment_mismatch_fails_closed():
  text='It is here.';a=alignment(text);a['words'][1]['word']='was'
  with pytest.raises(ValueError):compile_finality(compile_scene(text),a,1)
+
+def test_realized_clock_updates_continuity_and_breath_recovery():
+ from omega_voice.causal_v4.runtime import verify_plan
+ text='I found it.'
+ timeline={'source_audio_sha256':'test-audio','duration_s':3.5,'words':[{'start':.1,'end':.3},{'start':1.9,'end':2.5},{'start':2.5,'end':3.2}]}
+ p=compile_scene(text,timeline=timeline)
+ assert p['final_state']['time_s']==pytest.approx(3.5)
+ assert p['final_state']['body_state']['breath_reserve']>.90
+ assert verify_plan(p)
+ q=compile_scene('It is here.',prior=p['final_state'],timeline=timeline)
+ assert q['final_state']['time_s']==pytest.approx(7)
+
+def test_realized_clock_rejects_overlapping_or_invented_word_times():
+ timeline={'source_audio_sha256':'test-audio','duration_s':1,'words':[{'start':0,'end':.5},{'start':.4,'end':.7},{'start':.7,'end':1}]}
+ with pytest.raises(ValueError,match='nonmonotonic'):compile_scene('It is here.',timeline=timeline)
+
+def test_interruption_does_not_commit_unspoken_realization():
+ from omega_voice.generative_v5.interaction import commit_interrupted_prefix
+ events=[{'id':'future-discovery','at_word':4,'kind':'knowledge','status':'known','proposition':'key location','confidence':1,'source':{'text':'Mari finds the key later in the turn.'}}]
+ p=compile_scene('I will check it. The key is here.',{'events':events})
+ timeline={'source_audio_sha256':'interrupted-audio','duration_s':.7,'words':[{'start':0,'end':.3},{'start':.3,'end':.7}]}
+ interrupted=commit_interrupted_prefix(p,2,timeline,{'text':'Listener begins speaking.'})
+ s=interrupted['final_state']
+ assert s['interaction_state']['phase']=='interrupted'
+ assert 'key location' not in s['knowledge_state']['known']
+ resumed=compile_scene('Let me check.',{'events':[{'id':'resume','at_word':0,'kind':'resume','source':{'text':'Listener yields the floor.'}}]},prior=s)
+ assert resumed['final_state']['interaction_state']['phase']=='speaking'
+ assert resumed['final_state']['continuity_links']['parent_state_hash']==interrupted['trajectory'][-1]['state_hash'] or resumed['initial_state']==s

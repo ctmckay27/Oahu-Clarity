@@ -25,4 +25,9 @@ def main():
  receipt={'engine_base':REV,'patch_sha256':hashlib.sha256(patch.read_bytes()).hexdigest(),'native_controls_sha256':hashlib.sha256((src/'native_controls.h').read_bytes()).hexdigest(),'binary_sha256':hashlib.sha256((e/'qwen_tts').read_bytes()).hexdigest(),'command':cmd,'scope':'CPU single-request diagnostic. Other backends and serving are not qualified.'}
  receipt['source_hashes']={p:hashlib.sha256((e/p).read_bytes()).hexdigest() for p in ['qwen_tts.c','qwen_tts_talker.c','mari_native_controls.h']}
  (e/'MARI_BUILD_RECEIPT.json').write_text(json.dumps(receipt,indent=2)+'\n')
+ # Separate calibration codec utility; no speaker/profile creation and no TTS fallback.
+ objects=[str(p) for p in sorted(e.glob('*.o')) if p.name!='main.o']
+ codec_cmd=['cc','-O2','-I'+str(e),str(src/'codec_encode.c'),*objects,str(e/'vendor/lz4.o'),str(e/'third_party/ingot/libingot.a'),'-o',str(e/'mari_codec_encode'),'-lm','-lpthread','-L'+lib,'-Wl,-rpath,'+lib,'-lscipy_openblas']
+ subprocess.run(codec_cmd,check=True)
+ (e/'MARI_CODEC_BUILD_RECEIPT.json').write_text(json.dumps({'command':codec_cmd,'source_sha256':hashlib.sha256((src/'codec_encode.c').read_bytes()).hexdigest(),'binary_sha256':hashlib.sha256((e/'mari_codec_encode').read_bytes()).hexdigest(),'engine_base':REV},indent=2)+'\n')
 if __name__=='__main__':main()

@@ -21,17 +21,20 @@ def event(value,at=0):
          'Mari has verified the claim directly.' if value>.7 else 'Mari has incomplete evidence and treats the claim as provisional.'}}
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('root');a=ap.parse_args();root=pathlib.Path(a.root)
- d=root/'continuation/heldout_finality';d.mkdir(exist_ok=True)
+ ap=argparse.ArgumentParser();ap.add_argument('root');ap.add_argument('--bank',required=True);ap.add_argument('--output',required=True);ap.add_argument('--limit',type=int,default=4);a=ap.parse_args();root=pathlib.Path(a.root)
+ d=pathlib.Path(a.output);d.mkdir(exist_ok=True)
  ev=Evaluator(root/'models/whisper',root/'models/ecapa',root/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav')
- bank=np.load(root/'continuation/calibration/finality_bank.npz')['directions'];records=[]
- for index,text in enumerate(TEXTS):
+ bank=np.load(a.bank)['directions'];records=[]
+ for index,text in enumerate(TEXTS[:a.limit]):
   seed=91600+index;base=d/f'{index}_carrier.wav'
   if not base.exists():render(root,text,base,seed)
   base_eval=ev.evaluate(base,text);base_eval['acoustics']=measure(base)
   if not base_eval['alignment']['exact_words']:raise RuntimeError('carrier words failed')
   for name,scene in [('verified',{'events':[event(.98)]}),('provisional',{'events':[event(.15)]})]:
-   plan=compile_scene(text,scene);alignment=base_eval['alignment'];duration=base_eval['audio']['duration_s']
+   alignment=base_eval['alignment'];duration=base_eval['audio']['duration_s']
+   timeline={'source_audio_sha256':alignment['source_sha256'],'duration_s':duration,
+             'words':[{'start':float(w['start']),'end':float(w['end'])} for w in alignment['words']]}
+   plan=compile_scene(text,scene,timeline=timeline)
    trials=[]
    for attempt in range(3):
     stem=d/f'{index}_{name}_{attempt}';weights,packet=compile_finality(plan,alignment,duration)

@@ -39,7 +39,7 @@ def verify_runtime(root):
   if sha(model/rel)!=h:raise ValueError('model bytes changed: '+rel)
  return {'build':receipt,'model':prov}
 
-def render(root,text,out,seed=88000,trajectory=None,capture=False):
+def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None):
  root=Path(root);out=Path(out);out.parent.mkdir(parents=True,exist_ok=True)
  if out.exists():raise FileExistsError(out)
  if not text.strip() or re.search(r'[\[\]<>]',text):raise ValueError('invalid spoken text')
@@ -50,12 +50,18 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False):
  cmd=[str(engine/'qwen_tts'),'-d',str(model),'--load-voice',str(production/'MARI_VOICE_V1_PROFILE.bin'),'--xvector-only','-l','English','--text',text,'--seed',str(seed),'--temperature','.42','--top-k','40','--top-p','.95','--rep-penalty','1.05','-j4','-o',str(out)]
  env={k:v for k,v in os.environ.items() if not k.startswith(('QWEN_','MARI_'))}
  if trajectory:env['MARI_TRAJECTORY']=str(Path(trajectory).resolve())
+ if teacher_codes:
+  if trajectory:raise ValueError('calibration replay and free-generation control are separate routes')
+  codes=np.loadtxt(teacher_codes,dtype=np.int32,ndmin=2)
+  if codes.ndim!=2 or codes.shape[1]!=16 or not 1<=len(codes)<=8192 or (codes<0).any() or (codes>2047).any():raise ValueError('invalid teacher-forcing codes')
+  env['QWEN_TF_CODES']=str(Path(teacher_codes).resolve())
  if capture:
   env['QWEN_ACT_MAP']=str(out.with_suffix('.qamp'));env['MARI_ACT_SEQUENCE']=str(out.with_suffix('.qseq'))
  start=time.monotonic();r=subprocess.run(cmd,env=env,capture_output=True,text=True,timeout=900)
  out.with_suffix('.log').write_text(r.stdout+r.stderr)
  if r.returncode:raise RuntimeError('native renderer failure: '+r.stderr[-1500:])
  if trajectory and 'MARI_NATIVE_TRAJECTORY' not in r.stderr:raise RuntimeError('trajectory did not enter native renderer')
+ if teacher_codes and f'teacher-forcing replay: {len(codes)} reference frames' not in r.stderr:raise RuntimeError('teacher forcing did not enter renderer')
  _,_,audio=inspect_audio(out)
  capture_info=None
  if capture:
@@ -65,5 +71,8 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False):
   capture_info={'frames':len(seq),'sha256':sha(out.with_suffix('.qseq'))}
  record={'role':'native generative diagnostic','command':cmd,'explicit_environment':{k:v for k,v in env.items() if k.startswith(('QWEN_','MARI_'))},'audio':audio,'text':text,'seed':seed,'elapsed_wall_s':time.monotonic()-start,'binary_sha256':receipt['binary_sha256'],'prose_instructions':False,'trajectory_sha256':sha(trajectory) if trajectory else None}
  record.update(runtime_lock=lock,capture=capture_info)
+ if teacher_codes:
+  if round(audio['duration_s']/.08)!=len(codes):raise RuntimeError('teacher-forcing replay length mismatch')
+  record.update(role='teacher-forced calibration reconstruction; not free generation',teacher_codes_sha256=sha(teacher_codes))
  out.with_suffix('.receipt.json').write_text(json.dumps(record,indent=2)+'\n')
  return record

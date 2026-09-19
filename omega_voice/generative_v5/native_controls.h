@@ -24,8 +24,9 @@ static int mari_trajectory_init(qwen_tts_ctx_t *ctx) {
     if(!mari_bank||!mari_weights){fclose(f);return -1;}
     int ok=fread(mari_bank,4,nb,f)==nb && fread(mari_weights,4,nw,f)==nw && fgetc(f)==EOF;
     fclose(f);
-    for(size_t i=0;i<nb && ok;i++)if(!isfinite(mari_bank[i])||fabsf(mari_bank[i])>100)ok=0;
-    for(size_t i=0;i<nw && ok;i++)if(!isfinite(mari_weights[i])||fabsf(mari_weights[i])>2)ok=0;
+    /* Bit checks remain valid under the engine's -ffast-math build. */
+    for(size_t i=0;i<nb && ok;i++){uint32_t bits;memcpy(&bits,mari_bank+i,4);if((bits&0x7f800000u)==0x7f800000u||fabsf(mari_bank[i])>100)ok=0;}
+    for(size_t i=0;i<nw && ok;i++){uint32_t bits;memcpy(&bits,mari_weights+i,4);if((bits&0x7f800000u)==0x7f800000u||fabsf(mari_weights[i])>2)ok=0;}
     if(!ok){fprintf(stderr,"MARI: malformed, nonfinite or out-of-envelope trajectory\n");return -1;}
     ctx->ml_steer=calloc((size_t)mari_L*mari_D,sizeof(float));if(!ctx->ml_steer)return -1;
     ctx->ml_steer_layers=mari_L;ctx->ml_steer_dim=mari_D;

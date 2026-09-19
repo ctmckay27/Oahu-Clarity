@@ -27,8 +27,29 @@ Observed 2026-09-19:
 * Qwen2.5-Omni-3B transcribed speech but failed silence and rising/falling delivery
   controls. Its delivery judgments were rejected. An independent evaluator is
   being qualified; no character-specific perceptual pass is claimed.
-* 47 native/structural/prior regression tests passed. They do not establish
+* 50 native/structural/prior regression tests passed. They do not establish
   acoustic control generalization or voice completion.
+
+Subsequent correction:
+
+* `codec_encode.c` exposes the existing native codec encoder separately from
+  the wrapper's Base-only reference/profile creation path. It does not change
+  the identity profile. `reference_calibration.py` teacher-forces isolated
+  same-waveform contour references and verifies their reconstructed contours.
+* Four paired calibration contrasts passed. Their replacement native direction
+  passed first free-generation counterfactuals on two unseen texts, with zero
+  WER, speaker similarity .657–.814 and steeper falls under stronger finality.
+  Perceptual certainty, naturalness and wider performance coverage remain under
+  evaluation. Diagnostic derivatives are not production voice assets.
+* `interaction.py` stops native PCM delivery and generation on a source-bearing
+  interruption. The 0.8-second test delivered exactly "I understand" and did not
+  commit the unheard later knowledge event. Full resumed vocal continuity is
+  not yet established. The very short interrupted prefix did not pass the
+  inherited speaker threshold; do not reclassify that measurement as a pass.
+* Runtime optional realized timelines distinguish verified spoken word time
+  from actual silence. Existing untimed replay remains backward compatible.
+* Native integrity tests reproduce the baseline and zero-control waveform
+  byte for byte and reject NaN, truncated and wrong-model packets with no audio.
 
 Next causal correction is paired teacher-forced calibration with content,
 duration and identity held fixed and the acoustic contour isolated. This must
