@@ -6,7 +6,7 @@ from ..causal_v4.evaluate import Evaluator,normalized
 from ..causal_v4.renderer import sha
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('root');a=ap.parse_args();r=pathlib.Path(a.root);d=r/'continuation/native_ack_episode';cases=json.loads((d/'PREDECLARED.json').read_text())['cases'];ev=Evaluator(r/'models/whisper',r/'models/ecapa',r/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav');rows=[]
+ ap=argparse.ArgumentParser();ap.add_argument('root');ap.add_argument('--case-directory',default='native_ack_episode',choices=['native_ack_episode','ack_counterfactual']);a=ap.parse_args();r=pathlib.Path(a.root);d=r/'continuation'/a.case_directory;cases=json.loads((d/'PREDECLARED.json').read_text())['cases'];ev=Evaluator(r/'models/whisper',r/'models/ecapa',r/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav');rows=[]
  for c in cases:
   p=d/(c['id']+'.wav');q=ev.evaluate(p,c['text']);hyp=normalized(q['asr_text']);expected=normalized(c['continuation']);suffix=bool(len(hyp)>=len(expected)and hyp[-len(expected):]==expected);prefix=hyp[:-len(expected)]if suffix else None
   row={'id':c['id'],'audio_sha256':sha(p),'requested_event_form':c['event_form'],'quality':q,'lexical_continuation_exact':suffix,'preceding_ASR_tokens':prefix,'event_meaning_admitted':False,'short_event_identity_admitted':False,'full_completion':False}
