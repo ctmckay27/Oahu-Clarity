@@ -34,11 +34,26 @@ def verify():
         assert 'sales pitch' in contextual['renderer_instruction']
         assert 'the only chance to reconcile' in contextual['renderer_instruction']
         assert contextual['validation']['status'] == 'accepted_bounded'
+        for objective in [
+            "get Carl to understand the problem and choose the next step",
+            "tell Carl what ‘whisper’ means",
+            "ask Carl to lower his voice and speak slowly",
+        ]:
+            path.write_text(json.dumps({"objective": objective}))
+            cp = subprocess.run(base + ["--context-json", str(path)], text=True, capture_output=True, check=True)
+            directed = json.loads(cp.stdout)
+            assert directed['objective'] == objective
+            assert directed['source_context']['objective'] == objective
+            assert directed['intent_interpretations'][0]['segments']
+            assert json.dumps(objective, ensure_ascii=False) in directed['renderer_instruction']
         for value, expected in [
             ("raise your voice at the end", "sound_direction"),
             ("deliver the line in a whisper", "sound_direction"),
             ("restart the performance at every sentence", "continuity_conflict"),
             ("make it sparkle", "unresolved_intent"),
+            ("get Carl to understand using the blue-lantern procedure", "unresolved_intent"),
+            ('get Carl to understand by "raise your voice"', "sound_direction"),
+            ("reassure Carl in a whisper", "unresolved_intent"),
         ]:
             path.write_text(json.dumps({"objective": value}))
             cp = subprocess.run(base + ["--context-json", str(path)], text=True, capture_output=True)
@@ -47,6 +62,7 @@ def verify():
             error = json.loads(cp.stderr)
             assert error['status'] == 'blocked'
             assert expected in {f['code'] for f in error['findings']}
+            assert all(f['value'] == value for f in error['findings'])
     print(json.dumps({"coach_cli": "passed", "scene_context": "passed", "operative_rejections": "passed",
                       "audio_synthesis": "not_run", "permanent_voice_acceptance": "not_evaluated"}))
 

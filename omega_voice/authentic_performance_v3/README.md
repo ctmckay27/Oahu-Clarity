@@ -4,6 +4,8 @@ This directory is the **historical v3 coach and its verification path**. The
 September 19 `causal_v4` / `generative_v5` successor branch does not invoke it.
 Repairing this path does not select it as the operational voice architecture.
 See [the input, compilation, and evidence contract](CONTRACT.md) before using it.
+The [PR #2 review corpus and findings](review/README.md) distinguish supported
+expression, harmless unsupported input, prohibited direction, and unresolved force.
 
 This layer exists because Mari Voice v2 failed in a specific way: it sounded like an AI's first acting lesson. The v2 system coached audible vocal effects too directly. V3 changes the object being controlled.
 

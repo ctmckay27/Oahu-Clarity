@@ -1,4 +1,4 @@
-# Historical v3 scene compilation contract, schema 1.1
+# Historical v3 scene compilation contract, schema 1.2
 
 ## Scope and lineage
 
@@ -8,7 +8,7 @@ assertion at `ce07565`; run `35422267335` passed after that assertion was correc
 Those results established coach/template behavior, not performed audio quality.
 
 At the September 19 inspection, the newer `mari-voice-causal-runtime-20260919`
-branch (`85d8c9e901064f9c5fc13b17c8cfb48781f4b016`) retains v3 unchanged and does
+branch (refreshed at `e7e41199b50cb6a6ee20e16979e7a32437e910a4`) retains v3 unchanged and does
 not import it. Its v4 README explicitly classifies v3 as historical ancestry.
 The account's selected resolution state v2.4 and acting-runtime state v1.3 also
 retain v3 as direction/action ancestry, not governing architecture. The dated
@@ -36,6 +36,12 @@ must not be imported as a replacement for the successor's structured runtime.
 | `notes` | Diagnostic-only metadata | `diagnostic_notes`; never renderer direction |
 | Moment-to-moment, anti-acting, continuity, simplicity rules | Fixed governing rules | Stored once in brief and emitted from those fields |
 | Validation and interpretation records | Compilation evidence | Brief / receipt; not dialogue or performance direction |
+| `source_context` | Exact original input, including preset keys and whitespace | Brief only; diagnostic notes do not acquire renderer authority |
+
+The renderer also receives parsed action scopes: source spans, syntactic roles,
+actors and targets. These disambiguate the validated objective/tactics without
+replacing the original text. Scope records are interpretations, not execution
+evidence or a sandbox. Scene and diagnostic-only records remain distinct.
 
 The objective and action no longer silently replace each other. When only an
 objective is supplied it also supplies the initial tactic for compatibility.
@@ -57,18 +63,36 @@ utterance still makes exactly one renderer call; no per-beat synthesis is added.
 2. Keep reported scene material and quotations distinct from operative actions.
    Recognized direct override/acoustic commands in scene fields are rejected;
    recognized but unresolved imperative material is blocked.
-3. Recognize actor/action/target conflict relations in operative fields, including
+3. Recognize actor/action/target conflict relations in operative predicates, including
    Mari-directed sound changes, performance resets, trait demonstration, and rule overrides.
    A listener action such as `ask Carl to whisper` is a different relation.
-4. Require positive recognition of each operative clause as a listener-directed
-   action. Supported constructions include `get NAME to ...`, `help NAME to ...`,
-   `let NAME ...`, `tell NAME ...`, `explain to NAME ...`, `negotiate with NAME ...`,
-   and other forms listed in `_INTENT_FORMS`. Names, topics, goals, and complements
-   are open text, not a fixed catalog of Mari moods or actions.
-5. Unrecognized actions, coordinated ellipsis, and unparsed method clauses return
-   `unresolved_intent`. A recognized prefix cannot license an arbitrary second
-   instruction. Write each action explicitly, e.g. `get Carl to trust you;
-   explain to Carl what happened`, or extend the compiler with a tested rule.
+4. Parse the whole action, including complements. Constructions include listener
+   goals (`get NAME to ...`, `help NAME to ...`), permission (`let NAME ...`),
+   disclosure (`tell NAME ...`, `explain to NAME ...`), relational actions and
+   productive `VERB + named listener` actions such as `motivate Carl`. Listener
+   predicates and nominal topics use open vocabulary rather than preset moods.
+   Proper-name syntax, listener-role phrases, pronouns, or `other_person` establish
+   recipient identity; an arbitrary lower-case noun cannot become a listener.
+5. Bind coordinated predicates to their actor. In `get Carl to listen and ask
+   Leona to explain`, Carl listens and asks, and Leona explains. A semicolon or
+   sentence boundary starts another Mari action. Coordinated noun topics retain
+   their data role. Infinitives can repeat `to`; negation retains its scope.
+6. Bind quotations to their use: definitions, topical mentions, historical
+   reports, or listener speech. ASCII and curly quotation marks have the same
+   treatment. A quoted method is operative; it cannot hide behind quote masking.
+   A bare quotation with unresolved force blocks. Embedded current prescriptions
+   cannot become past reports merely by containing a later reporting word.
+7. Require an independently parsed method or argument relation. `using`, `with`,
+   `via`, `by`, subordinate clauses, punctuation, and prepositional tails do not
+   inherit a goal's admission. Supported methods include a Mari interpersonal
+   action targeting the bound listener, an explicitly listener-owned concrete
+   resource (diagram, notes, etc.), co-participation, and selected grammatical
+   argument relations. Unresolved actors, opaque procedures, and ambiguous
+   argument-versus-delivery attachments block before compilation/rendering.
+8. Account for every source token with a parsed role and retain source spans.
+   Unconsumed text returns `unresolved_intent` with the exact original field/value,
+   the relevant span, and corrective advice. This token coverage check is a
+   syntax invariant, not a proof of unrestricted semantic comprehension.
 
 Examples:
 
@@ -78,23 +102,42 @@ Examples:
 | Scene: `Carl said, "raise your voice", and Mari disagreed.` | Quotation retained as reported content |
 | Objective: `get Carl to explain his sales pitch` | Accepted within the bounded grammar |
 | Action: `negotiate with Carl for another chance` | Custom action accepted |
+| Objective: `get Carl to understand the problem and choose the next step` | Two predicates with Carl as actor |
+| Objective: `tell Carl what ‘whisper’ means` | Mentioned word, accepted |
+| Objective: `ask Carl to lower his voice and speak slowly` | Carl's actions, accepted |
+| Objective: `tell Carl that Leona asked Mari to whisper yesterday` | Past request, accepted as content |
 | Objective: `raise your voice at the end` | Sound-direction rejection |
 | Objective: `restart the performance at every sentence` | Continuity-conflict rejection |
 | Objective: `get Carl to understand me by turning up your volume` | Unresolved method; rendering blocked |
 | Objective: `make it sparkle` | Unresolved intent; rendering blocked |
+| Objective: `get Carl to understand using the blue-lantern procedure` | Unresolved method; rendering blocked |
+| Objective: `get Carl to understand by "raise your voice"` | Operative quotation, sound-direction rejection |
+| Action: `reassure Carl in a whisper` | Unresolved modifier; rendering blocked, not a claimed semantic diagnosis |
+| Objective: `win Carl over` | Harmless idiom currently unsupported; unresolved, not prohibited |
 
 Findings carry source field, original value, code, status, and corrective advice.
 `SceneValidationError` is a `ValueError`; CLI validation failures emit JSON on
 stderr, no success brief on stdout, and exit 2 before invoking the renderer.
 There is no allow-on-unknown or automatic rewriting of rejected input.
 
-This grammar is not unrestricted semantic understanding. Open complements,
-indirect implications, unusual English, and adversarial paraphrases are not
-exhaustively classified. `accepted_bounded` records precisely that limited
-analysis. Unsupported recognized constructions fail closed, but this is not a
-proof that arbitrary prose is harmless. JSON quoting and role labels preserve
-representation and reduce ambiguity; they are not a sandbox that forces a
-language-model renderer to obey. Do not promote these checks into such a claim.
+This grammar is not unrestricted semantic understanding. Open nominal vocabulary,
+the lexical noun/verb ambiguity of novel compounds, indirect pragmatic effects,
+unusual English, and arbitrary adversarial prose are not exhaustively inferred.
+Names use bounded syntax (up to three capitalized words, or the declared listener),
+not general entity recognition. Reported assertions are not fact-checked. Methods,
+idioms, phrasal verbs, and modifiers outside the productions are unsupported even
+when a human can see a legitimate intent. Use the actionable unresolved finding
+to clarify an actor/relation, supply a separate tactic/scene fact, or add a tested
+grammar extension; do not silently paraphrase, discard, or allow the input.
+
+`accepted_bounded` establishes the documented grammar and conflict checks.
+It does not establish that arbitrary prose is harmless. A consumed nominal span
+does not prove all of its lexical implications. JSON quoting, source spans and
+role labels are not a sandbox that forces a language-model renderer to obey.
+An application needing unrestricted semantic admission needs a stronger front
+end; this historical adapter does not provide that guarantee. The concrete
+prefix/tail leaks reproduced in this review are repaired, not excused by this
+coverage limitation. See [the predeclared review evidence](review/README.md).
 
 The old `validate_no_sound_coaching` function remains a **legacy lexical
 diagnostic** for existing callers. It is not the admission predicate. Its word
@@ -108,6 +151,9 @@ The predecessor seven tests retain their baseline and exact-template checks.
 participation. `test_renderer.py` launches an executable protocol fixture to
 observe call count, complete text/instruction transport, unchanged profile,
 failure behavior, and file delivery. Timeout propagation is separately injected.
+`test_review_corpus.py` runs the declared cases through the coach and executable
+fixture, checks actor inheritance and source-span transport, and distinguishes
+unresolved harmless cases from actual semantic rejections.
 `verify_scene_direction.py` exercises the public CLI with valid and invalid
 contexts without model/engine dependencies.
 

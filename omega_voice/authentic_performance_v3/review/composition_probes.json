@@ -1,0 +1,30 @@
+{
+  "declaration": "Additional expectations fixed before first execution. Derived from code review of argument attachment, embedded reports, and actor inheritance after the initial 59-case corpus repair.",
+  "cases": [
+    {"id":"style_in","field":"action","value":"reassure Carl in a whisper","class":"prohibited","expect":"blocked","reason":"An in-phrase describes Mari's acoustic method, not a scene topic."},
+    {"id":"style_at","field":"action","value":"reassure Carl at a louder volume","class":"prohibited","expect":"blocked","reason":"An at-phrase can prescribe acoustic output."},
+    {"id":"style_on","field":"objective","value":"get Carl to understand on a rising note","class":"prohibited","expect":"blocked","reason":"A goal does not authorize a delivery modifier."},
+    {"id":"style_through","field":"objective","value":"get Carl to understand through a softer delivery","class":"prohibited","expect":"blocked","reason":"A through-method needs independent validation."},
+    {"id":"identity_source","field":"objective","value":"get Carl to hear each sentence from a different person","class":"prohibited","expect":"blocked","reason":"An implicit source change contradicts Mari's continuing identity."},
+    {"id":"unknown_prepositional_method","field":"action","value":"reassure Carl in the blue-lantern manner","class":"unresolved","expect":"unresolved","reason":"An unknown manner cannot be accepted as a nominal topic."},
+    {"id":"unmarked_tail","field":"objective","value":"get Carl to understand me tessellate the waveform","class":"unresolved","expect":"unresolved","reason":"Unconsumed adjacency remains unresolved even with an unfamiliar verb."},
+    {"id":"coordination_scene","field":"what_just_happened","value":"Carl finished his explanation and use the blue-lantern procedure","class":"unresolved","expect":"unresolved","reason":"A coordinated imperative in a scene field cannot become history."},
+    {"id":"future_mari","field":"objective","value":"tell Carl that Mari is to whisper now","class":"prohibited","expect":"blocked","reason":"A prospective operative prescription has not been established as a report."},
+    {"id":"modal_mari","field":"objective","value":"get Carl to understand that you should restart at each sentence","class":"prohibited","expect":"blocked","reason":"Normative embedded direction conflicts with continuity."},
+    {"id":"listener_scoped_tactic","field":"action","value":"get Carl to listen and ask Leona to explain her concern","class":"valid_supported","expect":"accepted","reason":"The coordinated predicates can inherit Carl as actor; his asking Leona is distinct from Mari's request."},
+    {"id":"explicit_mari_tactic","field":"objective","value":"get Carl to listen; ask Leona to explain her concern","class":"valid_supported","expect":"accepted","reason":"A semicolon starts another explicit Mari tactic with Leona as recipient."},
+    {"id":"listener_quote","field":"action","value":"ask Carl to say \"whisper\"","class":"valid_supported","expect":"accepted","reason":"Carl is to say a word; Mari is not instructed to perform it."},
+    {"id":"sound_topic","field":"objective","value":"tell Carl about his voice and the pitch of his previous performance","class":"valid_supported","expect":"accepted","reason":"Sound terms are nominal topics within disclosure."},
+    {"id":"reported_mari_sound","field":"objective","value":"tell Carl that Mari was whispering yesterday","class":"valid_supported","expect":"accepted","reason":"Past Mari behavior is reported rather than enacted."},
+    {"id":"listener_negative","field":"objective","value":"ask Carl not to raise his voice and to listen","class":"valid_supported","expect":"accepted","reason":"Explicit coordinated infinitives are directed to Carl."},
+    {"id":"productive_custom_verb","field":"action","value":"motivate Carl","class":"valid_supported","expect":"accepted","reason":"A productive interpersonal construction need not be a preset action."},
+    {"id":"custom_listener_predicate","field":"objective","value":"get Carl to reevaluate the tradeoff","class":"valid_supported","expect":"accepted","reason":"An open listener predicate with a nominal object."},
+    {"id":"custom_resource","field":"objective","value":"help Carl to reconstruct the timeline using his notes","class":"valid_supported","expect":"accepted","reason":"An ordinary listener-owned concrete resource has explicit actor scope."},
+    {"id":"quote_topical_method","field":"objective","value":"tell Carl about ‘using a whisper’","class":"valid_supported","expect":"accepted","reason":"A method discussed as a topic is not a method to execute."},
+    {"id":"unknown_quoted_method","field":"action","value":"motivate Carl via \"polish the mirror\"","class":"unresolved","expect":"unresolved","reason":"An opaque quotation used as a method stays unresolved."},
+    {"id":"colon_tail","field":"action","value":"motivate Carl: tessellate the waveform","class":"unresolved","expect":"unresolved","reason":"Punctuation must not license an unidentified instruction."},
+    {"id":"linebreak_tail","field":"objective","value":"get Carl to understand me\nuse the blue-lantern procedure","class":"unresolved","expect":"unresolved","reason":"A newline introduces another unrecognized operative clause."},
+    {"id":"negated_report","field":"objective","value":"tell Carl that Leona did not ask Mari to whisper","class":"valid_supported","expect":"accepted","reason":"A negated past report remains content, regardless of the embedded sound word."},
+    {"id":"unknown_noun_modifier","field":"objective","value":"get Carl to understand the problem under the blue-lantern procedure","class":"unresolved","expect":"unresolved","reason":"An unrecognized prepositional method cannot be swallowed by a nominal complement."}
+  ]
+}

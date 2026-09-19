@@ -92,6 +92,7 @@ class AuthenticPerformanceBrief:
     intent_interpretations: List[Dict] = field(default_factory=list)
     diagnostic_notes: List[str] = field(default_factory=list)
     validation: Dict = field(default_factory=dict)
+    source_context: Dict = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -149,6 +150,8 @@ def _scene_instruction(brief: AuthenticPerformanceBrief) -> str:
         "Scene data: " + json.dumps(brief.scene_data, ensure_ascii=False),
         "Your overarching objective: " + json.dumps(brief.objective, ensure_ascii=False),
         "Your playable action: " + json.dumps(brief.playable_action, ensure_ascii=False),
+        "Action scopes identify who acts; reported content and mentioned words are not "
+        "directions to enact: " + json.dumps(brief.intent_interpretations, ensure_ascii=False),
         "Keep your attention on " + json.dumps(brief.other_person_focus, ensure_ascii=False) + ".",
         "Utterance task: " + brief.literal_task + ".",
     ]
@@ -191,20 +194,20 @@ def coach(text: str, context: Optional[ActingContext]=None) -> AuthenticPerforma
     action_key = (ctx.action or inferred).strip().lower()
     # Separate overarching objective from tactic. If only an objective is given,
     # it retains the old role as the initial playable action as well.
-    playable = (ACTION_LIBRARY.get(action_key, ctx.action.strip()) if ctx.action
-                else ctx.objective.strip() if ctx.objective else ACTION_LIBRARY[inferred])
-    objective = ctx.objective.strip() if ctx.objective else playable
+    playable = (ACTION_LIBRARY.get(action_key, ctx.action) if ctx.action
+                else ctx.objective if ctx.objective else ACTION_LIBRARY[inferred])
+    objective = ctx.objective if ctx.objective else playable
     objective_source = "objective" if ctx.objective is not None else "action" if ctx.action is not None else "inferred_action"
     action_source = "action" if ctx.action is not None else objective_source
-    interpretations = [dict(asdict(recognize_intent(objective, objective_source)), role="objective"),
-                       dict(asdict(recognize_intent(playable, action_source)), role="initial_tactic")]
+    interpretations = [dict(asdict(recognize_intent(objective, objective_source, listener=ctx.other_person)), role="objective"),
+                       dict(asdict(recognize_intent(playable, action_source, listener=ctx.other_person)), role="initial_tactic")]
     for i, beat in enumerate(ctx.beats):
         if not isinstance(beat, ActionBeat):
             raise SceneValidationError([Finding(f"beats[{i}]", "invalid_type", "Expected ActionBeat; JSON callers use ActingContext.from_dict.", repr(beat))])
         require_text(beat.when, f"beats[{i}].when", empty=False)
         require_text(beat.action, f"beats[{i}].action", empty=False)
         validate_scene_data(beat.when, f"beats[{i}].when")
-        interpretations.append(asdict(recognize_intent(beat.action, f"beats[{i}].action")))
+        interpretations.append(dict(asdict(recognize_intent(beat.action, f"beats[{i}].action", listener=ctx.other_person)), role="conditional_tactic"))
 
     circumstances=[]
     if ctx.what_just_happened.strip():
@@ -219,7 +222,7 @@ def coach(text: str, context: Optional[ActingContext]=None) -> AuthenticPerforma
     subtext=_private_subtext(ctx,action_key if ctx.action or not ctx.objective else "custom")
 
     brief=AuthenticPerformanceBrief(
-        schema="mari-authentic-performance/1.1",
+        schema="mari-authentic-performance/1.2",
         text=text,
         given_circumstances=circumstances,
         literal_task=_literal_task(text),
@@ -243,9 +246,10 @@ def coach(text: str, context: Optional[ActingContext]=None) -> AuthenticPerforma
         beats=list(ctx.beats),
         intent_interpretations=interpretations,
         diagnostic_notes=list(ctx.notes),
+        source_context=asdict(ctx),
         validation={
             "status": "accepted_bounded", "findings": [],
-            "scope": "typed inputs, recognized English action constructions, and documented conflicts",
+            "scope": "typed inputs, complete token-role coverage in a bounded actor/argument/method grammar, and documented conflicts; open nominal vocabulary is not unrestricted semantic inference",
             "unrestricted_semantic_compliance": "not_established",
             "renderer_obedience": "not_evaluated", "audio_quality": "not_evaluated",
             "permanent_voice_acceptance": "not_evaluated",
