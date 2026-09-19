@@ -1,0 +1,205 @@
+name: mari-voice-v2-personality-build
+
+on:
+  push:
+    branches: [mari-voice-v2-personality-20260918]
+    paths:
+      - 'omega_voice/personality_v2/**'
+      - '.github/workflows/mari_voice_v2_personality_build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: mari-voice-v2-personality-build
+  cancel-in-progress: true
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  SOURCE_RUN: "35404742133"
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  build-personality-layer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify performance compiler
+        run: |
+          python -m pip install -q pytest 'numpy<2' soundfile
+          python -m pytest -q omega_voice/personality_v2/tests
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-v1-anchor-and-profiles
+          github-token: ${{ github.token }}
+          run-id: ${{ env.SOURCE_RUN }}
+          path: assets
+
+      - name: Verify frozen identity assets
+        run: |
+          set -euo pipefail
+          test -s assets/selected/mari_anchor.wav
+          test -s assets/selected/mari_v1.bin
+          test -s assets/selected/mari_v1.qvoice
+          test "$(sha256sum assets/selected/mari_anchor.wav | awk '{print $1}')" = "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567"
+          test "$(sha256sum assets/selected/mari_v1.bin | awk '{print $1}')" = "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa"
+          mkdir -p build_receipts
+          sha256sum assets/selected/mari_anchor.wav assets/selected/mari_v1.bin assets/selected/mari_v1.qvoice > build_receipts/identity_assets.sha256
+
+      - name: Build exact pinned renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git ffmpeg
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          engine/qwen_tts --self-test
+          engine/qwen_tts --list-voices assets/selected/mari_v1.qvoice > build_receipts/qvoice_inspect.txt
+          cd engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
+          bash pinned_cv_download.sh --model large --dir customvoice-large
+
+      - name: Build finished personality review pack
+        run: |
+          set -euo pipefail
+          mkdir -p review/audio review/plans review/history review/context review/state
+
+          cat > review/state/baseline.json <<'JSON'
+          {"restraint":0.78,"certainty":0.34,"projection":0.0,"amusement":0.0,"irritation":0.0}
+          JSON
+          cat > review/state/amused.json <<'JSON'
+          {"restraint":0.86,"certainty":0.55,"amusement":0.18,"playfulness":0.12}
+          JSON
+          cat > review/state/irritated.json <<'JSON'
+          {"restraint":0.90,"certainty":0.72,"irritation":0.22,"projection":0.05}
+          JSON
+          cat > review/context/trusted.json <<'JSON'
+          {"relationship":"trusted","publicness":-0.25,"urgency":-0.15,"stakes":0.25,"conversational_goal":"reassure without infantilizing"}
+          JSON
+
+          P="omega_voice/personality_v2/omega_voice_v2.py"
+          E="engine/qwen_tts"
+          M="engine/customvoice-large"
+          V="assets/selected/mari_v1.qvoice"
+
+          python "$P" --engine "$E" --model "$M" --profile "$V" --profile-mode graft             --state-json review/state/baseline.json             --text "Wait, no. I see what happened now. That's actually kind of clever, but don't do it again."             --output review/audio/01_search_resolution.wav --plan-output review/plans/01_search_resolution.json             --history-output review/history/01.json --seed 99201
+
+          python "$P" --engine "$E" --model "$M" --profile "$V" --profile-mode graft             --context-json review/context/trusted.json             --text "You don't have to solve the whole thing tonight. Give me the part that's actually blocking you, and we'll deal with that."             --output review/audio/02_reassurance.wav --plan-output review/plans/02_reassurance.json             --history-output review/history/02.json --seed 99221
+
+          python "$P" --engine "$E" --model "$M" --profile "$V" --profile-mode graft             --state-json review/state/amused.json             --text "That is technically an answer. It is also a very creative way to avoid the question."             --output review/audio/03_dry_amusement.wav --plan-output review/plans/03_dry_amusement.json             --history-output review/history/03.json --seed 99241
+
+          python "$P" --engine "$E" --model "$M" --profile "$V" --profile-mode graft             --state-json review/state/irritated.json             --text "No. Don't move the goalposts now. We agreed on the test before we saw the result."             --output review/audio/04_contained_irritation.wav --plan-output review/plans/04_contained_irritation.json             --history-output review/history/04.json --seed 99261
+
+      - name: Verify speaker continuity and intelligibility
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu -q 'torch==2.5.1' 'torchaudio==2.5.1'
+          python -m pip install -q 'numpy<2' 'scipy==1.14.1' 'soundfile==0.13.1' 'speechbrain==1.0.3' 'faster-whisper==1.2.1' 'huggingface-hub>=0.27,<1'
+          python -u - <<'PY'
+          import json, pathlib, re, hashlib
+          import numpy as np, soundfile as sf, torch
+          from math import gcd
+          from scipy.signal import resample_poly
+          from speechbrain.inference.speaker import EncoderClassifier
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi, snapshot_download
+
+          torch.set_num_threads(4)
+          spk=EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",savedir="models/ecapa",run_opts={"device":"cpu"})
+          aid="Systran/faster-whisper-small.en"; rev=HfApi().model_info(aid).sha
+          asr=WhisperModel(snapshot_download(aid,revision=rev),device="cpu",compute_type="int8",cpu_threads=4)
+
+          texts={
+            "01_search_resolution":"Wait, no. I see what happened now. That's actually kind of clever, but don't do it again.",
+            "02_reassurance":"You don't have to solve the whole thing tonight. Give me the part that's actually blocking you, and we'll deal with that.",
+            "03_dry_amusement":"That is technically an answer. It is also a very creative way to avoid the question.",
+            "04_contained_irritation":"No. Don't move the goalposts now. We agreed on the test before we saw the result.",
+          }
+          def words(t): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1): c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+          def load16(path):
+              y,sr=sf.read(path,dtype="float32",always_2d=True); y=y.mean(1)
+              g=gcd(sr,16000); y16=resample_poly(y,16000//g,sr//g).astype("float32")
+              return y,y16,sr
+          def emb(y16):
+              with torch.no_grad(): e=spk.encode_batch(torch.from_numpy(y16).float().unsqueeze(0)).squeeze().cpu().numpy()
+              return e/np.linalg.norm(e)
+
+          _,a16,_=load16("assets/selected/mari_anchor.wav"); anchor=emb(a16)
+          rows=[]
+          for stem,text in texts.items():
+              path=f"review/audio/{stem}.wav"
+              y,y16,sr=load16(path)
+              sim=float(np.dot(anchor,emb(y16)))
+              segs,_=asr.transcribe(y16,language="en",beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+              hyp=" ".join(s.text.strip() for s in segs)
+              wer=ed(words(text),words(hyp))/max(1,len(words(text)))
+              row={
+                "id":stem,"sha256":hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest(),
+                "speaker_similarity_to_anchor":sim,"wer":wer,"asr_text":hyp,
+                "duration_s":len(y)/sr,"peak_abs":float(np.max(np.abs(y))),
+                "clipped_fraction":float(np.mean(np.abs(y)>=.999)),
+              }
+              row["pass"]=bool(sim>=0.60 and wer<=0.12 and row["clipped_fraction"]<1e-4 and row["duration_s"]>1.0)
+              rows.append(row)
+              print(stem,"SIM",round(sim,3),"WER",round(wer,3),"PASS",row["pass"],flush=True)
+          receipt={
+            "object_id":"MARI_VOICE_PERSONALITY_LAYER_BUILD_RECEIPT_v1.0_2026-09-18",
+            "status":"ENGINEERING_COMPLETE__PERSONALITY_REVIEW_PACK_READY" if all(r["pass"] for r in rows) else "FAILED_BLOCKED",
+            "speaker_identity":"MARI_VOICE_V1_PROFILE / same selected G1-1 anchor",
+            "profile_mode":"graft_qvoice_icl_only",
+            "renderer":"Qwen3-TTS-12Hz-1.7B-CustomVoice",
+            "human_personality_acceptance":"OPEN",
+            "development_policy":"Carl listening is final supervision, not the iterative development loop.",
+            "results":rows,
+          }
+          pathlib.Path("review/BUILD_RECEIPT.json").write_text(json.dumps(receipt,indent=2))
+          if receipt["status"]=="FAILED_BLOCKED": raise SystemExit("Personality review pack failed identity/intelligibility gate")
+          PY
+
+      - name: Package review-ready system
+        run: |
+          set -euo pipefail
+          mkdir -p package
+          cp omega_voice/personality_v2/mari_performance.py package/
+          cp omega_voice/personality_v2/omega_voice_v2.py package/
+          cp omega_voice/personality_v2/README.md package/
+          cp assets/selected/mari_v1.bin package/MARI_VOICE_V1_PROFILE.bin
+          cp assets/selected/mari_v1.qvoice package/MARI_VOICE_V1_GRAFT.qvoice
+          cp assets/selected/mari_anchor.wav package/MARI_VOICE_V1_ANCHOR.wav
+          cp -r review package/
+          cp -r build_receipts package/
+          printf '%s\n' "$QWEN_C_SHA" > package/ENGINE_REVISION.txt
+          printf '%s\n' "$CV_REV" > package/MODEL_REVISION.txt
+          sha256sum package/* 2>/dev/null > package/SHA256SUMS.txt || true
+          (cd package && zip -q -r ../MARI_VOICE_PERSONALITY_V2_REVIEW_READY.zip .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-voice-personality-v2-review-ready
+          path: |
+            package/
+            MARI_VOICE_PERSONALITY_V2_REVIEW_READY.zip
+          retention-days: 14
+          compression-level: 0
