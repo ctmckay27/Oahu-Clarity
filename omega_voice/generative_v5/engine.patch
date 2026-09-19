@@ -1,5 +1,5 @@
 diff --git a/qwen_tts.c b/qwen_tts.c
-index abbca11..07f6d25 100644
+index abbca11..d0dfb42 100644
 --- a/qwen_tts.c
 +++ b/qwen_tts.c
 @@ -1059,7 +1059,10 @@ static void lookup_codec_embed(qwen_tts_ctx_t *ctx, int token_id, float *out) {
@@ -13,7 +13,18 @@ index abbca11..07f6d25 100644
      qwen_exec_budget_engine_owned("cli");
      double t_start = time_ms();
      int h = ctx->config.hidden_size;
-@@ -1546,6 +1549,7 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
+@@ -1109,6 +1112,10 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
+         return -1;
+     }
+ 
++    if (mari_text_release_init(ctx,text_tokens,text_token_len)!=0) {
++        free(text_tokens);free(instruct_tokens);free(ref_text_tokens);return -1;
++    }
++
+     int role_len = 3;
+     int suffix_len = 5;
+     int all_len = role_len + text_token_len + suffix_len;
+@@ -1546,6 +1553,7 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
      ctx->kv_len = delta_start;
  
      ctx->ml_steer_w_eff = 0.0f;
@@ -21,7 +32,33 @@ index abbca11..07f6d25 100644
  
      if (prefill_len > ctx->rope_cache_len) {
          fprintf(stderr, "Error: prompt too long (%d tokens > RoPE cache %d); shorten the text.\n",
-@@ -1870,6 +1874,7 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
+@@ -1772,6 +1780,9 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
+             fprintf(stderr, "  [frame %d] EOS logit=%.2f rank=%d\n", frame, eos_logit, eos_rank);
+         }
+ 
++        if (mari_release_frames && ctx->stream_trailing_pos < ctx->stream_trailing_len)
++            ctx->logits[QWEN_TTS_CODEC_EOS] = -1e30f;
++
+         float frame_temp = ctx->temperature;
+         int frame_top_k = ctx->top_k;
+         if (ctx->greedy_warmup > 0 && frame < ctx->greedy_warmup) {
+@@ -1847,10 +1858,12 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
+             }
+         }
+ 
+-        if (ctx->stream_layout_active && frame < ctx->stream_trailing_len) {
+-            const float *tail = ctx->stream_trailing_text + (size_t)frame * h;
++        int text_pos = mari_release_frames ? ctx->stream_trailing_pos : frame;
++        if (ctx->stream_layout_active && text_pos < ctx->stream_trailing_len && mari_text_ready(text_pos+1,frame)) {
++            const float *tail = ctx->stream_trailing_text + (size_t)text_pos * h;
+             for (int j = 0; j < h; j++) step_embed[j] += tail[j];
+-            ctx->stream_trailing_pos = frame + 1;
++            ctx->stream_trailing_pos = text_pos + 1;
++            mari_text_record(text_pos+1,frame);
+         } else {
+             for (int j = 0; j < h; j++) step_embed[j] += tts_pad_embed[j];
+         }
+@@ -1870,6 +1883,7 @@ int qwen_tts_generate(qwen_tts_ctx_t *ctx, const char *text, float **out_samples
                  ctx->ml_steer_w_eff = ctx->ml_steer_weight * powf(g, (float)frame);
              }
          }

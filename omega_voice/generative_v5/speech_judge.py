@@ -26,7 +26,7 @@ def waveform(path):
 
 def main():
  from transformers import Qwen2_5OmniThinkerForConditionalGeneration,Qwen2_5OmniThinkerConfig,Qwen2_5OmniProcessor
- ap=argparse.ArgumentParser();ap.add_argument('--model',required=True);ap.add_argument('--provenance',required=True);ap.add_argument('--jobs',required=True);ap.add_argument('--output',required=True);ap.add_argument('--max-tokens',type=int,default=700);a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--model',required=True);ap.add_argument('--provenance',required=True);ap.add_argument('--jobs',required=True);ap.add_argument('--output',required=True);ap.add_argument('--max-tokens',type=int,default=700);ap.add_argument('--official-processor',action='store_true');a=ap.parse_args()
  torch.set_num_threads(5);torch.set_num_interop_threads(1)
  d=pathlib.Path(a.model);manifest=json.loads(pathlib.Path(a.provenance).read_text())
  if manifest['revision']!='8d4ce4ddf54c5e7ac0b457fc7b561cec1bd784c1' or manifest['status']!='complete':raise ValueError('unselected critic dependency')
@@ -55,16 +55,29 @@ def main():
    def end(self):pass
   started=time.monotonic();messages=conversation(job['text'],job['a'],job['b'])
   prompt=processor.apply_chat_template(messages,add_generation_prompt=True,tokenize=False)
-  inputs=processor(text=prompt,audio=[waveform(job['a']),waveform(job['b'])],return_tensors='pt',padding=True,use_audio_in_video=False)
+  if a.official_processor:
+   from qwen_omni_utils import process_mm_info
+   audios,images,videos=process_mm_info(messages,use_audio_in_video=False)
+   inputs=processor(text=prompt,audio=audios,images=images,videos=videos,return_tensors='pt',padding=True,use_audio_in_video=False)
+  else:inputs=processor(text=prompt,audio=[waveform(job['a']),waveform(job['b'])],return_tensors='pt',padding=True,use_audio_in_video=False)
+  features={'tokens':int((inputs.input_ids==cfg.audio_token_id).sum()),'lengths':inputs.feature_attention_mask.sum(1).tolist(),
+   'input_features_sha256':hashlib.sha256(inputs.input_features.numpy().tobytes()).hexdigest()}
+  audio_forward=[]
+  def observe_audio(module,args,output):
+   tensor=output.last_hidden_state if hasattr(output,'last_hidden_state') else output[0]
+   audio_forward.append({'shape':list(tensor.shape),'finite':bool(torch.isfinite(tensor).all()),'rms':float(tensor.float().square().mean().sqrt())})
+  hook=model.audio_tower.register_forward_hook(observe_audio)
   for k,v in inputs.items():
    if torch.is_floating_point(v):inputs[k]=v.to(torch.bfloat16)
   with torch.inference_mode():out=model.generate(**inputs,use_audio_in_video=False,do_sample=False,max_new_tokens=a.max_tokens,eos_token_id=[151645],pad_token_id=151643,streamer=Progress())
+  hook.remove()
   decoded=processor.batch_decode(out[:,inputs['input_ids'].shape[1]:],skip_special_tokens=True,clean_up_tokenization_spaces=False)[0]
   match=re.findall(r'Output A:\s*(\d+(?:\.\d+)?).*?Output B:\s*(\d+(?:\.\d+)?)',decoded.replace('**',''),re.S)
   score={'a':float(match[-1][0]),'b':float(match[-1][1])} if match else None
   row={'id':job['id'],'input':job,'audio_hashes':{'a':sha(job['a']),'b':sha(job['b'])},'scores':score,
    'model_response':decoded,'elapsed_s':time.monotonic()-started,'model_revision':manifest['revision'],
    'decoding':'greedy, CPU BF16 SDPA; source prompt retained','scope':'unqualified machine judgment; no character-completion inference',
-   'generated_tokens':int(out.shape[1]-inputs['input_ids'].shape[1])}
+   'generated_tokens':int(out.shape[1]-inputs['input_ids'].shape[1]),'official_processor':a.official_processor,
+   'audio_input':features,'audio_encoder_forward':audio_forward}
   rows.append(row);pathlib.Path(a.output).write_text(json.dumps(rows,indent=2)+'\n');print(job['id'],score,decoded[-700:],flush=True)
 if __name__=='__main__':main()

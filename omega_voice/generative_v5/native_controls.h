@@ -58,3 +58,42 @@ static void mari_trajectory_prefill(qwen_tts_ctx_t *ctx) {
     mari_trajectory_apply(ctx,mari_onset);
     if(mari_bank && ctx->ml_steer_w_eff!=0.0f)fprintf(stderr,"MARI_NATIVE_ONSET last_prompt_position_only=true\n");
 }
+
+/* Explicit text availability, separate from acoustic steering. MRL1 contains
+ * u32 magic,N then N+1 pairs (token_id, earliest_feed_frame), including EOD.
+ * First token is prefilled at time zero. Other tokens enter at most one/frame.
+ * A schedule is meaningful only in the non-ICL incremental layout. */
+static uint32_t *mari_release_frames=NULL;
+static int mari_release_n=0;
+static FILE *mari_release_audit=NULL;
+static int mari_text_release_init(qwen_tts_ctx_t *ctx,const int32_t *ids,int n) {
+    const char *path=getenv("MARI_TEXT_RELEASE");
+    if(!path||!*path)return 0;
+    if(mari_release_frames||!ctx->stream_layout_active||ctx->emo_ref_path||!ctx->xvector_only||n<1||n>8190) {
+        fprintf(stderr,"MARI: text release requires one non-ICL incremental request\n");return -1;
+    }
+    FILE *f=fopen(path,"rb");uint32_t head[2];
+    if(!f)return -1;
+    if(fread(head,4,2,f)!=2||head[0]!=0x314c524d||head[1]!=(uint32_t)n){fclose(f);return -1;}
+    mari_release_frames=calloc((size_t)n+1,4);if(!mari_release_frames){fclose(f);return -1;}
+    for(int i=0;i<=n;i++) {
+        uint32_t pair[2];
+        if(fread(pair,4,2,f)!=2||pair[0]!=(uint32_t)(i<n?ids[i]:151673)||pair[1]>8190||
+           (i==0&&pair[1]!=0)||(i>0&&pair[1]<mari_release_frames[i-1])) {
+            fclose(f);fprintf(stderr,"MARI: release token identity or chronology mismatch\n");return -1;
+        }
+        mari_release_frames[i]=pair[1];
+    }
+    if(fgetc(f)!=EOF){fclose(f);return -1;}fclose(f);mari_release_n=n;
+    const char *audit=getenv("MARI_TEXT_RELEASE_AUDIT");
+    if(!audit||!(*audit)||(mari_release_audit=fopen(audit,"w"))==NULL)return -1;
+    fprintf(mari_release_audit,"token_index,feed_frame\n0,-1\n");fflush(mari_release_audit);
+    fprintf(stderr,"MARI_TEXT_RELEASE tokens=%d; first-token-only prefill; pad until source release\n",n);
+    return 0;
+}
+static int mari_text_ready(int token_index,int frame) {
+    return !mari_release_frames||frame>=(int)mari_release_frames[token_index];
+}
+static void mari_text_record(int token_index,int frame) {
+    if(mari_release_audit){fprintf(mari_release_audit,"%d,%d\n",token_index,frame);fflush(mari_release_audit);}
+}

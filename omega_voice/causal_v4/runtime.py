@@ -146,8 +146,9 @@ def compile_direction(direction, at_word=0):
     return {"id":"direction-"+digest([direction,at_word])[:12],"at_word":at_word,
             "source":{"kind":"direction","text":direction},**entries[d]}
 
-def apply_event(s,e):
+def apply_event(s,e,policy=None):
     k=e["kind"]
+    old_certainty=s['knowledge_state']['certainty']
     if k=="set":numeric_patch(s,e["values"])
     elif k=="thought":
         mode=e["mode"]
@@ -171,6 +172,21 @@ def apply_event(s,e):
             s["knowledge_state"]["certainty"]=confidence
             s["knowledge_state"][status][prop]={"confidence":confidence,"source":e["source"]}
             if prop in s["knowledge_state"]["unresolved"]:s["knowledge_state"]["unresolved"].remove(prop)
+        if policy=='epistemic_focus_v2' and prop!=s['knowledge_state'].get('assertion',{}).get('proposition'):
+            # Knowing an unrelated fact does not strengthen this assertion.
+            s['knowledge_state']['certainty']=old_certainty
+    elif k=='assertion':
+        if policy!='epistemic_focus_v2':raise ValueError('assertion focus requires epistemic_focus_v2')
+        prop=e.get('proposition');mode=e.get('mode','assert')
+        if not isinstance(prop,str) or not prop.strip() or mode not in {'assert','admit_unknown','ask'}:raise ValueError('invalid assertion focus')
+        confidence=e.get('confidence')
+        if confidence is None:
+            evidence=next((s['knowledge_state'][status][prop] for status in ['known','beliefs','suspicions'] if prop in s['knowledge_state'][status]),None)
+            if evidence is None:raise ValueError('assertion needs proposition evidence or explicitly sourced commitment')
+            confidence=evidence['confidence']
+        if isinstance(confidence,bool) or not isinstance(confidence,(int,float)) or not math.isfinite(confidence) or not 0<=confidence<=1:raise ValueError('invalid assertion confidence')
+        s['knowledge_state']['assertion']={'proposition':prop,'mode':mode,'source':copy.deepcopy(e['source'])}
+        s['knowledge_state']['certainty']=float(confidence)
     elif k=="action":
         if e["tactic"] not in TACTICS:raise ValueError("unknown tactic")
         s["objective"]={"action":e.get("objective",e["tactic"]),"target":e["target"]}
@@ -221,6 +237,10 @@ def apply_event(s,e):
         if e["behavior"] not in {"laugh","sigh","acknowledgment"}:raise ValueError("unsupported nonlexical event")
         s["nonlexical_behavior"].append({"behavior":e["behavior"],"cause":e["id"],"at_word":e["at_word"]})
     else:raise ValueError("unknown event kind: "+str(k))
+    if policy=='epistemic_focus_v2' and k=='thought' and e.get('mode') in {'realizing','correcting'}:
+        # Completing a thought may reveal uncertainty or an error. Its
+        # epistemic result must come from evidence, not the operation label.
+        s['knowledge_state']['certainty']=old_certainty
     validate_state(s)
 
 def advance(s,dt,speaking=True):
@@ -279,7 +299,7 @@ def realize_state(s,at_word,active_causes):
 
 def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
     if not isinstance(text,str) or not words(text):raise ValueError("spoken text required")
-    if policy not in {None,'bounded_thought_recovery_v1'}:raise ValueError('unknown temporal policy')
+    if policy not in {None,'bounded_thought_recovery_v1','epistemic_focus_v2'}:raise ValueError('unknown temporal policy')
     def evolve(state,dt,speaking=True):
         advance(state,dt,speaking)
         if policy and state['mental_state']['thought'] in {'realizing','correcting'}:
@@ -332,7 +352,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
     head=original["continuity_links"]["journal_head"]
     for i in range(n+1):
         for e in grouped.get(i,[]):
-            before=digest(s);apply_event(s,e);active.append(e["id"])
+            before=digest(s);apply_event(s,e,policy=policy);active.append(e["id"])
             if policy and e['kind']=='thought' and e.get('mode') in {'realizing','correcting'}:
                 s['mental_state']['load']=max(.12,s['mental_state']['load'])
             row={"event":e,"before":before,"after":digest(s),"parent":head}
