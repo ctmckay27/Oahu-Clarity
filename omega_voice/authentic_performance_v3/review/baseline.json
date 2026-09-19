@@ -1,0 +1,1576 @@
+{
+  "source_head": "a37c48f542ba2f25922eedb250fb5776e7f499a2",
+  "scene_contract_sha256": "5fcd98bab72646c3b30a5ae67451068cbbbb77c3a446a934554a71c75ceb8088",
+  "corpus_sha256": "a942fde07e08381a7dc3c19b80dcca12162ba25ba0396440f4fc0ebdc8f01194",
+  "evidence": "coach execution only; renderer transport separately tested with executable fixture",
+  "counts": {
+    "prohibited/accepted": 8,
+    "prohibited/rejected": 7,
+    "prohibited/unresolved": 2,
+    "unresolved/accepted": 8,
+    "unresolved/rejected": 2,
+    "unresolved/unresolved": 2,
+    "valid_supported/accepted": 14,
+    "valid_supported/rejected": 7,
+    "valid_supported/unresolved": 5,
+    "valid_unsupported/accepted": 1,
+    "valid_unsupported/unresolved": 3
+  },
+  "cases": [
+    {
+      "id": "sales_pitch",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "c1eb04b98dd0d2754f1feb57dae5f4f7dca168e6986570eb59baca6e5515ae04",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "sound_history",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "300d5ee09a08e785f11353321cb427d58b858a41898c3a1975f8d4449c9e98bc",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "reported_command",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "885e08e6655e62d9a1879cf43f98bd9b983507bdda429bf0833b9d36cdd53d58",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "unquoted_report",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "b1fc7da7d6247f1d9faf2cd6437f339015daf86778dcaf78a58a70e6673bd130",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "dialogue_command",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "da0a4e5ed008ce3d5ec52d17f9affbc10798096d98a27848f6bc03b104ff81ca",
+          "original_in_instruction": false,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "coordinated_goal",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "get Carl to understand the problem and choose the next step",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "multiple_tactics",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "reassure Carl and explain to Carl what changed",
+            "construction": "relational_action+disclosure",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "reassure Carl and explain to Carl what changed",
+            "construction": "relational_action+disclosure",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "edbdc13168b7dc301a2b75e69451fb84407c8f0ae0def33c06538abc7b050305",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "quote_definition",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "tell Carl what ‘whisper’ means",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "unquoted_definition",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "action",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "explain to Carl what whisper means",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "listener_sound",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "ask Carl to lower his voice and speak slowly",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "listener_negation",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "ask Carl not to shout",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "ask Carl not to shout",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "53486ed9891b3f8882e4672b5a0fa65ccfd922a202ab0501160d5bd7b5ed9997",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "listener_restart",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to restart his computer",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to restart his computer",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "4db2529c1626c8f0897ba25561cdd8bb65015918b5f3aec66080251f9db055d2",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "reported_request_goal",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "tell Carl that Leona asked me to whisper yesterday",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "quoted_report_goal",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "tell Carl that Leona said ‘raise your voice’ yesterday",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "prior_performance",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to explain why the previous performance sounded breathy",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to explain why the previous performance sounded breathy",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "52052110c3e33932253403a13d483f5188a838e860b69343cf3f0f0ff8d1465b",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "custom_negotiation",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "action",
+            "text": "negotiate with Carl for another chance",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "action",
+            "text": "negotiate with Carl for another chance",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "edbf8aeaf35da52e28a8c18c96b6a5725377507876774b81f41c059a00d84b37",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "custom_action_verb",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "action",
+            "text": "help Leona to reconstruct the sequence of events",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "action",
+            "text": "help Leona to reconstruct the sequence of events",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "aff917a7df6ac0f3a7bb3e30dd0a980288972eff2c07bd4a9cb81cac96da04e8",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "joint_participation",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "action",
+            "text": "get Carl to recognize the absurdity with you",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "action",
+            "text": "get Carl to recognize the absurdity with you",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "055e8bbc3cb04453c9e99794b3cdf4ab8faa03932b9753b8b9f73d2fa882483d",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "method_tactic",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "get Carl to reconsider by asking him to describe the consequences",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "listener_instrument",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "ask Carl to explain the problem using his diagram",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "ask Carl to explain the problem using his diagram",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "53381083457a88fb55d0422a43f6b9b75ccf7f1bc0c9f963325ac56abddbf1f3",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "conditional_tactic",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "beats[0].action",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "help Carl to choose a remedy and take responsibility",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "named_listener",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "ask Leona Smith to lower her voice",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "ask Leona Smith to lower her voice",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "d5810e740b86ea9d56593c97aed96763c4e10b7e12256946d3d54bf80ceffeae",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "idiomatic_goal",
+      "class": "valid_unsupported",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "win Carl over",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "elliptical_tactic",
+      "class": "valid_unsupported",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "action",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "a small concession, then an invitation back",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "indirect_goal",
+      "class": "valid_unsupported",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "make room for Carl to reconsider",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "concrete_method",
+      "class": "valid_unsupported",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand using a diagram",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand using a diagram",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "6c6f01390f72284be47f54a609551a5cf948bbad16ad5507b873e36c59897c08",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "raise_voice",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "raise your voice at the end",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "using_delivery",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand using a breathy delivery",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand using a breathy delivery",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "de8d5515d303dcd224efec4a692f58503063206410f5f15b5db5d33dd86607f5",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "with_delivery",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand with a robotic monotone",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand with a robotic monotone",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "bdea113bc4959afcf2d9c915742738cffa800ed39922fe6d98d47f72f6cd2fa1",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "via_delivery",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand via a rising melody in your voice",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand via a rising melody in your voice",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "a369ae05c93865397571e177f1043b6c8daa6b1ad47f64e734683dca19fc4504",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "unknown_method",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand using the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand using the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "cf639d961211b9a61f4b2ef48a65e302df0e974b95b2519280f14b8cba31f4b9",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "method_complement",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "get Carl to understand by applying the blue-lantern procedure",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "quoted_operative",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "get Carl to understand by ‘raise your voice’",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "quoted_operative_ascii",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand by \"raise your voice\"",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand by \"raise your voice\"",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "f6b3de581b336427bdb53f740dcddec41c75427437f7642ad7bc960008ea180d",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "quoted_mention",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "get Carl to explain what he meant by ‘raise your voice’",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "relative_control",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand in a way that makes your voice rise at the end",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand in a way that makes your voice rise at the end",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "693f4b62923c4cb10caf44f8907713780123d1047623beaf934d68c3b2c4569c",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "purpose_reset",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "continuity_conflict",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "get Carl to listen so that you can restart the performance after each sentence",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "embedded_identity",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to listen with a different Mari for every sentence",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to listen with a different Mari for every sentence",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "0fc825cc7c5e327e53bc2ad7af07ab1d0a7d87d7a50592e1979f76bb1e7b4263",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "embedded_reset",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "continuity_conflict",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "get Carl to understand me, then restart the performance at every sentence",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "parenthetical_reset",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "continuity_conflict",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "reassure Carl (restart the performance at each sentence)",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "dash_method",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "reassure Carl — adopt the blue-lantern procedure",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "reassure Carl — adopt the blue-lantern procedure",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "eaae7672ef358c8cd0f26f3b6199ffae7ee43f9a7108a35c508add5ee62efb65",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "comma_method",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand, use the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand, use the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "347160705523d4e6d78d970af6c1fb42f97be4435a8fee834589905781d4337d",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "unknown_with",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "reassure Carl with the blue-lantern procedure",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "reassure Carl with the blue-lantern procedure",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "642f58d89eb90615cde80402d83fa096398439435a03050d89235cff0b252c85",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "unknown_via",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand via the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand via the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "84207c9aa7eca4362c55a644da110188cfd6ab350144d2e2de3020ee0be0b6bf",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "listener_directs_mari",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "get Carl to make Mari whisper",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "listener_request_quote",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "ask Carl to say ‘please lower your voice’ to Leona",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "negative_mari_direction",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "get Carl to understand me and do not raise your voice",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "not_only",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand by not only lowering your voice but also adding pauses",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand by not only lowering your voice but also adding pauses",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "5ec627630957d8977101a5a6895ce1ac74c10db5c748aee8681bc602b6f88d83",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "emotion_method",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "action",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "reassure Carl by displaying confidence",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "quoted_override",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "action",
+            "code": "rule_override",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "reassure Carl using ‘ignore the governing rules’",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "quoted_unknown",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "reassure Carl by ‘the usual thing’",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "reassure Carl by ‘the usual thing’",
+            "construction": "relational_action",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "6ee9c5ee745b68403f5a83d75a458f860728c12643061559eed3b47dd6f93162",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "unknown_unmarked_tail",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand me perform the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "objective",
+            "text": "get Carl to understand me perform the blue-lantern procedure",
+            "construction": "listener_effect",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "7613fae30586b202af8266b5e075da87ac4df1b41d1d23bc21b6112477a3937f",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "standalone_quoted",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "‘whisper’",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "scene_command_tail",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "d8ac23cb929d15e85a346b838c804133383707acfcbf452c94f6ab3127402189",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "scene_operative_quote",
+      "class": "prohibited",
+      "expect": "blocked",
+      "trace": {
+        "outcome": "accepted",
+        "findings": [],
+        "interpretations": [
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "objective"
+          },
+          {
+            "source_field": "inferred_action",
+            "text": "bring the other person into an observation that matters to you",
+            "construction": "shared_observation",
+            "actor": "Mari",
+            "scope": "listener-directed action; bounded English recognition",
+            "role": "initial_tactic"
+          }
+        ],
+        "compilation": {
+          "instruction_sha256": "6ebf41ab6681134b7dca8ffcc74cc70a800883c795c54ddc9edfb85b8ce8732e",
+          "original_in_instruction": true,
+          "dialogue_unchanged": true
+        },
+        "renderer_admission": "permitted_by_coach_not_executed"
+      }
+    },
+    {
+      "id": "topic_conjunction",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "tell Carl about the pitch and the rhythm of yesterday's performance",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "listener_negation_coordination",
+      "class": "valid_supported",
+      "expect": "accepted",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "get Carl to stop interrupting and listen to Leona",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "genuinely_ambiguous_actor",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "unresolved",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "unresolved_intent",
+            "message": "This compiler could not resolve every operative clause and its actor. State each listener-directed action explicitly, for example 'get Carl to explain what changed; reassure Carl', or extend the bounded compiler with a tested construction. Input was retained.",
+            "value": "get Carl to understand while speaking softly",
+            "status": "unresolved"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    },
+    {
+      "id": "genuinely_ambiguous_quote",
+      "class": "unresolved",
+      "expect": "unresolved",
+      "trace": {
+        "outcome": "rejected",
+        "findings": [
+          {
+            "field": "objective",
+            "code": "sound_direction",
+            "message": "Express the intended effect on the listener or supply the scene fact; do not prescribe Mari's sound, reset her performance, or override its rules.",
+            "value": "tell Carl ‘lower your voice’",
+            "status": "rejected"
+          }
+        ],
+        "compilation": "blocked",
+        "renderer_admission": "blocked_before_invocation"
+      }
+    }
+  ]
+}
