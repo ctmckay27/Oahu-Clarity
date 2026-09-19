@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+runtime/
+models/
+*.wav
+*.mp3

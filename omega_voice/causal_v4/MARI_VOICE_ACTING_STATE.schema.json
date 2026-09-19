@@ -1,0 +1,591 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "turn": {
+      "type": "integer"
+    },
+    "time_s": {
+      "type": "number"
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "adult": {
+          "type": "boolean"
+        },
+        "lineage": {
+          "type": "string"
+        },
+        "anchor_sha256": {
+          "type": "string"
+        },
+        "profile_sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "adult",
+        "lineage",
+        "anchor_sha256",
+        "profile_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "character": {
+      "type": "object",
+      "properties": {
+        "continuity_law": {
+          "type": "string"
+        },
+        "commitments": {
+          "type": "array"
+        },
+        "shared_history": {
+          "type": "array"
+        },
+        "listener_histories": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "continuity_law",
+        "commitments",
+        "shared_history",
+        "listener_histories"
+      ],
+      "additionalProperties": false
+    },
+    "body_state": {
+      "type": "object",
+      "properties": {
+        "fatigue": {
+          "type": "number"
+        },
+        "exertion": {
+          "type": "number"
+        },
+        "breath_reserve": {
+          "type": "number"
+        },
+        "tension": {
+          "type": "number"
+        },
+        "suppression_effort": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "fatigue",
+        "exertion",
+        "breath_reserve",
+        "tension",
+        "suppression_effort"
+      ],
+      "additionalProperties": false
+    },
+    "vocal_configuration": {
+      "type": "object",
+      "properties": {
+        "support": {
+          "type": "number"
+        },
+        "pressure": {
+          "type": "number"
+        },
+        "projection": {
+          "type": "number"
+        },
+        "attack_softness": {
+          "type": "number"
+        },
+        "precision": {
+          "type": "number"
+        },
+        "breathiness": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "support",
+        "pressure",
+        "projection",
+        "attack_softness",
+        "precision",
+        "breathiness"
+      ],
+      "additionalProperties": false
+    },
+    "mental_state": {
+      "type": "object",
+      "properties": {
+        "attention": {
+          "type": "number"
+        },
+        "load": {
+          "type": "number"
+        },
+        "thought": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "attention",
+        "load",
+        "thought"
+      ],
+      "additionalProperties": false
+    },
+    "emotional_state": {
+      "type": "object",
+      "properties": {
+        "amusement": {
+          "type": "number"
+        },
+        "anger": {
+          "type": "number"
+        },
+        "curiosity": {
+          "type": "number"
+        },
+        "fear": {
+          "type": "number"
+        },
+        "relief": {
+          "type": "number"
+        },
+        "shame": {
+          "type": "number"
+        },
+        "tenderness": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "amusement",
+        "anger",
+        "curiosity",
+        "fear",
+        "relief",
+        "shame",
+        "tenderness"
+      ],
+      "additionalProperties": false
+    },
+    "objective": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "obstacle": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "description"
+      ],
+      "additionalProperties": false
+    },
+    "tactic": {
+      "type": "string"
+    },
+    "stakes": {
+      "type": "number"
+    },
+    "subtext": {
+      "type": "object",
+      "properties": {
+        "private_meaning": {
+          "type": "string"
+        },
+        "disclosure": {
+          "type": "number"
+        },
+        "conflict": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "private_meaning",
+        "disclosure",
+        "conflict"
+      ],
+      "additionalProperties": false
+    },
+    "mask": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "boolean"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "display_target": {
+          "type": "number"
+        },
+        "effort": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "active",
+        "dimension",
+        "display_target",
+        "effort"
+      ],
+      "additionalProperties": false
+    },
+    "leakage": {
+      "type": "object",
+      "properties": {
+        "pressure": {
+          "type": "number"
+        },
+        "threshold": {
+          "type": "number"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "cause": {}
+      },
+      "required": [
+        "pressure",
+        "threshold",
+        "active",
+        "cause"
+      ],
+      "additionalProperties": false
+    },
+    "listener_model": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "monitoring": {
+          "type": "number"
+        },
+        "resistance": {
+          "type": "number"
+        },
+        "known_propositions": {
+          "type": "array"
+        },
+        "misunderstandings": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "monitoring",
+        "resistance",
+        "known_propositions",
+        "misunderstandings"
+      ],
+      "additionalProperties": false
+    },
+    "relationship": {
+      "type": "object",
+      "properties": {
+        "authority": {
+          "type": "number"
+        },
+        "concern": {
+          "type": "number"
+        },
+        "distance": {
+          "type": "number"
+        },
+        "expected_knowledge": {
+          "type": "number"
+        },
+        "familiarity": {
+          "type": "number"
+        },
+        "irritation": {
+          "type": "number"
+        },
+        "playfulness": {
+          "type": "number"
+        },
+        "suspicion": {
+          "type": "number"
+        },
+        "trust": {
+          "type": "number"
+        },
+        "vulnerability": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "authority",
+        "concern",
+        "distance",
+        "expected_knowledge",
+        "familiarity",
+        "irritation",
+        "playfulness",
+        "suspicion",
+        "trust",
+        "vulnerability"
+      ],
+      "additionalProperties": false
+    },
+    "knowledge_state": {
+      "type": "object",
+      "properties": {
+        "certainty": {
+          "type": "number"
+        },
+        "known": {
+          "type": "object"
+        },
+        "beliefs": {
+          "type": "object"
+        },
+        "suspicions": {
+          "type": "object"
+        },
+        "withheld": {
+          "type": "array"
+        },
+        "unresolved": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "certainty",
+        "known",
+        "beliefs",
+        "suspicions",
+        "withheld",
+        "unresolved"
+      ],
+      "additionalProperties": false
+    },
+    "language": {
+      "type": "string"
+    },
+    "dialect_register": {
+      "type": "object",
+      "properties": {
+        "dialect": {
+          "type": "string"
+        },
+        "register": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dialect",
+        "register"
+      ],
+      "additionalProperties": false
+    },
+    "speech_behavior": {
+      "type": "object",
+      "properties": {
+        "lexical_policy": {
+          "type": "string"
+        },
+        "nonlexical_permission": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "lexical_policy",
+        "nonlexical_permission"
+      ],
+      "additionalProperties": false
+    },
+    "prosody": {
+      "type": "object"
+    },
+    "microbehavior": {
+      "type": "array"
+    },
+    "nonlexical_behavior": {
+      "type": "array"
+    },
+    "interaction_state": {
+      "type": "object",
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "urgency": {
+          "type": "number"
+        },
+        "elapsed_s": {
+          "type": "number"
+        },
+        "interrupted_intention": {},
+        "repair_open": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "phase",
+        "urgency",
+        "elapsed_s",
+        "interrupted_intention",
+        "repair_open"
+      ],
+      "additionalProperties": false
+    },
+    "medium": {
+      "type": "string"
+    },
+    "performance_grammar": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "listener_distance_m": {
+          "type": "number"
+        },
+        "noise_level": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "listener_distance_m",
+        "noise_level"
+      ],
+      "additionalProperties": false
+    },
+    "capture": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "microphone_distance_m": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "mode",
+        "microphone_distance_m"
+      ],
+      "additionalProperties": false
+    },
+    "processing": {
+      "type": "object",
+      "properties": {
+        "effects": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "effects"
+      ],
+      "additionalProperties": false
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "random_disfluency": {
+          "type": "boolean"
+        },
+        "fallback": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "random_disfluency",
+        "fallback"
+      ],
+      "additionalProperties": false
+    },
+    "temporal_trajectory": {
+      "type": "array"
+    },
+    "continuity_links": {
+      "type": "object",
+      "properties": {
+        "parent_state_hash": {},
+        "journal_head": {}
+      },
+      "required": [
+        "parent_state_hash",
+        "journal_head"
+      ],
+      "additionalProperties": false
+    },
+    "previous_vocal_state": {}
+  },
+  "required": [
+    "schema",
+    "session_id",
+    "turn",
+    "time_s",
+    "identity",
+    "character",
+    "body_state",
+    "vocal_configuration",
+    "mental_state",
+    "emotional_state",
+    "objective",
+    "obstacle",
+    "tactic",
+    "stakes",
+    "subtext",
+    "mask",
+    "leakage",
+    "listener_model",
+    "relationship",
+    "knowledge_state",
+    "language",
+    "dialect_register",
+    "speech_behavior",
+    "prosody",
+    "microbehavior",
+    "nonlexical_behavior",
+    "interaction_state",
+    "medium",
+    "performance_grammar",
+    "environment",
+    "capture",
+    "processing",
+    "constraints",
+    "temporal_trajectory",
+    "continuity_links",
+    "previous_vocal_state"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mari-voice-acting-state/1.0",
+  "title": "MARI_VOICE_ACTING_STATE"
+}

@@ -1,0 +1,350 @@
+[
+  {
+    "id": "neutral",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "observation",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "reasoning",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "realization",
+    "split": "development",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "correction",
+    "split": "development",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "uncertainty",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "certainty",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "practical_action",
+    "split": "development",
+    "not_realized": [
+      "articulation_precision"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "reassurance",
+    "split": "development",
+    "not_realized": [
+      "vocal_attack"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "tenderness",
+    "split": "development",
+    "not_realized": [
+      "vocal_attack"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "dry_amusement",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "genuine_amusement",
+    "split": "development",
+    "not_realized": [
+      "situated_nonlexical_vocalization"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "contained_irritation",
+    "split": "development",
+    "not_realized": [
+      "articulation_precision"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "stronger_anger",
+    "split": "development",
+    "not_realized": [
+      "articulation_precision",
+      "phonatory_tension"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "urgency",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "authority",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "curiosity",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "guardedness",
+    "split": "development",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "increased_trust",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "familiarity",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "disagreement",
+    "split": "development",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "withholding",
+    "split": "development",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "fatigue",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "interruption_recovery",
+    "split": "development",
+    "not_realized": [
+      "articulation_precision",
+      "live_interruption_waveform_truncation",
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "concealed_fear",
+    "split": "development",
+    "not_realized": [
+      "phonatory_tension"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "remembering",
+    "split": "development",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "reconsidering",
+    "split": "development",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "heldout_trust_under_pressure",
+    "split": "held_out",
+    "not_realized": [],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "heldout_tender_disagreement",
+    "split": "held_out",
+    "not_realized": [
+      "vocal_attack"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "heldout_relief_to_judgment",
+    "split": "held_out",
+    "not_realized": [
+      "articulation_precision",
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  },
+  {
+    "id": "long_form",
+    "split": "held_out",
+    "not_realized": [
+      "local_commitment_and_finality"
+    ],
+    "not_established": [
+      "character_specific_person_presence",
+      "full_expressive_bandwidth",
+      "physical_vocal_coherence"
+    ]
+  }
+]

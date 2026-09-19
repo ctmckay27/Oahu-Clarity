@@ -1,0 +1,144 @@
+{
+  "schema": "mari-voice-acting-state/1.0",
+  "session_id": "mari-default",
+  "turn": 0,
+  "time_s": 0.0,
+  "identity": {
+    "subject": "Mari404",
+    "adult": true,
+    "lineage": "G1-1/Mari Voice v1",
+    "anchor_sha256": "73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567",
+    "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa"
+  },
+  "character": {
+    "continuity_law": "Mari becomes otherwise without becoming someone else",
+    "commitments": [],
+    "shared_history": [],
+    "listener_histories": {}
+  },
+  "body_state": {
+    "fatigue": 0.0,
+    "exertion": 0.0,
+    "breath_reserve": 0.85,
+    "tension": 0.08,
+    "suppression_effort": 0.0
+  },
+  "vocal_configuration": {
+    "support": 0.85,
+    "pressure": 0.2,
+    "projection": 0.4,
+    "attack_softness": 0.25,
+    "precision": 0.5,
+    "breathiness": 0.0
+  },
+  "mental_state": {
+    "attention": 0.8,
+    "load": 0.0,
+    "thought": "known"
+  },
+  "emotional_state": {
+    "amusement": 0.0,
+    "anger": 0.0,
+    "curiosity": 0.0,
+    "fear": 0.0,
+    "relief": 0.0,
+    "shame": 0.0,
+    "tenderness": 0.0
+  },
+  "objective": {
+    "action": "share",
+    "target": "communicate the proposition"
+  },
+  "obstacle": {
+    "kind": "none",
+    "description": ""
+  },
+  "tactic": "share",
+  "stakes": 0.2,
+  "subtext": {
+    "private_meaning": "",
+    "disclosure": 1.0,
+    "conflict": 0.0
+  },
+  "mask": {
+    "active": false,
+    "dimension": "fear",
+    "display_target": 0.0,
+    "effort": 0.0
+  },
+  "leakage": {
+    "pressure": 0.0,
+    "threshold": 0.72,
+    "active": false,
+    "cause": null
+  },
+  "listener_model": {
+    "id": "unspecified",
+    "monitoring": 0.2,
+    "resistance": 0.0,
+    "known_propositions": [],
+    "misunderstandings": []
+  },
+  "relationship": {
+    "authority": 0.0,
+    "concern": 0.0,
+    "distance": 0.5,
+    "expected_knowledge": 0.0,
+    "familiarity": 0.0,
+    "irritation": 0.0,
+    "playfulness": 0.0,
+    "suspicion": 0.0,
+    "trust": 0.5,
+    "vulnerability": 0.0
+  },
+  "knowledge_state": {
+    "certainty": 0.7,
+    "known": {},
+    "beliefs": {},
+    "suspicions": {},
+    "withheld": [],
+    "unresolved": []
+  },
+  "language": "English",
+  "dialect_register": {
+    "dialect": "anchor",
+    "register": "conversational"
+  },
+  "speech_behavior": {
+    "lexical_policy": "preserve_supplied_text",
+    "nonlexical_permission": false
+  },
+  "prosody": {},
+  "microbehavior": [],
+  "nonlexical_behavior": [],
+  "interaction_state": {
+    "phase": "speaking",
+    "urgency": 0.0,
+    "elapsed_s": 0.0,
+    "interrupted_intention": null,
+    "repair_open": false
+  },
+  "medium": "ordinary_conversation",
+  "performance_grammar": "naturalistic",
+  "environment": {
+    "listener_distance_m": 1.5,
+    "noise_level": "quiet"
+  },
+  "capture": {
+    "mode": "dry_mono",
+    "microphone_distance_m": 0.3
+  },
+  "processing": {
+    "effects": []
+  },
+  "constraints": {
+    "random_disfluency": false,
+    "fallback": false
+  },
+  "temporal_trajectory": [],
+  "continuity_links": {
+    "parent_state_hash": null,
+    "journal_head": null
+  },
+  "previous_vocal_state": null
+}

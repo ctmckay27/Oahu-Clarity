@@ -1,0 +1,32 @@
+{
+  "status": "STRUCTURAL_PASS_WAVEFORM_COMPLETION_FAILED",
+  "test_command": "python3 -m pytest -q omega_voice/causal_v4/tests omega_voice/authentic_performance_v3/tests omega_voice/personality_v2/tests",
+  "tests_passed": 41,
+  "structural_corpus_cases": 32,
+  "carrier": {
+    "long_form_seconds": 45.6,
+    "long_form_WER": 0.0,
+    "long_form_similarity": 0.7991268038749695,
+    "window_min_similarity": 0.7055938243865967,
+    "cold_process_exact_waveform": true
+  },
+  "failures": [
+    {
+      "layer": "structural-to-acoustic actuation",
+      "case": "certainty vs neutral",
+      "observed": "identical waveform despite different finality intent"
+    },
+    {
+      "layer": "temporal DSP naturalness",
+      "case": "guardedness",
+      "observed": "UTMOS22 falls from 4.511 to 3.884; no human MOS claim"
+    },
+    {
+      "layer": "actuator coverage",
+      "observed": "articulation, vocal attack, phonatory tension, commitment/finality, nonlexical and live interruption are not realized"
+    }
+  ],
+  "person_presence": "NOT_VERIFIED",
+  "performance_complete": false,
+  "final_review_set": null
+}

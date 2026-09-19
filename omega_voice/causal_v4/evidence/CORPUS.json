@@ -1,0 +1,935 @@
+[
+  {
+    "id": "neutral",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": []
+    }
+  },
+  {
+    "id": "observation",
+    "split": "development",
+    "text": "The light is still on in the room across the street.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: observing"
+          },
+          "mode": "observing"
+        }
+      ]
+    }
+  },
+  {
+    "id": "reasoning",
+    "split": "development",
+    "text": "If the door was already open, someone must have arrived earlier.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: deciding"
+          },
+          "mode": "deciding"
+        }
+      ]
+    }
+  },
+  {
+    "id": "realization",
+    "split": "development",
+    "text": "The reflection moved first. That means the window was open.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: searching"
+          },
+          "mode": "searching"
+        },
+        {
+          "id": "thought-5",
+          "kind": "thought",
+          "at_word": 5,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: realizing"
+          },
+          "mode": "realizing"
+        }
+      ]
+    }
+  },
+  {
+    "id": "correction",
+    "split": "development",
+    "text": "I said the second door. I meant the one beside it.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: known"
+          },
+          "mode": "known"
+        },
+        {
+          "id": "thought-5",
+          "kind": "thought",
+          "at_word": 5,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: correcting"
+          },
+          "mode": "correcting"
+        }
+      ]
+    }
+  },
+  {
+    "id": "uncertainty",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: searching"
+          },
+          "mode": "searching"
+        },
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "knowledge_state.certainty": 0.3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "certainty",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: known"
+          },
+          "mode": "known"
+        },
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "knowledge_state.certainty": 0.95
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "practical_action",
+    "split": "development",
+    "text": "Set the cup down here. I'll clear a space beside the lamp.",
+    "scene": {
+      "events": [
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "clarify",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "reassurance",
+    "split": "development",
+    "text": "You can leave that with me. Let's deal with the immediate problem.",
+    "scene": {
+      "events": [
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "reassure",
+          "target": "the immediate conversational outcome"
+        },
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "relationship.concern": 0.7
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "tenderness",
+    "split": "development",
+    "text": "You don't have to explain it yet. I can stay a little longer.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.tenderness": 0.75,
+            "relationship.trust": 0.9,
+            "relationship.familiarity": 0.8,
+            "relationship.distance": 0.1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "dry_amusement",
+    "split": "development",
+    "text": "You found the one drawer that was supposed to stay closed.",
+    "scene": {
+      "events": [
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "tease",
+          "target": "the immediate conversational outcome"
+        },
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.amusement": 0.45,
+            "relationship.playfulness": 0.5
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "genuine_amusement",
+    "split": "development",
+    "text": "You were trying to be helpful. I know. That makes it better.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.amusement": 0.8
+          }
+        },
+        {
+          "id": "nonlexical-5",
+          "kind": "nonlexical",
+          "at_word": 5,
+          "source": {
+            "kind": "authored_scene",
+            "text": "shared unexpected absurdity"
+          },
+          "behavior": "laugh"
+        }
+      ]
+    }
+  },
+  {
+    "id": "contained_irritation",
+    "split": "development",
+    "text": "We already agreed on this. Tell me what has actually changed.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.anger": 0.45
+          }
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "set_boundary",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "stronger_anger",
+    "split": "development",
+    "text": "You knew the door was broken. You sent them through it anyway.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.anger": 0.9
+          }
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "confront",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgency",
+    "split": "development",
+    "text": "Leave the bag. Come through the door with me now.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "interaction_state.urgency": 0.85
+          }
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "protect",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "authority",
+    "split": "development",
+    "text": "Stay beside the wall. I'll tell you when there is room to move.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "relationship.authority": 0.8
+          }
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "protect",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "curiosity",
+    "split": "development",
+    "text": "What made you notice that part of the picture first?",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.curiosity": 0.75
+          }
+        },
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: discovering"
+          },
+          "mode": "discovering"
+        }
+      ]
+    }
+  },
+  {
+    "id": "guardedness",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "relationship.suspicion": 0.7,
+            "relationship.trust": 0.2,
+            "subtext.disclosure": 0.3
+          }
+        },
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: withholding"
+          },
+          "mode": "withholding"
+        }
+      ]
+    }
+  },
+  {
+    "id": "increased_trust",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": [
+        {
+          "id": "listener-0",
+          "kind": "listener",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "listener_id": "trusted",
+          "relationship": {
+            "trust": 0.9,
+            "familiarity": 0.7,
+            "distance": 0.15
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "familiarity",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "relationship.trust": 0.85,
+            "relationship.familiarity": 0.95,
+            "relationship.distance": 0.1,
+            "relationship.expected_knowledge": 0.8
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "disagreement",
+    "split": "development",
+    "text": "I see why you think that. I don't think the evidence fits.",
+    "scene": {
+      "events": [
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "challenge",
+          "target": "the immediate conversational outcome"
+        },
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: judging"
+          },
+          "mode": "judging"
+        }
+      ]
+    }
+  },
+  {
+    "id": "withholding",
+    "split": "development",
+    "text": "There is something else. It can wait until we get outside.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: withholding"
+          },
+          "mode": "withholding"
+        },
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "subtext.conflict": 0.8,
+            "subtext.disclosure": 0.2
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "fatigue",
+    "split": "development",
+    "text": "I understand what happened. Give me a moment to check the sequence.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "body_state.fatigue": 0.85,
+            "body_state.exertion": 0.3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "interruption_recovery",
+    "split": "development",
+    "text": "Let me finish the part about the door. Then you can tell me.",
+    "scene": {
+      "events": [
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "clarify",
+          "target": "the immediate conversational outcome"
+        },
+        {
+          "id": "interrupt-3",
+          "kind": "interrupt",
+          "at_word": 3,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          }
+        },
+        {
+          "id": "resume-6",
+          "kind": "resume",
+          "at_word": 6,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "concealed_fear",
+    "split": "development",
+    "text": "Take my hand. We have enough room to get through together.",
+    "scene": {
+      "events": [
+        {
+          "id": "direction-1cd8472e0b86",
+          "at_word": 0,
+          "source": {
+            "kind": "direction",
+            "text": "Mari is trying not to sound scared"
+          },
+          "kind": "mask",
+          "dimension": "fear",
+          "internal": 0.75,
+          "display": 0.1,
+          "effort": 0.8
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "protect",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "remembering",
+    "split": "development",
+    "text": "I remember the bench being closer to the water than this.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: remembering"
+          },
+          "mode": "remembering"
+        },
+        {
+          "id": "thought-6",
+          "kind": "thought",
+          "at_word": 6,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: realizing"
+          },
+          "mode": "realizing"
+        }
+      ]
+    }
+  },
+  {
+    "id": "reconsidering",
+    "split": "development",
+    "text": "That should work. Unless the weight is carried by the other side.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: known"
+          },
+          "mode": "known"
+        },
+        {
+          "id": "thought-3",
+          "kind": "thought",
+          "at_word": 3,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: reconsidering"
+          },
+          "mode": "reconsidering"
+        }
+      ]
+    }
+  },
+  {
+    "id": "heldout_trust_under_pressure",
+    "split": "held_out",
+    "text": "Keep the blue folder with you. We'll sort out the rest when the lift arrives.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "relationship.trust": 0.86,
+            "relationship.familiarity": 0.71,
+            "relationship.distance": 0.2,
+            "interaction_state.urgency": 0.64,
+            "body_state.fatigue": 0.25
+          }
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "protect",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "heldout_tender_disagreement",
+    "split": "held_out",
+    "text": "I believe you. I also think we should check before we call anyone.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.tenderness": 0.63,
+            "relationship.concern": 0.5
+          }
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "challenge",
+          "target": "the immediate conversational outcome"
+        },
+        {
+          "id": "thought-5",
+          "kind": "thought",
+          "at_word": 5,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: deciding"
+          },
+          "mode": "deciding"
+        }
+      ]
+    }
+  },
+  {
+    "id": "heldout_relief_to_judgment",
+    "split": "held_out",
+    "text": "The latch is free. Good. Now tell me why you thought pulling harder would help.",
+    "scene": {
+      "events": [
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "emotional_state.relief": 0.8
+          }
+        },
+        {
+          "id": "thought-6",
+          "kind": "thought",
+          "at_word": 6,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: judging"
+          },
+          "mode": "judging"
+        },
+        {
+          "id": "action-0",
+          "kind": "action",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "tactic": "clarify",
+          "target": "the immediate conversational outcome"
+        }
+      ]
+    }
+  },
+  {
+    "id": "long_form",
+    "split": "held_out",
+    "text": "Before we begin, I want to check one thing. The route on the map crosses the old bridge, but the photograph shows a temporary barrier. That may be nothing more than maintenance. It could also mean the crossing is closed. We should find out before carrying everything down there. I remember a second path beside the garden. It takes longer, and the last stretch is narrow, but there is room to stop if we need to. Yes, that is the better choice. Leave the heavy case here for now. We can come back for it after we know the path is clear. I know you wanted to finish this tonight. So did I. Getting there together matters more than proving that the first plan was right.",
+    "scene": {
+      "events": [
+        {
+          "id": "thought-0",
+          "kind": "thought",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: deciding"
+          },
+          "mode": "deciding"
+        },
+        {
+          "id": "thought-53",
+          "kind": "thought",
+          "at_word": 53,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: remembering"
+          },
+          "mode": "remembering"
+        },
+        {
+          "id": "thought-80",
+          "kind": "thought",
+          "at_word": 80,
+          "source": {
+            "kind": "authored_scene",
+            "text": "thought operation: realizing"
+          },
+          "mode": "realizing"
+        },
+        {
+          "id": "set-0",
+          "kind": "set",
+          "at_word": 0,
+          "source": {
+            "kind": "authored_scene",
+            "text": "specified causal situation"
+          },
+          "values": {
+            "relationship.trust": 0.8,
+            "relationship.familiarity": 0.8,
+            "relationship.distance": 0.2
+          }
+        }
+      ]
+    }
+  }
+]

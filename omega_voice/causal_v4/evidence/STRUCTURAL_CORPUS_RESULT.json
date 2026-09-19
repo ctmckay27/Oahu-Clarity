@@ -1,0 +1,256 @@
+[
+  {
+    "id": "neutral",
+    "split": "development",
+    "plan_hash": "b16f5a8783259d3e66e5776a3920f9ec24b0d37fa6739f974b08db3d80b2c6c9",
+    "words": 12,
+    "events": 0,
+    "pass": true
+  },
+  {
+    "id": "observation",
+    "split": "development",
+    "plan_hash": "b50c31a20b273423b7659d0eb975551fa8d249b22bd188e5d7b8862ff405c0b9",
+    "words": 11,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "reasoning",
+    "split": "development",
+    "plan_hash": "31663b479b85502b91cb6688c686bd75f39d40568c1eccf8aba6eb3f1fa2a12b",
+    "words": 11,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "realization",
+    "split": "development",
+    "plan_hash": "f0908eea82263eccb907f8def974b96ac82fd76929a261fffadca70e79ed14ab",
+    "words": 10,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "correction",
+    "split": "development",
+    "plan_hash": "b116dd80e02cf928644f7c5e37226868017d4a7a893e8998d1ae8006dff63151",
+    "words": 11,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "uncertainty",
+    "split": "development",
+    "plan_hash": "9b5fd3e4dd91a35a126f7b5a9eee1c2a78a982c35509aa8dea85685b683470b0",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "certainty",
+    "split": "development",
+    "plan_hash": "9672b8df3371ba2842480df0941ace2e4acbb103088a70d77d6ea5ac1506b167",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "practical_action",
+    "split": "development",
+    "plan_hash": "d7c649cb972ce4c80a9f05146ba3e820991b122440258fdbebb1a879e503b9a4",
+    "words": 12,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "reassurance",
+    "split": "development",
+    "plan_hash": "4c30f999c2c02fce3cc45267a105e0c83b9a777c5c939d16a1cbaedc2000ffb1",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "tenderness",
+    "split": "development",
+    "plan_hash": "dda72db809e0d1382aa0acce85b782c2dc0456425d87c34b6c9e3f18c4c5dcd4",
+    "words": 13,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "dry_amusement",
+    "split": "development",
+    "plan_hash": "4768a7f2b7fc398543948ccba871b11591a287448fd81278ff29bb7b0703e34f",
+    "words": 11,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "genuine_amusement",
+    "split": "development",
+    "plan_hash": "c289d698593440ef6d25b2557c16092325512013dbf794dc4ff53928ac5474f0",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "contained_irritation",
+    "split": "development",
+    "plan_hash": "d4000c7e0cc04813173bb0c18a410912ff139564fffba35f25fee126f5357c73",
+    "words": 11,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "stronger_anger",
+    "split": "development",
+    "plan_hash": "1863d56beeaadeab7e0a31c86d1e25f6dd204d8f5ac32ba913ddd5076b88c9cf",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "urgency",
+    "split": "development",
+    "plan_hash": "053963809bf588a68e1873b2c7329e368c7a9d2cf689ad8df2e3ead854a86783",
+    "words": 10,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "authority",
+    "split": "development",
+    "plan_hash": "f4746a985679133eeea0a100e83b552319f35d714da1b308a28eae1cb020c32d",
+    "words": 13,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "curiosity",
+    "split": "development",
+    "plan_hash": "bbb9a49ed2dcc597bc0c20ee4e0dd3b009026356ee639c8a38763ddde8764f4e",
+    "words": 10,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "guardedness",
+    "split": "development",
+    "plan_hash": "d89c4489ef3348ebd3e351a490014893c507095f1bf2bbaa3286b6198b28b79a",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "increased_trust",
+    "split": "development",
+    "plan_hash": "d2036fc9f92b118c74cf99d6aa917cdf0e788dc262260f6a25ee4563ffc2112d",
+    "words": 12,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "familiarity",
+    "split": "development",
+    "plan_hash": "fb50b76fcc0219df51224091db931b02c36f30a525812fc33fe21685546f991d",
+    "words": 12,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "disagreement",
+    "split": "development",
+    "plan_hash": "6307e4bbb72950084bec6fc343e321590027f53cfee827a11ece890a3405cb23",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "withholding",
+    "split": "development",
+    "plan_hash": "d66e99274a2a1f0e296fc2803053e8644bbaed62001c584b0b5df34876301420",
+    "words": 11,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "fatigue",
+    "split": "development",
+    "plan_hash": "0355663ef7afde1a32c9fe31acfaffdb10eeb76466c6f9affaf97139ca63ab74",
+    "words": 12,
+    "events": 1,
+    "pass": true
+  },
+  {
+    "id": "interruption_recovery",
+    "split": "development",
+    "plan_hash": "6dc59d589c871422e0c94cea8020df4564f191d363a5f117c99c69a1b5df0338",
+    "words": 13,
+    "events": 3,
+    "pass": true
+  },
+  {
+    "id": "concealed_fear",
+    "split": "development",
+    "plan_hash": "0a5739b7704ef6ad2e52bc791c0a0d477e5f517fad5e55ef337631f395b3e884",
+    "words": 11,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "remembering",
+    "split": "development",
+    "plan_hash": "22c59e31a3cc154b81b50bdaccfd0f16d9f7602fc676f847aca9f5f878ed99f7",
+    "words": 11,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "reconsidering",
+    "split": "development",
+    "plan_hash": "ac23ec404da37fa590c26b19907795ee8c2ad109d46231d31cae48321b004c25",
+    "words": 12,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "heldout_trust_under_pressure",
+    "split": "held_out",
+    "plan_hash": "01b8d0f53e7f4b7e5cef05543e6487b798b87be3a173090fb3cb71cc85fb13a6",
+    "words": 15,
+    "events": 2,
+    "pass": true
+  },
+  {
+    "id": "heldout_tender_disagreement",
+    "split": "held_out",
+    "plan_hash": "7ddb8728f13ab20a6e49db1f5042f63f277b6ac4607a19aa4dc3c29710809047",
+    "words": 13,
+    "events": 3,
+    "pass": true
+  },
+  {
+    "id": "heldout_relief_to_judgment",
+    "split": "held_out",
+    "plan_hash": "9e6091028a6d19342c713b88eecfc8a0e70a6f8ee9c3b04343e14c7db3147bd8",
+    "words": 15,
+    "events": 3,
+    "pass": true
+  },
+  {
+    "id": "long_form",
+    "split": "held_out",
+    "plan_hash": "6475c0f20e646799ac1cbdd4c01c2427b02a110e5ca19cd92121cee24c45bf7d",
+    "words": 126,
+    "events": 4,
+    "pass": true
+  },
+  {
+    "id": "multi_turn_continuity",
+    "split": "held_out",
+    "pass": true,
+    "state_hash": "22378be8f27a27cd755a061e1942b43d680ae1b9b40a180e4c173d1c33020eec"
+  }
+]
