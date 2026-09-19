@@ -3,23 +3,11 @@
 Unlike global rate/pauses, only the explicitly contrasted lexical unit changes
 duration. All later original samples shift intact; earlier speech stays exact.
 """
-import pathlib,json,math,copy,hashlib,threading
+import pathlib,json,math,copy
 import numpy as np,soundfile as sf,parselmouth
-from parselmouth.praat import call,run
+from parselmouth.praat import call
 from ..causal_v4.runtime import verify_plan
 from ..causal_v4.renderer import sha
-
-_PRAAT_LOCK=threading.RLock()
-
-def deterministic_overlap_add(manipulation,local_pcm):
- # Praat 6.1.38 copies unvoiced intervals using random 8--12ms grains.
- # Bind that numerical resynthesis state to this local input, never to the
- # number/order of other events or later conversational information.
- seed=int.from_bytes(hashlib.sha256(local_pcm.tobytes()).digest()[:4],'little')
- with _PRAAT_LOCK:
-  run(f'random_initializeWithSeedUnsafelyButPredictably ({seed})')
-  audio=call(manipulation,'Get resynthesis (overlap-add)').values[0].copy()
- return audio,seed
 
 def realize(source,out,plan,calibration):
  source=pathlib.Path(source);out=pathlib.Path(out);calibration=pathlib.Path(calibration)
@@ -49,7 +37,7 @@ def realize(source,out,plan,calibration):
   start=(a-lo)/sr;end=(b-lo)/sr;length=end-start;ramp=min(.025,length*.1);height=1+(extra/sr)/(length-ramp)
   knots=[(0.,1.),(start,1.),(start+ramp,height),(end-ramp,height),(end,1.),(sound.xmax,1.)]
   for t,v in sorted(set(knots)):call(duration,'Add point',t,v)
-  call([duration,manipulation],'Replace duration tier');z,seed=deterministic_overlap_add(manipulation,y[lo:hi]);w['resynthesis_seed']=seed;target_length=b-a+extra;offset=a-lo;segment=z[offset:offset+target_length]
+  call([duration,manipulation],'Replace duration tier');z=call(manipulation,'Get resynthesis (overlap-add)').values[0];target_length=b-a+extra;offset=a-lo;segment=z[offset:offset+target_length]
   if len(segment)!=target_length:raise ValueError('duration resynthesis lost requested lexical unit')
   fade=min(round(.012*sr),len(word)//8);alpha=np.linspace(0,1,fade,endpoint=False)
   # These blends stay inside the changed word; no past/future source sample
