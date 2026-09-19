@@ -32,7 +32,8 @@ def quiet_boundary(y,sr,clock,index):
  if level[j]>max(.001,float(np.max(np.abs(y)))*.01):raise ValueError('respiratory boundary would cut active articulation')
  return int(candidates[j])
 
-def realize(source,out,text,scene,prior,timeline):
+def realize(source,out,text,scene,prior,timeline,policy=POLICY):
+ if policy not in {POLICY,'listener_causal_v6'}:raise ValueError('unsupported respiratory policy')
  source=pathlib.Path(source);out=pathlib.Path(out)
  if out.exists():raise FileExistsError(out)
  if sha(source)!=timeline['source_audio_sha256']:raise ValueError('respiratory clock belongs to another recording')
@@ -42,7 +43,7 @@ def realize(source,out,text,scene,prior,timeline):
  if any(e.get('kind')=='inhale' for e in actual['events']):raise ValueError('preplanned inhalation requires its own delivery receipt')
  clock=copy.deepcopy(timeline);boundaries=phrase_boundaries(text);events=[];insertions=[];offset=0
  for index,end in zip(boundaries[:-1],boundaries[1:]):
-  plan=compile_scene(text,actual,prior,timeline=clock,policy=POLICY)
+  plan=compile_scene(text,actual,prior,timeline=clock,policy=policy)
   state=plan['state_samples'][index]['state'];body=state['body_state']
   # Anticipate only the currently available linguistic phrase, using current
   # body demand. Later scene state is not allowed to color this earlier breath.
@@ -64,7 +65,7 @@ def realize(source,out,text,scene,prior,timeline):
   # Exact insertion transform, not an invented re-alignment.
   for word in clock['words'][index:]:word['start']+=duration;word['end']+=duration
   clock['duration_s']+=duration;offset+=frames
- plan=compile_scene(text,actual,prior,timeline=clock,policy=POLICY)
+ plan=compile_scene(text,actual,prior,timeline=clock,policy=policy)
  if min(s['state']['body_state']['breath_reserve'] for s in plan['state_samples'])<FLOOR-1e-7:
   raise ValueError('unresolved respiratory deficit after causal planning')
  parts=[];cursor=0
@@ -72,7 +73,7 @@ def realize(source,out,text,scene,prior,timeline):
   at=item['source_sample'];parts.extend([raw[cursor:at],np.zeros(item['frames'],dtype=np.int16)]);cursor=at
  parts.append(raw[cursor:]);output=np.concatenate(parts);sf.write(out,output,sr,subtype='PCM_16')
  if not insertions and sha(out)!=sha(source):raise ValueError('no-breath route must retain exact carrier bytes')
- clock['source_audio_sha256']=sha(out);plan=compile_scene(text,actual,prior,timeline=clock,policy=POLICY);verify_plan(plan)
+ clock['source_audio_sha256']=sha(out);plan=compile_scene(text,actual,prior,timeline=clock,policy=policy);verify_plan(plan)
  receipt={'role':'quiet respiratory-budget diagnostic, not completed Mari performance','full_completion':False,
   'source_sha256':sha(source),'audio_sha256':sha(out),'implementation_sha256':sha(__file__),
   'source_timeline':timeline,'delivered_timeline':clock,'source_scene':scene,'delivered_scene':actual,'plan':plan,

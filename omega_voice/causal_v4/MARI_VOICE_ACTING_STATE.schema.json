@@ -302,6 +302,22 @@
         },
         "misunderstandings": {
           "type": "array"
+        },
+        "condition": {
+          "type": "object",
+          "properties": {
+            "worry": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "confusion": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [

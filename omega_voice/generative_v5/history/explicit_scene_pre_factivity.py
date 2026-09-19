@@ -141,14 +141,6 @@ class ExplicitSceneCompiler:
      if lemma=='search' or (lemma=='look' and 'for' in subtree and any(x in subtree for x in ['word','name'])):add(token,'thought','remembering' if 'memory' in subtree else 'searching')
      elif lemma in THOUGHT:
       if lemma!='correct' or any(x in subtree for x in ['herself','her earlier','her previous']):add(token,'thought',THOUGHT[lemma])
-      if self.temporal_policy=='listener_causal_v6' and lemma in {'realize','remember'}:
-       # An asserted finite factive complement supplies an epistemic result.
-       # Deciding, imagining, conditional or negated cognition does not.
-       for child in token.children:
-        if child.dep_=='ccomp':
-         tokens_of_fact=[x for x in child.subtree if not (x.dep_=='mark' and x.lower_=='that')]
-         if tokens_of_fact:add(token,'knowledge',' '.join(x.text for x in tokens_of_fact))
-       if lemma=='remember' and any(c.dep_=='ccomp' for c in token.children):add(token,'thought','known')
      elif lemma in ACTION:add(token,'action',ACTION[lemma])
      elif lemma in {'trust','distrust'}:add(token,'relationship.'+('trust' if lemma=='trust' else 'suspicion'),.8)
      elif lemma=='know':
@@ -156,7 +148,7 @@ class ExplicitSceneCompiler:
       else:
        complements=[c for c in token.children if c.dep_ in {'ccomp','dobj','xcomp'}]
        if complements:
-        prop=' '.join(x.text for c in complements for x in c.subtree if not (self.temporal_policy=='listener_causal_v6' and c.dep_=='ccomp' and x.dep_=='mark' and x.lower_=='that'))
+        prop=' '.join(x.text for c in complements for x in c.subtree)
         add(token,'knowledge',prop)
      elif lemma in {'spot','notice','see'}:add(token,'observation',sentence)
      elif lemma in {'run','sprint','climb'}:add(token,'body_state.exertion',.75)

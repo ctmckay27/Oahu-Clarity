@@ -48,7 +48,7 @@ class PerformanceSession:
   self.conditioning=conditioning
   if articulation and mode!='physical':raise ValueError('consonant precision requires physical mechanism')
   self.articulation=bool(articulation)
-  if respiration and (mode!='physical' or temporal_policy!='respiratory_budget_v5'):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5')
+  if respiration and (mode!='physical' or temporal_policy not in {'respiratory_budget_v5','listener_causal_v6'}):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5 or successor')
   self.respiration=bool(respiration)
   if cold_start not in {'profile_only','selected_anchor_icl'}:raise ValueError('unknown cold-start conditioning')
   self.cold_start=cold_start
@@ -218,7 +218,7 @@ class PerformanceSession:
    if self.respiration:
     from .respiration import realize as breathe
     respiratory_carrier=target/'respiratory_carrier.wav'
-    respiratory_receipt=breathe(carrier,respiratory_carrier,text,scene,prior,timeline)
+    respiratory_receipt=breathe(carrier,respiratory_carrier,text,scene,prior,timeline,policy=self.temporal_policy)
     receipt['respiration']=respiratory_receipt
     carrier=respiratory_carrier;timeline=respiratory_receipt['delivered_timeline'];scene=respiratory_receipt['delivered_scene']
     expected_frames+=respiratory_receipt['added_samples']

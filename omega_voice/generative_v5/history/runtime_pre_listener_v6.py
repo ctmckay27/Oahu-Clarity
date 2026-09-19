@@ -96,12 +96,6 @@ def validate_state(s):
         raise ValueError("unsupported tactic/thought")
     if s["turn"]<0 or s["time_s"]<0 or not s["listener_model"]["id"]:
         raise ValueError("invalid continuity coordinates")
-    condition=s['listener_model'].get('condition',{})
-    if not isinstance(condition,dict) or set(condition)-{'worry','confusion'}:
-        raise ValueError('unsupported listener condition')
-    for value in condition.values():
-        if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or not 0<=value<=1:
-            raise ValueError('invalid listener condition')
     for path,(lo,hi) in NUMERIC_PATHS.items():
         x=get_path(s,path)
         if isinstance(x,bool) or not isinstance(x,(int,float)) or not math.isfinite(x) or not lo<=x<=hi:
@@ -178,11 +172,11 @@ def apply_event(s,e,policy=None):
             s["knowledge_state"]["certainty"]=confidence
             s["knowledge_state"][status][prop]={"confidence":confidence,"source":e["source"]}
             if prop in s["knowledge_state"]["unresolved"]:s["knowledge_state"]["unresolved"].remove(prop)
-        if policy in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'} and prop!=s['knowledge_state'].get('assertion',{}).get('proposition'):
+        if policy in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5'} and prop!=s['knowledge_state'].get('assertion',{}).get('proposition'):
             # Knowing an unrelated fact does not strengthen this assertion.
             s['knowledge_state']['certainty']=old_certainty
     elif k=='assertion':
-        if policy not in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'}:raise ValueError('assertion focus requires epistemic_focus_v2 or successor')
+        if policy not in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5'}:raise ValueError('assertion focus requires epistemic_focus_v2 or successor')
         prop=e.get('proposition');mode=e.get('mode','assert')
         if not isinstance(prop,str) or not prop.strip() or mode not in {'assert','admit_unknown','ask'}:raise ValueError('invalid assertion focus')
         confidence=e.get('confidence')
@@ -211,20 +205,10 @@ def apply_event(s,e,policy=None):
         s["character"]["listener_histories"][old]={"relationship":copy.deepcopy(s["relationship"]),
                                                 "model":copy.deepcopy(s["listener_model"])}
         stored=s["character"]["listener_histories"].get(new)
-        if stored and 'condition' in stored['model'] and policy!='listener_causal_v6':
-            raise ValueError('stored listener condition requires listener_causal_v6')
         fresh=new_state(listener_id=new)
         s["relationship"]=copy.deepcopy(stored["relationship"] if stored else fresh["relationship"])
         s["listener_model"]=copy.deepcopy(stored["model"] if stored else fresh["listener_model"])
         numeric_patch(s,{"relationship."+k:v for k,v in e.get("relationship",{}).items()})
-    elif k=='listener_condition':
-        if policy!='listener_causal_v6':raise ValueError('listener condition requires listener_causal_v6')
-        if e.get('listener_id',s['listener_model']['id'])!=s['listener_model']['id']:
-            raise ValueError('listener observation belongs to another listener')
-        values=e.get('values')
-        if not isinstance(values,dict) or not values or set(values)-{'worry','confusion'}:
-            raise ValueError('invalid listener observation')
-        s['listener_model'].setdefault('condition',{}).update(copy.deepcopy(values))
     elif k=="feedback":
         feedback=e["feedback"]
         if feedback=="resistance":
@@ -250,13 +234,13 @@ def apply_event(s,e,policy=None):
         if e["proposition"] not in s["character"]["commitments"]:
             s["character"]["commitments"].append(e["proposition"])
     elif k=='speech_act':
-        if policy not in {'linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'}:raise ValueError('scoped speech act requires linguistic_scope_v4')
+        if policy not in {'linguistic_scope_v4','respiratory_budget_v5'}:raise ValueError('scoped speech act requires linguistic_scope_v4')
         mode=e.get('mode');end=e.get('until_word')
         if mode not in {'assert','admit_unknown','ask','request','acknowledge'} or type(end) is not int or end<=e['at_word']:
             raise ValueError('invalid scoped speech act')
         s['speech_behavior']['scoped_act']={'mode':mode,'until_word':end,'cause':e['id'],'source':copy.deepcopy(e['source'])}
     elif k=="inhale":
-        if policy not in {'respiratory_budget_v5','listener_causal_v6'}:raise ValueError('explicit inhalation requires respiratory_budget_v5')
+        if policy!='respiratory_budget_v5':raise ValueError('explicit inhalation requires respiratory_budget_v5')
         duration=e.get('duration_s');volume=e.get('reserve_increment')
         if any(isinstance(x,bool) or not isinstance(x,(int,float)) or not math.isfinite(x) for x in [duration,volume]):raise ValueError('invalid inhalation quantities')
         if not 0<duration<=2 or not 0<volume<=1:raise ValueError('inhalation outside modeled bound')
@@ -267,7 +251,7 @@ def apply_event(s,e,policy=None):
         if e["behavior"] not in {"laugh","sigh","acknowledgment"}:raise ValueError("unsupported nonlexical event")
         s["nonlexical_behavior"].append({"behavior":e["behavior"],"cause":e["id"],"at_word":e["at_word"]})
     else:raise ValueError("unknown event kind: "+str(k))
-    if policy in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'} and k=='thought' and e.get('mode') in {'realizing','correcting'}:
+    if policy in {'epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5'} and k=='thought' and e.get('mode') in {'realizing','correcting'}:
         # Completing a thought may reveal uncertainty or an error. Its
         # epistemic result must come from evidence, not the operation label.
         s['knowledge_state']['certainty']=old_certainty
@@ -300,19 +284,10 @@ def realize_state(s,at_word,active_causes,policy=None):
     s["leakage"].update(pressure=leakage,active=leakage>.72,cause=active_causes[-1] if leakage>.72 and active_causes else None)
     support=clamp(b["breath_reserve"]*(1-.35*b["fatigue"])/(1+.35*b["exertion"]))
     pressure=clamp(.2+.25*irritation+.18*urgency+.12*b["tension"]-.12*b["fatigue"])
-    if policy in {'respiratory_budget_v5','listener_causal_v6'}:pressure*=min(1.,support/.35)
+    if policy=='respiratory_budget_v5':pressure*=min(1.,support/.35)
     projection=clamp(.4-.20*closeness+.13*urgency+.04*r["authority"])
     attack=clamp(.25+.35*em["tenderness"]+.12*r["concern"]-.15*irritation)
     precision=clamp(.5+.28*irritation+.13*l["resistance"]+.12*(s["tactic"] in {"clarify","correct","set_boundary"})-.08*b["fatigue"])
-    if policy=='listener_causal_v6':
-        # Another person's state is not Mari's emotion. A chosen tactic and
-        # relationship determine her response; worry alone changes no sound.
-        condition=l.get('condition',{})
-        care=condition.get('worry',0.)*r['concern']*(s['tactic'] in {'reassure','protect'})
-        clarification=condition.get('confusion',0.)*(s['tactic'] in {'clarify','correct'})
-        attack=clamp(attack+.20*care)
-        pressure=clamp(pressure-.08*care)
-        precision=clamp(precision+.10*clarification)
     s["vocal_configuration"]={"support":support,"pressure":pressure,"projection":projection,
                               "attack_softness":attack,"precision":precision,"breathiness":0.0}
     rate=clamp(1+.07*urgency-.09*search-.05*b["fatigue"]-.03*l["resistance"]+.015*r["expected_knowledge"],.86,1.10)
@@ -345,7 +320,7 @@ def realize_state(s,at_word,active_causes,policy=None):
 
 def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
     if not isinstance(text,str) or not words(text):raise ValueError("spoken text required")
-    if policy not in {None,'bounded_thought_recovery_v1','epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'}:raise ValueError('unknown temporal policy')
+    if policy not in {None,'bounded_thought_recovery_v1','epistemic_focus_v2','embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5'}:raise ValueError('unknown temporal policy')
     def evolve(state,dt,speaking=True,respiratory_rest=True):
         advance(state,dt,speaking,respiratory_rest=respiratory_rest)
         if policy and state['mental_state']['thought'] in {'realizing','correcting'}:
@@ -362,11 +337,9 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
     if set(scene)-allowed:raise ValueError("unknown scene field")
     original=copy.deepcopy(prior if prior is not None else new_state(scene.get("session_id","mari-default"),scene.get("listener_id","unspecified")))
     validate_state(original)
-    if policy!='listener_causal_v6' and 'condition' in original['listener_model']:
-        raise ValueError('listener-conditioned continuity requires listener_causal_v6')
     if scene.get("session_id",original["session_id"])!=original["session_id"]:raise ValueError("session mismatch")
     s=copy.deepcopy(original)
-    if policy in {'linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'}:s['speech_behavior'].pop('scoped_act',None)
+    if policy in {'linguistic_scope_v4','respiratory_budget_v5'}:s['speech_behavior'].pop('scoped_act',None)
     if scene.get("listener_id",s["listener_model"]["id"])!=s["listener_model"]["id"]:
         raise ValueError("listener changes require explicit listener event")
     elapsed=scene.get("elapsed_s",0.0)
@@ -387,7 +360,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
             if not last_end<=t['start']<t['end']<=duration+.001:
                 raise ValueError('nonmonotonic word clock')
             last_end=t['end']
-        advance(s,timeline['words'][0]['start'],speaking=False,respiratory_rest=policy not in {'embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'})
+        advance(s,timeline['words'][0]['start'],speaking=False,respiratory_rest=policy not in {'embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5'})
     for e in events:
         if not isinstance(e.get("at_word"),int) or not 0<=e["at_word"]<=n:raise ValueError("event boundary out of range")
         if not e.get("id") or e["id"] in ids:raise ValueError("missing/duplicate event id")
@@ -422,7 +395,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
             s['prosody']['onset_delay_s']=0.;s['microbehavior']=copy.deepcopy(knot['microbehavior'])
             knot['state_hash']=digest(s)
         knots.append(knot)
-        if i in grouped or i==0 or i==n or policy in {'respiratory_budget_v5','listener_causal_v6'}:state_samples.append({"at_word":i,"state":copy.deepcopy(s)})
+        if i in grouped or i==0 or i==n or policy=='respiratory_budget_v5':state_samples.append({"at_word":i,"state":copy.deepcopy(s)})
         if i<n:
             speaking=s["interaction_state"]["phase"]=="speaking"
             if timeline is None:evolve(s,.30/knot["controls"]["rate"],speaking=speaking)
@@ -432,7 +405,7 @@ def compile_scene(text,scene=None,prior=None,timeline=None,policy=None):
                 next_start=timeline['words'][i+1]['start'] if i+1<n else timeline['duration_s']
                 # CTC gaps include closures, coarticulation and alignment
                 # blanks. They are not observations of an inhalation or rest.
-                evolve(s,max(0,next_start-clock['end']),speaking=False,respiratory_rest=policy not in {'embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5','listener_causal_v6'})
+                evolve(s,max(0,next_start-clock['end']),speaking=False,respiratory_rest=policy not in {'embodied_continuity_v3','linguistic_scope_v4','respiratory_budget_v5'})
     s["turn"]+=1
     s["previous_vocal_state"]=copy.deepcopy(original["vocal_configuration"])
     s["temporal_trajectory"]=[{"at_word":k["at_word"],"thought":k["thought"],"state_hash":k["state_hash"]} for k in knots]
