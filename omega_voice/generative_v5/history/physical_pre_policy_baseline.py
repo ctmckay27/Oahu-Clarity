@@ -14,7 +14,7 @@ from ..causal_v4.renderer import sha,inspect_audio
 
 def control_curves(plan,times):
  if not verify_plan(plan) or 'realization_timeline' not in plan:raise ValueError('verified actual word clock required')
- timeline=plan['realization_timeline'];neutral=compile_scene(plan['text'],timeline=timeline,policy=plan.get('temporal_policy'))
+ timeline=plan['realization_timeline'];neutral=compile_scene(plan['text'],timeline=timeline)
  starts=np.array([w['start'] for w in timeline['words']]);indices=np.clip(np.searchsorted(starts,times,side='right')-1,0,len(starts)-1)
  curves={}
  for name in ['phonatory_tension','attack_softness','gain_db']:
