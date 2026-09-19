@@ -37,7 +37,7 @@ def unresolved_channels(plan):
  return sorted(channels)
 
 class PerformanceSession:
- def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent',articulation=False,cold_start='profile_only',respiration=False):
+ def __init__(self,root,directory,evaluator,bank=None,bank_sha256=None,mode='native',aligner=None,temporal_policy=None,scene_compiler=None,conditioning='independent',articulation=False,cold_start='profile_only',respiration=False,prominence=False,prominence_calibration=None):
   self.root=pathlib.Path(root);self.directory=pathlib.Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
   if mode not in ['native','physical']:raise ValueError('unknown realization mechanism')
   if mode=='physical' and aligner is None:raise ValueError('physical session requires independently qualified alignment')
@@ -50,6 +50,10 @@ class PerformanceSession:
   self.articulation=bool(articulation)
   if respiration and (mode!='physical' or temporal_policy not in {'respiratory_budget_v5','listener_causal_v6','contrast_focus_v7'}):raise ValueError('respiratory planning requires physical mechanism and respiratory_budget_v5 or successor')
   self.respiration=bool(respiration)
+  if type(prominence) is not bool or (prominence and (mode!='physical' or temporal_policy!='contrast_focus_v7')):raise ValueError('prominence requires physical contrast_focus_v7')
+  self.prominence=prominence;self.prominence_calibration=pathlib.Path(prominence_calibration) if prominence_calibration else None
+  if prominence and (self.prominence_calibration is None or sha(self.prominence_calibration)!='cc38d2a2d23689ab735a92e5076e8dbd7a11466dac83fd8c66e03de3b8c888c3'):raise ValueError('selected prominence calibration required')
+  if not prominence and prominence_calibration is not None:raise ValueError('unused prominence calibration')
   if cold_start not in {'profile_only','selected_anchor_icl'}:raise ValueError('unknown cold-start conditioning')
   self.cold_start=cold_start
   self.bank_path=pathlib.Path(bank) if bank else None
@@ -113,7 +117,7 @@ class PerformanceSession:
    if prior['interaction_state']['phase']=='interrupted' and parent.get('delivery',{}).get('kind')!='verified_interrupted_native_stream':raise UnresolvedRealization('full prior carrier must not condition recovery after partial delivery')
    reference={'audio':str(prior_audio),'text':parent['delivered_plan']['text'],'sha256':sha(prior_audio),'source_carrier_sha256':ANCHOR,
     'role':'preceding verified native carrier; physical state carried separately to avoid repeated physical processing'}
-  request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy,'conditioning':self.conditioning,'reference':reference,'consonant_precision':self.articulation,'cold_start':self.cold_start,'respiration':self.respiration})
+  request_hash=digest({'text':text,'source_scene':source_scene or {},'scene':scene or {},'compiler':scene_record['provenance'] if scene_record else None,'seed':seed,'parent':digest(prior) if prior else None,'mechanism':self.mode,'temporal_policy':self.temporal_policy,'conditioning':self.conditioning,'reference':reference,'consonant_precision':self.articulation,'cold_start':self.cold_start,'respiration':self.respiration,'prominence':self.prominence,'prominence_calibration_sha256':sha(self.prominence_calibration) if self.prominence else None})
   target=self.directory/request_id
   if target.exists():raise FileExistsError('request already exists; inspect its persisted receipt rather than regenerate or double-commit')
   target.mkdir();draft=self.compile(text,scene,prior)
@@ -215,6 +219,19 @@ class PerformanceSession:
    aligned=dict(base,asr_alignment=base['alignment'],alignment=alignment)
    timeline=timeline_from_evaluation(aligned);respiratory_receipt=None
    expected_frames=base['audio']['frames']
+   prominence_receipt=None
+   if self.prominence:
+    from .prominence_duration import realize as emphasize
+    prominence_plan=self.compile(text,scene,prior,timeline=timeline)
+    prominent=target/'prominence.wav';prominence_receipt=emphasize(carrier,prominent,prominence_plan,self.prominence_calibration)
+    receipt['prominence']=prominence_receipt
+    quality=self.evaluator.evaluate(prominent,text)
+    if not quality['quality_screen_pass'] or quality['wer']!=0:raise UnresolvedRealization('scoped prominence quality gate failed')
+    observed_prominence=self.aligner.align(self.evaluator.load(prominent),text,sha(prominent),True)
+    clock_error=max(abs(a[k]-b[k]) for a,b in zip(prominence_receipt['mapped_timeline']['words'],observed_prominence['words']) for k in ['start','end'])
+    receipt['prominence_evaluation']={'quality':quality,'alignment':observed_prominence,'clock_error_s':clock_error}
+    if clock_error>.08:raise UnresolvedRealization('prominence clock mapping failed')
+    carrier=prominent;timeline=timeline_from_evaluation(dict(quality,alignment=observed_prominence));expected_frames+=prominence_receipt['added_samples']
    if self.respiration:
     from .respiration import realize as breathe
     respiratory_carrier=target/'respiratory_carrier.wav'
@@ -242,6 +259,8 @@ class PerformanceSession:
    unresolved=set(unresolved_channels(plan))-{'phonatory_tension','attack_softness','gain_db'}
    if self.articulation and 'precision' in unresolved:
     unresolved.remove('precision');unresolved.add('perceived_articulatory_precision')
+   if prominence_receipt:
+    unresolved.discard('emphasis');unresolved.add('perceived_dramatic_appropriateness_of_contrast')
    if respiratory_receipt:
     unresolved.discard('support');unresolved.add('respiratory_physiology_and_perceived_timing')
    receipt.update(quality_admitted=bool(admitted),unresolved_channels=sorted(unresolved),alignment=alignment,
