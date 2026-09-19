@@ -44,7 +44,7 @@ def verify_runtime(root):
   if sha(model/rel)!=h:raise ValueError('model bytes changed: '+rel)
  return {'build':receipt,'model':prov}
 
-def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None):
+def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None,incremental_text=False):
  root=Path(root);out=Path(out);out.parent.mkdir(parents=True,exist_ok=True)
  if out.exists():raise FileExistsError(out)
  if not text.strip() or re.search(r'[\[\]<>]',text):raise ValueError('invalid spoken text')
@@ -65,6 +65,9 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   cmd.extend(['--emo-ref',str(ref),'--emo-ref-text',reference['text']])
   reference_record=dict(reference,audio_info=refinfo)
  env={k:v for k,v in os.environ.items() if not k.startswith(('QWEN_','MARI_'))}
+ if not isinstance(incremental_text,bool):raise ValueError('incremental text flag must be boolean')
+ if incremental_text:
+  env['QWEN_TTS_STREAM_LAYOUT']='1';env['QWEN_DUMP_CODE0']=str(out.with_suffix('.code0.txt'))
  if trajectory:env['MARI_TRAJECTORY']=str(Path(trajectory).resolve())
  if teacher_codes:
   if trajectory:raise ValueError('calibration replay and free-generation control are separate routes')
@@ -77,6 +80,7 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
  out.with_suffix('.log').write_text(r.stdout+r.stderr)
  if r.returncode:raise RuntimeError('native renderer failure: '+r.stderr[-1500:])
  if trajectory and 'MARI_NATIVE_TRAJECTORY' not in r.stderr:raise RuntimeError('trajectory did not enter native renderer')
+ if incremental_text and not re.search(r'stream_common=\d+, trailing_text=[1-9][0-9]*',r.stderr):raise RuntimeError('incremental text layout did not enter native renderer')
  if reference and ('Emotion-by-example:' not in r.stderr or not re.search(r'icl_codes=[1-9][0-9]*',r.stderr)):
   raise RuntimeError('reference conditioning did not enter native renderer; output is not admitted')
  if teacher_codes and f'teacher-forcing replay: {len(codes)} reference frames' not in r.stderr:raise RuntimeError('teacher forcing did not enter renderer')
@@ -89,6 +93,10 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   capture_info={'frames':len(seq),'sha256':sha(out.with_suffix('.qseq'))}
  record={'role':'native generative diagnostic','command':cmd,'explicit_environment':{k:v for k,v in env.items() if k.startswith(('QWEN_','MARI_'))},'audio':audio,'text':text,'seed':seed,'elapsed_wall_s':time.monotonic()-start,'binary_sha256':receipt['binary_sha256'],'prose_instructions':False,'trajectory_sha256':sha(trajectory) if trajectory else None}
  record.update(runtime_lock=lock,capture=capture_info,reference=reference_record)
+ if incremental_text:
+  codes=out.with_suffix('.code0.txt')
+  if not codes.is_file() or not codes.stat().st_size:raise RuntimeError('incremental token evidence absent')
+  record.update(text_availability='one text token per generation frame; diagnostic qualification pending',code0_sha256=sha(codes))
  if teacher_codes:
   if round(audio['duration_s']/.08)!=len(codes):raise RuntimeError('teacher-forcing replay length mismatch')
   record.update(role='teacher-forced calibration reconstruction; not free generation',teacher_codes_sha256=sha(teacher_codes))

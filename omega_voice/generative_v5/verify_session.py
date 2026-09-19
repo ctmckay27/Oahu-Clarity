@@ -6,11 +6,15 @@ from ..causal_v4.evaluate import Evaluator
 from ..causal_v4.renderer import sha
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('root');a=ap.parse_args();r=pathlib.Path(a.root)
- d=r/'continuation/session_continuity';d.mkdir(exist_ok=True)
+ ap=argparse.ArgumentParser();ap.add_argument('root');ap.add_argument('--mode',choices=['native','physical'],default='native');ap.add_argument('--output',default='session_continuity');a=ap.parse_args();r=pathlib.Path(a.root)
+ d=r/'continuation'/a.output;d.mkdir(exist_ok=True)
  ev=Evaluator(r/'models/whisper',r/'models/ecapa',r/'recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav')
  bank=r/'continuation/isolated_calibration/isolated_finality_bank.npz'
- def session(name):return PerformanceSession(r,d/name,ev,bank,sha(bank))
+ aligner=None
+ if a.mode=='physical':
+  from .alignment import ForcedAligner
+  aligner=ForcedAligner('/tmp/mari-alignment-large',r/'continuation/FORCED_ALIGNMENT_LARGE_DEPENDENCIES.json')
+ def session(name):return PerformanceSession(r,d/name,ev,bank,sha(bank),mode=a.mode,aligner=aligner)
  events=[{'id':'location-unverified','at_word':0,'kind':'knowledge','status':'beliefs','confidence':.15,'proposition':'spare-key location','source':{'text':'Mari has only an unverified recollection of the location.'}},
          {'id':'memory-search','at_word':0,'kind':'thought','mode':'remembering','source':{'text':'Mari searches her memory while checking the room.'}},
          {'id':'key-seen','at_word':7,'kind':'knowledge','status':'known','confidence':.98,'proposition':'spare-key location','source':{'text':'At the second sentence Mari sees the key beside the blue bowl.'}},
