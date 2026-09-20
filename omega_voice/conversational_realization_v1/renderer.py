@@ -249,15 +249,24 @@ def render_whole_utterance_baseline(
     """Matched-text baseline: one neutral whole-utterance render, same speaker profile."""
     verify_realization_plan(realization_plan)
     text=" ".join(u["text"] for u in realization_plan["units"])
+    raw_path=str(Path(output).with_suffix(".raw.wav"))
+    if Path(raw_path).exists(): Path(raw_path).unlink()
     result=_render_engine_unit(
-        engine=engine,model=model,profile=profile,text=text,output=output,
+        engine=engine,model=model,profile=profile,text=text,output=raw_path,
         seed=seed,rate=1.0,volume=1.0,
     )
+    y,sr=sf.read(raw_path,dtype="float32",always_2d=True)
+    mono=y[:,0]
+    latency=float(realization_plan["continuity"]["initial_response_latency_s"])
+    matched=np.concatenate([np.zeros(int(round(sr*latency)),dtype=np.float32),mono])
+    sf.write(output,matched,sr,subtype="PCM_16")
+    Path(raw_path).unlink(missing_ok=True)
+    matched_info=inspect_wav(output)
     return {
         "schema":"mari-conversational-realization-baseline/1.0",
         "plan_hash":realization_plan["plan_hash"],
         "text":text,
-        "output":result["audio"],
+        "output":matched_info,
         "identity":{"anchor_sha256":ANCHOR_SHA256,"profile_sha256":PROFILE_SHA256},
         "whole_utterance":True,
         "generic_tts_fallback":False,
