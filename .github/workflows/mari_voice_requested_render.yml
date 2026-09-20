@@ -1,0 +1,152 @@
+name: mari-voice-requested-render
+
+on:
+  push:
+    branches: [mari-voice-render-20260920-g11]
+    paths: ['.github/workflows/mari_voice_requested_render.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  ENGINE_REV: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  MODEL_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recover existing production identity assets
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: 35405800719
+          path: package
+      - name: Verify exact accepted identity before execution
+        run: |
+          python - <<'PY'
+          import hashlib,pathlib
+          base=pathlib.Path('package/production')
+          expected={
+            'MARI_VOICE_V1_ANCHOR.wav':'73bb894fc75e18dddf76e3327f3bf48e161b7dd8b30fbe4949c3ac7318c29567',
+            'MARI_VOICE_V1_PROFILE.bin':'9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa',
+          }
+          for name,digest in expected.items():
+            p=base/name
+            assert p.is_file(),name
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==digest,name
+          print('Exact accepted G1-1 anchor and x-vector hashes verified.')
+          PY
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev ffmpeg
+          python -m pip install -q 'numpy<2' soundfile faster-whisper
+      - name: Build exact pinned production engine
+        run: |
+          set -euo pipefail
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$ENGINE_REV"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$ENGINE_REV"
+          make -C engine blas SIMD=portable
+          cd engine
+          sed "s|/resolve/main|/resolve/$MODEL_REV|g" download_model.sh > pinned_download.sh
+          bash pinned_download.sh --model large --dir customvoice-large
+      - name: Generate new waveforms with preserved identity
+        env:
+          OPENBLAS_NUM_THREADS: '4'
+          OMP_NUM_THREADS: '4'
+        run: |
+          python - <<'PY'
+          import datetime,hashlib,json,os,pathlib,subprocess
+          import numpy as np
+          import soundfile as sf
+          out=pathlib.Path('rendered');out.mkdir()
+          base=pathlib.Path('package/production')
+          cases={c['id']:c for c in json.loads((base/'FINAL_CASES.json').read_text())}
+          plan=[('Mari_Dry_Amusement',['perf_amusement','heldout_3'],'dry_amusement',920404),
+                ('Mari_Grounded_Warmth',['perf_reassuring'],'reassuring',920405)]
+          directions={
+            'dry_amusement':'Dry understated amusement. A restrained intelligent smile in the timing, never cute, breathy, or theatrical.',
+            'reassuring':'Calm direct reassurance. Grounded warmth, measured pace, steady clarity, never sentimental or whispery.',
+          }
+          receipts=[]
+          for name,ids,perf,seed in plan:
+            text=' '.join(cases[i]['text'] for i in ids)
+            wav=out/(name+'.wav')
+            cmd=['engine/qwen_tts','-d','engine/customvoice-large','--load-voice',str(base/'MARI_VOICE_V1_PROFILE.bin'),
+              '--xvector-only','-l','English','--text',text,'--seed',str(seed),
+              '--temperature','0.42','--top-k','40','--top-p','0.95','--rep-penalty','1.05',
+              '-j4','--instruct',directions[perf],'-o',str(wav)]
+            with (out/(name+'.engine.log')).open('w') as log:
+              subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=600)
+            y,sr=sf.read(wav,dtype='float32',always_2d=True)
+            assert sr==24000 and y.shape[1]==1,(sr,y.shape)
+            assert np.isfinite(y).all() and len(y)>sr
+            assert float(np.max(np.abs(y)))>.01
+            assert float(np.mean(np.abs(y)>=.9999))<.001
+            assert hashlib.sha256(wav.read_bytes()).hexdigest()!=hashlib.sha256((base/'MARI_VOICE_V1_ANCHOR.wav').read_bytes()).hexdigest()
+            subprocess.run(['ffmpeg','-y','-hide_banner','-loglevel','error','-i',str(wav),'-codec:a','libmp3lame','-b:a','160k',str(out/(name+'.mp3'))],check=True)
+            (out/(name+'.txt')).write_text(text+'\n')
+            receipt={
+              'name':name,'selected_identity':'G1-1 / Mari Voice v1','fresh_waveform':True,
+              'text_source':'preserved production FINAL_CASES.json','source_case_ids':ids,
+              'performance':perf,'seed':seed,'engine_revision':os.environ['ENGINE_REV'],
+              'model_revision':os.environ['MODEL_REV'],
+              'anchor_sha256':hashlib.sha256((base/'MARI_VOICE_V1_ANCHOR.wav').read_bytes()).hexdigest(),
+              'profile_sha256':hashlib.sha256((base/'MARI_VOICE_V1_PROFILE.bin').read_bytes()).hexdigest(),
+              'wav_sha256':hashlib.sha256(wav.read_bytes()).hexdigest(),
+              'sample_rate_hz':sr,'duration_s':len(y)/sr,'peak':float(np.max(np.abs(y))),
+              'fallback_used':False,'generation_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            }
+            receipts.append(receipt)
+            (out/'GENERATION_RECEIPT.json').write_text(json.dumps(receipts,indent=2))
+            print(json.dumps({k:receipt[k] for k in ['name','duration_s','wav_sha256','fresh_waveform']}),flush=True)
+          PY
+      - name: Verify intelligible words
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python - <<'PY'
+          import json,pathlib,re
+          from faster_whisper import WhisperModel
+          out=pathlib.Path('rendered')
+          model=WhisperModel('base.en',device='cpu',compute_type='int8',cpu_threads=4)
+          checks=[]
+          def words(s):return re.findall(r"[a-z]+(?:'[a-z]+)?",s.lower())
+          def distance(a,b):
+            row=list(range(len(b)+1))
+            for i,x in enumerate(a,1):
+              new=[i]
+              for j,y in enumerate(b,1):new.append(min(new[-1]+1,row[j]+1,row[j-1]+(x!=y)))
+              row=new
+            return row[-1]
+          for wav in sorted(out.glob('*.wav')):
+            segs,_=model.transcribe(str(wav),language='en',beam_size=5,vad_filter=False)
+            observed=' '.join(s.text.strip() for s in segs)
+            reference=wav.with_suffix('.txt').read_text().strip()
+            error=distance(words(reference),words(observed))/max(1,len(words(reference)))
+            checks.append({'file':wav.name,'reference':reference,'transcript':observed,'word_error_rate':error,'pass':error<=.20})
+          (out/'ASR_VERIFICATION.json').write_text(json.dumps(checks,indent=2))
+          print(json.dumps([{'file':x['file'],'word_error_rate':x['word_error_rate'],'pass':x['pass']} for x in checks]))
+          assert all(x['pass'] for x in checks),'Inspect ASR verification; do not substitute voice.'
+          PY
+      - name: Preserve generated audio and receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mari-requested-voice-g11-20260920
+          path: rendered/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
