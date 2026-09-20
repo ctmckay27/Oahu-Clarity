@@ -20,12 +20,11 @@ SHAPE = (29, 2048)
 _COMPRESSED_B64 = (
     "eNrtmkmvrdl511ffvN1uT3O7KruqjJ2E2I5F4jQVbKQghUSKIBJigBgkQso3AImJkRgwY8AIiSEDT4AoJEhkQCIYQGyICcaJXWWX"
     "q+r2p9nN269+8dwhcyag9yfdwb13n92s9Tz/Zusg9I+/hv4v//m7//Dvv/9X0L97/5/94cv3d7/Ofvn3/1H1y//nYxYWFhYWFhYW"
-    "FhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYW"
-    "FhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYW"
+    "FhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYW"
     "FhYWFhYWFhb+32NzGG2B8LwztUYan1NboCEwtI2pPQzqlviDvPdth4qCppSmqzMWF0kkNPXs66PsmpvLXZE2mkVhj9u5/KJld8NU"
     "T6v1fDJkTmEeVmO3+V67M9LqxvtzKElDa8r2nCVGj+RZFqUVOJ+e/WifBoo6kb+V8ReEWpOxLV9OR1pdfPf2aO1tEV1ONbqRUfXx"
     "5Lqa8zY8UfLBp/60wdefCH9Yf/Ir4ambLmwQx81cD52qpgONW/qEbfbjMbmQ+Do3vF6zTnqypTnQl/nBdSjwwdFnr/GwnwaytbQn"
-    "JmaCd7I2ev74LhaY7XqphrOgMfat+quOHaZ3JD2jJ7/jSy3G8zls+wobnHfXH0fubUgtu+PD9NkXj3H7zYAs90GH+z609r0qV7Le"
+    "JmaCd7I2ev74LhaY7XqphrOgMfat+quOHaZ3JD2jJ7cjSy3G8zls+wobnHfXH0fubUgtu+PD9NkXj3H7zYAs90GH+z609r0qV7Le"
     "360DrtKeqqqzRG3SKh9sv2qx7kIhhS3+60BfGMHgPR5w7oVu8gFOXq0qEn2a6wmZYhDctLFoxrU4Of7iTmqjVMy70V+eX/Iy/vFI"
     "n1j9vTVDlKP1xjQvN1cpds00rFfyYRLqMxZ9/MRN8009+zF2/gsqo5Q0hqtB1cDVaE432lf80TZuTC8RlvtBSJoG29mTGWsYHo1Z"
     "vigFYk03idWTkygyGmQ3nEfD18/Yb10Px9vQjKJipyyVIUomWQUxqGnsQ7dDLfZD3pUHXN+nsLNPaDIjoRtHsa3ezQMJtm8luteC"
@@ -40,7 +39,7 @@ _COMPRESSED_B64 = (
     "Kzw/9Sr4QxvltWCDKlUsPvqskdtXsiZM+a+NsIPxljXFKW+4+TmsnrjL+PZBN5/u6Y/E23O7vggVvnq5J9P2Ye7+iOMVtVfFpbcE"
     "609NHH0rSxi7b86m53+Hfr4df1c2j6P3JFTaf1Rgy0wot2kIGWO8fuc03KPNqts63lq9c1Slm+4oCj68cD18YtSf7nYOrVkcZX6e"
     "6t0PsDtSYTaajr1GN/u59rlSc8sUed7cZSM6vL6NiG7ka7luWPHgRyD9j+UL/qUH5votqnZ0XXjQoop1YEUrp1+L+YGsbsUXfrLq"
-    "9mhUDCdR/fYspuZpv2VnczweiCiIgtG3+362efr4k3brJ1LczbelSGklzvj4SVIkN+Hztpq/M9zNVde6x1aQhBhHomv8uY0s0uH1"
+    "9mhUDCdR/fYspuZpv2VnczweiCiIgtG3s362efr4k3brJ1LczbelSGklzvj4SVIkN+Hztpq/M9zNVde6x1aQhBhHomv8uY0s0uH1"
     "eT9vHl3YGbXrguUZIYpneuENHrj7jlK+emefXGvSSBMcmbwplf3ji674k7P1+9Nsv8ISXpFgGstcAz8/5edFc3G60O88xWc8j5+G"
     "bM1ENzSvlAW58Uz+x7Ha9M5tzjG5WRV9vJ8LGo91/VwosV1ZEv/pc+1p9aQJ8tba6TCHjp9+naJofXX3MPmb/foahhiNGyIp8YoV"
     "6/zZLsrZFuvYTQ8dg0VbOdcyP7E6VJO3vkVnHnMIq3GkWjiKUF/1qCoDysbO+nNJHHftZ5WIJcpMnc8GlddOuW5uWFMiH6/cbLGh"
@@ -48,7 +47,7 @@ _COMPRESSED_B64 = (
     "AZG73eHdaRqSDJjj0jTmwKrxULJL8k65Lk2L4aakQCXna/28mM21CKOHOVpjTrLjzwdBiiG4hy502JeCrEoqAjkdT2iNVX3quRuL"
     "wAgY71eRa9MTnm7Yxfs92VR2mLPoK+s3dH11zPmcshj5PTfDptes/07KH6uIaSC9cOVmRQkm64+qgbFJe8WnOXOG18ixXhxzg4SQ"
     "0fM/sfGul7gU7ZFYTBNBH5uG8rqKwUa0RiB9rRI+I41ihW8sN1ONwSHsFc+WHV+vSfv7Q357lt8uWSZ85CKi17v1mGjOJyFUfZSo"
-    "9kP/qBvxRDEKZ0R+gXEWcSMJBCNwGzP59ixco57A4Ye7RnBa6phZnk4n2wa4hJpjVglRlJFVODY1HgOSJuI4j6hr9gf6O6uz6XDR"
+    "9kP/qBvxRDEKZ0R+gXEWcSMJBCNwGzP59ixco57A4Ye7RnBa6phZnk4n2ba4hJpjVglRlJFVODY1HgOSJuI4j6hr9gf6O6uz6XDR"
     "MypGIdFAg/eUGzqiMLbWqL5jZsyKzUi9SD3CDXIERUFynEOxSl1MsAysGFeaUreCv7DbM7yE7u3vprAnr6pcgKlYT+bmyF+byzM7"
     "lv6xmPh4SlExVWR+ZuPN7MYXPW/+OuPjhrvJSofLUrWlhj18xHEMNNzTMN8/9FRDHpKDpPR7mOB/jhG+YROOCVdZBwkOm2Sk28bE"
     "ZN7fffA8lvjt6tjRboxN1YMu5tD2oin28m2JUztxwR4/+CWaN733gxAIxm9IVYBZYBGdC0kSDkbkpL7G647HItZziKDOA0LjdFPh"
@@ -62,7 +61,7 @@ _COMPRESSED_B64 = (
     "xszLHwbUw8EXSA1HN79Q0Eicgqmj1+L5blSBhSB7B68lD7QgXNZn1OZr9Wzz+V26XAW7J6TWnAoNkimNCNZhWYy6k0+eFHMmBdUR"
     "2tY3YubFyTQu+Bc3p1AxVF6Rxlf9+BoXHzm7yhavJwj2dJqkmqg9Uxw5Tddjmb9lbob1OE37Gc9SY5zcJORhnA2rbrFJDu79EONU"
     "QtqiecAlmWVK/kzVR9CbxDsSIztl3ICWrIqPRIN/KEf0DLrf7gUO7weaWOW9iE1aaWcnNu7xY1uYiyNuqbVnOJqIQFJdIAx1Icb4"
-    "LV/XINy1SRBNGR18AsklZxr6nMCRIVf++1uJGCvBL7ows/7MoJL8hFSgQeL5u9xPF7lYKZ3MFaVz9FRgCYo+8eDZmk5OG74ZyMqY"
+    "LV/XINy1SRBNGR18AsklZxr6nMCRIVf++1uJGCvBL7ows/7MoJL8hFSgQeL3u9xPF7lYKZ3MFaVz9FRgCYo+8eDZmk5OG74ZyMqY"
     "kbqZiVCZ0fMZn2CNXOTBMa0yIaDe51AUHiZ4mvhDL7vt8LkNQzoRTc8Hw/V+ZjSFjCoeHbmOs1Oe4WP4i+kRAiWBrNjGNWGF9njl"
     "I2YteCTT1HWmoM8DPUOUUo6bjl4ouib5LnmbJVp/eLqDmrmRBSuLsZWZFsWMCYSIEEHCLk8VY6G2AvV1e906T7QLRVZ4PcJJdi1W"
     "a/JeqWs7BJBxDmODkeYtlJAdJRPoOANRJ9jyO0fwymG7sfhEc62oglxAdf+q1QXB5XmgzpccIZKqnyfTWV4y/oysf7LjFXVjwsbJ"
@@ -99,38 +98,17 @@ _COMPRESSED_B64 = (
     "r9rEYX8YgrmqNCP9Aw6yekUHmfA6rm1KR2jIpi4SqQyTBwTNl5CXFb5TuMNvaSOVNnXu68c+Q29oIJ03lxFpFY+SncDgdsUw/p7r"
     "J/x4dTmiF5nXiXrYTon/Ey/mCfUgW/jNYLpNmUyXSGMuiS57VGS+h5lDSsKoUB5JiUILIjUhmizGIBT1B1GcIWqUEzeTa5/LXg6M"
     "jk8Ht1d3xVhxEu+cD0iL2ugqK77rZOJX9IyvLpJQaVQECTgkBWYtqlhEzdGkJpHU22tuUNBv7g+pb6AZSkdejSgdPu3RisT9Togu"
-    "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"
-)
+    "O3dUJbR4lYLeW+ErlSyHIUawVL4K/oog9SG5OUCp
+ÜÑ\[Þ™”šÎMQ™]•šZš][ÙL^–YÒQL”SJÍŠÛQœT–TŠÖMˆ‚ˆ›ZYŽ‘’LLÔ’Õ^žRLTLœ›ÜÙÕ™VMŽQÚ]›Lš’–œZ“˜ÊÝÔ™ÚÖYžTSÕ‹ÌÞ“Ñ’RŽÕÛŽQZ›PÝšS”ËÐÒÙY™™‚ˆURÜZ]Ôœ–]QUQUKÒÓÑÒÙZ’ÕšœSZÔR›ÊØÔÐT’žLÞ›[SÝ›“XØÊÒT\ÕQPÚš™XÞ•V›ÑM˜›LØÖ”È‚ˆ•ÐÐN]X“˜UVÓÕKÓ›ÓÖZÜUPÎLRÐ‘]KÕŽV›’QMPÙYÓœÙ’RÐ\ž›•^›QÙ]SXÓ\œÝTÚMÞUšPH‚ˆŒšMYŒÜ•ÚÕÍ^ÞÑÝM•ÔšœRÜ”‹ÛL–˜”ÙPÑØ™š›LS‘UT˜Z“Ò]Ô˜Œ•\•RÍPÚŠÚ“PÍÙÖ‘UÚZÐ[Rˆ‚ˆ”SŒÚ“ÍM^‘ŒÒTTšÔ•Y“TMœŽ’ÕÖZ›V^“šZÐÓ•KÞ•ÊÓÝ‘œ^MÓÍ›\RÚQ^U˜ÌŽYVÛL“•Ð^RL\ÜNPÖXQÎPKÒ•Ý“™”ˆ‚ˆššÌ
+ÓÚ”•Õš•ÙÔ]ÍPÍZ\QÊÎURSJÔ‹ÊÚÔ‘ÍÐ]“ŒÌQ–Z\“MÕÕÔSœV“ÓÓSVž^QTÝLØT”ÑØ^Y™‚ˆŒš•Ž[‹ÖZYŽÔSÎ[ÛÝ]ŒÎÊÑØ•Í›ÎYÐLÊÞYÝÞMÌÓÒKØÔ]ÊÕ••JÑ]’UXSËÛMUÙÜÍU”œUR[•PÛšXVXÓ‚ˆ‘Œ˜YÑTÐØšLPTMJÜÌ”S^Þ^YQÐ›ÍÎUMP^ØSÊÜQÑÎ›‘S[Q\TÙÍÕRZÝÙZÍÑM^]S]ÚVRÔTLZØÚš‚ˆŠÖUÙ™L\ÓÑQ–œ•TÌŽ[Õ“S^Ü\YMÛœLÕÜNYÜ”‘ÜÑ\TžYZSž\ÎÜŒÊÊÔ‘Ú‘ÝÔSLœŒ“ÛÍQÞ\œZÜ™“ÜÌL‚ˆŒZÖšÊÔXØœÍ”™ØŒÛš“ÝÜYÒQU˜Ö[šÌ˜ÜËÝ–‘PÔÌÓÞ‘ØÝÌÝT–œUNPÕMP[Üš””ÑŽKÓUÓžR“PZRU™›Z‘ÌÖ“H‚ˆ”ÜÍMÖ˜PS•ÚÞÓÝL›PQZÒXÚZÑÚžœJÐÛSÞÎ[ÓPQÌQÜMTÛÐØ]ØÙÜ˜’R‘Z˜SÖVXÍZQ•ÝœÓ“ž‘ZÓRÖŠÔ^ZÒÈ‚ˆ’]ÞÔ”SÙYÕQÛM“Ì’Ì˜ÍZØU\[MÛ’ŒœÒQXÓ’™U‹ÝÎ^U“Òœ’TÜ”ÛÚ]ZÝœ™ØÜÙŽÑ‘“VÔÙQRUÖS\•˜H‚ˆS”žLXSœÖÜÓQÝÕ“ÙÝËÑÛ‘JÓT”ÚÝTœÜÕÛU“ÕQJÞU[’ÕÔ™ÒÍLÝ–™ÌÒM••Ø•šž˜ÛÝ\•ÕRV™XÚÜ[QšH‚ˆŒÝÕÞš^^MÛP\RÑŒ–N™QÍØÚ‘ÌÚY•UÚÛšRÔž›ŽMšQ˜\žÜRÌ]ÔUV“YÜ‘›œ›ŒÖš’›˜–U’œÛ“ÝJÍÓŽNZ›SÈ‚ˆ•L‘UžQÐ‘MÔ[“”UÚV˜ÓÜ˜YÔLžÖQLNQTžØÑ\˜NX–‘ÊÖÛÚTÓZØR[Nž‘Ý[T›NV››RMÍ•”ÎTÓÓÚ‘Úž’ˆ‚ˆ•ØÒ^
+ÚÎœ›ž’‘ÚSÕš™ÕÒVž“ÛÝZŠÜ’[LÚÓ–œRš[ÑšŒÙ“ÐVS•ØØX\ÕRÜZX”Uš˜Ù\ŠÞS[]LÍQ”È‚ˆš\”Ò”MQXÎX˜“LLÑÕÒÒX››T•ÝŽ–›Ý]œMLZL‘žÕš]ŠÔÒÖ[ÓÝ][Õ‘˜QÝ[ÙÔÑÑÙ’Öœ\ÓÕÎMØRS\žTRYÈ‚ˆQÒÍ\T™˜]ØÕšœ“œÕÙÜÓÌÛŠÜš’ÚØÖ•œžŒÌÔMQ™™V˜ÕMXÙ‘“ÞYYÍÌ\ÖMUS\ÜšRY’UÞ›šT”ÙÚVH‚ˆ˜]ÜÊÕ]TQÐUÑYLQVœ\JÕPšÞQÛÛØÐÛ”™›ÜÚSLÎR‹ÙRÑZV”•ÐÕÔÜ–^QT’“ÍT–’Y›ÝÊÚžXÖŽTØ\ÐÝŠÒ™ZT‚ˆŒXÎÍ‹Û›TY[Z^QÑRTÎ\Óœ[ÊÊÒSØ”ÜÌÌž•ÕÒÕÝËÍM]ÞV™‘”T^š”ÑZŒ›RÚKÐKÞY•”•UY]Ú”ÓÓM™Y‘“È‚ˆšX“ÙÔ“ÑZRÜÖ[“MRŒTP›Î”KÚž‘UXœ”ÔTZ]LQÛR\^MY•[NÜØMžTÒÌÜÕX“^•Ô[^ž˜›•^T
+ÎZÜÝÑÍH‚ˆœÓÝÜÓÝÜÓÝÜÓÝÜÓÝÜÓÝÜÓÝÎ‹ÞRL]Yˆ‚ŠB‚™YˆØYÙ\™XÝ[ÛŠ
+HOˆœ›™\œ˜^N‚ˆ˜]Ï^›X‹™XÛÛ\™\ÜÊ˜\ÙM˜XÛÙJÐÓÓT‘TÔÑQÐ
+JBˆYˆ\ÚX‹œÚLMŠ˜]ÊKš^YÙ\Ý
 
-def load_direction() -> np.ndarray:
-    raw=zlib.decompress(base64.b64decode(_COMPRESSED_B64))
-    if hashlib.sha256(raw).hexdigest()!=QUANTIZED_PAYLOAD_SHA256:
-        raise RuntimeError("calibrated direction payload failed integrity check")
-    scales=np.frombuffer(raw[:29*4],dtype="<f4").copy()
-    q=np.frombuffer(raw[29*4:],dtype=np.int8).copy().reshape(SHAPE)
-    arr=q.astype(np.float32)*scales[:,None]
-    if not np.isfinite(arr).all() or arr.shape!=SHAPE:
-        raise RuntimeError("invalid calibrated direction reconstruction")
-    return arr[None]
+HOTUPS•V‘QÔVSÐQÔÒLMŽ‚ˆ˜Z\ÙH[[YQ\œ›ÜŠ˜Ø[Xœ˜]Y\™XÝ[Ûˆ^[ØY˜Z[Y[YÜš]HÚXÚÈŠBˆØØ[\Ï[œ™œ›ÛXY™™\Š˜]ÖÎŒŽJK\OHŠK˜ÛÜJ
+BˆO[œ™œ›ÛXY™™\Š˜]ÖÌŽJ—K\O[œš[
+K˜ÛÜJ
+Kœ™\Ú\JÒTJBˆ\œ\K˜\Ý\Jœ™›Ø]ÌŠJœØØ[\ÖÎ‹›Û™WBˆYˆ›Ýœš\Ùš[š]J\œŠK˜[
+
+HÜˆ\œ‹œÚ\HOTÒTN‚ˆ˜Z\ÙH[[YQ\œ›ÜŠš[˜[YØ[Xœ˜]Y\™XÝ[Ûˆ™XÛÛœÝXÝ[ÛˆŠBˆ™]\›ˆ\œ–Ó›Û™WB
