@@ -1,0 +1,29 @@
+name: mari-voice-conversational-v6-verify
+
+on:
+  push:
+    branches:
+      - mari-voice-conversational-authenticity-20260919
+    paths:
+      - 'omega_voice/conversational_v6/**'
+      - '.github/workflows/mari_voice_conversational_v6_verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: |
+          python -m py_compile omega_voice/conversational_v6/runtime.py omega_voice/conversational_v6/bridge.py
+      - name: Regression tests
+        run: |
+          python -m unittest discover -s omega_voice/conversational_v6/tests -v
