@@ -1,0 +1,29 @@
+{
+  "implementation_commit": "eef28117cfd2582485f137920c35c7462e8c280c",
+  "tree": "3e49c30288781bf6e09ae620e319fc67e91cedad",
+  "parent": "3d57a90d9a2f1aa49cbdff909707556bbb98d1e6",
+  "verification": "Git connector readback exact UTF-8 content equality to submitted retained source; local filesystem comparison blocked by confirmed environment_offline",
+  "files": [
+    {
+      "path": "omega_voice/generative_v5/phi4_probe.py",
+      "git_blob_sha": "48a835e18606aa4862ccff76c05a2d45fc138c16",
+      "utf8_content_exact": true
+    },
+    {
+      "path": "omega_voice/generative_v5/banked_acknowledgment.py",
+      "git_blob_sha": "4ef3380262a6650d1fed1ec06d4110e90614a3f9",
+      "utf8_content_exact": true
+    },
+    {
+      "path": "omega_voice/generative_v5/qualify_phi4_tasks.py",
+      "git_blob_sha": "fe42b81c34c8337e0a4fc89a9e092c0d570a5eb4",
+      "utf8_content_exact": true
+    },
+    {
+      "path": "omega_voice/generative_v5/REENTRY_PLATFORM_INTERRUPTION_2026-09-20.md",
+      "git_blob_sha": "4c2994fb01f0e424d18ba6b074ee1ee2af073d5e",
+      "utf8_content_exact": true
+    }
+  ],
+  "full_completion": false
+}
