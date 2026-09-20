@@ -1,0 +1,163 @@
+name: mari-voice-authenticity-investigation
+on:
+  push:
+    branches: [mari-voice-render-20260920-g11]
+    paths: ['.github/workflows/mari_voice_authenticity_investigation.yml']
+permissions:
+  contents: read
+  actions: read
+env:
+  ENGINE_REV: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  MODEL_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+jobs:
+  investigate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: 35405800719
+          path: package
+      - name: Install and build pinned renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev ffmpeg
+          python -m pip install -q 'numpy<2' soundfile faster-whisper
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$ENGINE_REV"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$ENGINE_REV"
+          make -C engine blas SIMD=portable
+          cd engine
+          sed "s|/resolve/main|/resolve/$MODEL_REV|g" download_model.sh > pinned_download.sh
+          bash pinned_download.sh --model large --dir customvoice-large
+      - name: Run structural ablations
+        env: {OPENBLAS_NUM_THREADS: '4', OMP_NUM_THREADS: '4'}
+        run: |
+          python - <<'PY'
+          import json, pathlib, subprocess, hashlib, re, math
+          import numpy as np, soundfile as sf
+          from faster_whisper import WhisperModel
+
+          out=pathlib.Path('investigation'); out.mkdir()
+          profile=pathlib.Path('package/production/MARI_VOICE_V1_PROFILE.bin')
+          anchor=pathlib.Path('package/production/MARI_VOICE_V1_ANCHOR.wav')
+          assert hashlib.sha256(profile.read_bytes()).hexdigest()=='9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa'
+          text=("Yeah. I thought that was the problem at first. Actually, no. "
+                "The voice itself is close. What's missing is the moment where the thought changes "
+                "before the sentence has finished. That's what I want you to hear.")
+          units=[
+            "Yeah.",
+            "I thought that was the problem at first.",
+            "Actually, no.",
+            "The voice itself is close.",
+            "What's missing is the moment where the thought changes before the sentence has finished.",
+            "That's what I want you to hear."
+          ]
+          engine='engine/qwen_tts'; model='engine/customvoice-large'
+          def render(name, txt, seed, instruct=None, rate=1.0, volume=1.0):
+            p=out/f'{name}.wav'
+            cmd=[engine,'-d',model,'--load-voice',str(profile),'--xvector-only','-l','English',
+                 '--text',txt,'--seed',str(seed),'--temperature','0.42','--top-k','40','--top-p','0.95',
+                 '--rep-penalty','1.05','--rate',str(rate),'--volume',str(volume),'-j4','-o',str(p)]
+            if instruct: cmd[-2:-2]=['--instruct',instruct]
+            subprocess.run(cmd,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT,timeout=600)
+            return p
+          # H0: same text, no instruction, repeated seeds: intrinsic stochastic variance.
+          paths=[]
+          for i,s in enumerate([40401,40402,40403]): paths.append(render(f'A_neutral_seed{i+1}',text,s))
+          # H1: prose acting instruction effect.
+          paths.append(render('B_style_instruction',text,40401,
+            'Natural conversational speech. Begin certain, then genuinely reconsider at Actually, no; become precise and newly committed afterward. No theatrical acting.'))
+          # H2: coarse causal controls without style prose, separate units.
+          rates=[1.0,.97,.94,1.0,.96,1.02]; vols=[1.0,.99,.97,1.0,.98,1.01]; pauses=[.04,.08,.14,.06,.10,.05]
+          chunks=[]
+          for i,(u,r,v) in enumerate(zip(units,rates,vols)):
+            p=render(f'C_unit_{i+1}',u,40500+i*7919,None,r,v)
+            y,sr=sf.read(p,dtype='float32'); chunks.append((y,sr))
+          sr=chunks[0][1]; combined=[]
+          for i,(y,_) in enumerate(chunks):
+            if i: combined.append(np.zeros(int(pauses[i]*sr),dtype=np.float32))
+            combined.append(y)
+          c=np.concatenate(combined); sf.write(out/'C_incremental_coarse.wav',c,sr,subtype='PCM_16'); paths.append(out/'C_incremental_coarse.wav')
+          # H3: punctuation/text representation only, no acting instruction.
+          punct=("Yeah... I thought that was the problem at first. Actually—no. "
+                 "The voice itself is close. What's missing is the moment where the thought changes "
+                 "before the sentence has finished. That's what I want you to hear.")
+          paths.append(render('D_punctuation_only',punct,40401))
+          # H4: explicit acting style without semantic repair marker: separates style from repair language.
+          paths.append(render('E_style_without_repair_text',
+            "Yeah. I thought that was the problem at first. The voice itself is close. What's missing is the moment where the thought changes before the sentence has finished. That's what I want you to hear.",
+            40401,'Natural conversational speech with active reconsideration and increasing precision. No theatrical acting.'))
+          # H5: lexical repair with neutral synthesis: separates semantic repair from style.
+          paths.append(render('F_lexical_repair_neutral',text,40401))
+          
+          whisper=WhisperModel('base.en',device='cpu',compute_type='int8',cpu_threads=4)
+          def words(s): return re.findall(r"[a-z]+(?:'[a-z]+)?",s.lower())
+          def lev(a,b):
+            row=list(range(len(b)+1))
+            for i,x in enumerate(a,1):
+              new=[i]
+              for j,y in enumerate(b,1): new.append(min(new[-1]+1,row[j]+1,row[j-1]+(x!=y)))
+              row=new
+            return row[-1]
+          def features(p):
+            y,sr=sf.read(p,dtype='float32')
+            if y.ndim>1:y=y[:,0]
+            frame=max(1,int(.02*sr)); hop=max(1,int(.01*sr))
+            rms=np.array([np.sqrt(np.mean(y[i:i+frame]**2)+1e-12) for i in range(0,max(1,len(y)-frame),hop)])
+            active=rms[rms>max(1e-4,np.max(rms)*.03)]
+            return {'duration_s':len(y)/sr,'rms_mean':float(np.mean(active)) if len(active) else 0,
+                    'rms_cv':float(np.std(active)/(np.mean(active)+1e-9)) if len(active) else 0,
+                    'silence_fraction':float(np.mean(rms<=max(1e-4,np.max(rms)*.03))),
+                    'peak':float(np.max(np.abs(y))),'sha256':hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()}
+          refs={p.name:(punct if p.name.startswith('D_') else
+                        "Yeah. I thought that was the problem at first. The voice itself is close. What's missing is the moment where the thought changes before the sentence has finished. That's what I want you to hear."
+                        if p.name.startswith('E_') else text) for p in paths}
+          rows=[]
+          for p in paths:
+            segs,_=whisper.transcribe(str(p),language='en',beam_size=5,vad_filter=False)
+            transcript=' '.join(s.text.strip() for s in segs)
+            f=features(p); ref=refs[p.name]
+            f.update({'file':p.name,'transcript':transcript,'wer':lev(words(ref),words(transcript))/max(1,len(words(ref)))})
+            rows.append(f)
+          # Pairwise waveform-feature distances, not perceptual scores.
+          keys=['duration_s','rms_mean','rms_cv','silence_fraction']
+          for row in rows:
+            row['feature_vector']=[row[k] for k in keys]
+          report={
+            'identity':'G1-1 / Mari Voice v1',
+            'text':text,
+            'hypotheses':{
+              'H0':'intrinsic seed variance',
+              'H1':'style-instruction contribution',
+              'H2':'separate-unit coarse causal-control contribution and reset cost',
+              'H3':'punctuation/orthography contribution',
+              'H4':'style effect without lexical repair',
+              'H5':'lexical repair with neutral synthesis'
+            },
+            'measurements':rows,
+            'interpretation_limits':[
+              'No automatic metric here proves authenticity.',
+              'WER tests intelligibility only.',
+              'Feature differences establish acoustic consequence, not human preference.',
+              'Carl listening remains the discriminator for authenticity.'
+            ]
+          }
+          (out/'INVESTIGATION_REPORT.json').write_text(json.dumps(report,indent=2))
+          for p in paths:
+            subprocess.run(['ffmpeg','-y','-hide_banner','-loglevel','error','-i',str(p),'-codec:a','libmp3lame','-b:a','160k',str(p.with_suffix('.mp3'))],check=True)
+          print(json.dumps([{'file':r['file'],'duration_s':r['duration_s'],'wer':r['wer'],'rms_cv':r['rms_cv'],'silence_fraction':r['silence_fraction']} for r in rows],indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-authenticity-investigation-20260920
+          path: investigation/
+          retention-days: 30
+          compression-level: 0
