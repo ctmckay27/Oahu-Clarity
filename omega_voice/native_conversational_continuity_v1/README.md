@@ -30,14 +30,15 @@ listener turn
 ## Evidence boundary
 
 The only acoustic direction used in v1 comes from
-`MARI_ISOLATED_NATIVE_CONTROL_EVIDENCE_2026-09-19.zip`. Its compact repository
-projection has cosine similarity > 0.9997 to the measured float32 direction.
-It is a boundary-contour actuator, not an emotion, personality or generic style
-vector.
+`MARI_ISOLATED_NATIVE_CONTROL_EVIDENCE_2026-09-19.zip`. The repository uses an
+integrity-checked rank-two compact projection with cosine similarity
+`0.9797614813` to the measured float32 direction and relative L2 error
+`0.2001689970`. The original evidence archive remains authoritative.
 
-Unsupported acoustic dimensions remain unresolved. The layer does not add
-random filler, breath, fry, noise, emotion presets, prose acting instructions,
-or a fallback voice.
+This is a boundary-contour actuator, not an emotion, personality or generic
+style vector. Unsupported acoustic dimensions remain unresolved. The layer does
+not add random filler, breath, fry, noise, emotion presets, prose acting
+instructions, or a fallback voice.
 
 ## Verification target
 
