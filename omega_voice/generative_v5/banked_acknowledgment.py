@@ -24,7 +24,7 @@ def render_episode(session,request_id,event,continuation,bank_path,scene=None,se
    if prior['listener_model']['id']!=listener:raise ValueError('wrong listener')
    target=session.directory/request_id
    if target.exists():raise FileExistsError('request already exists')
-   target.mkdir();stage=PerformanceSession(session.root,target/'staging',session.evaluator,mode='physical',aligner=session.aligner,temporal_policy=session.temporal_policy,scene_compiler=session.scene_compiler,conditioning='selected_anchor',articulation=session.articulation,cold_start=session.cold_start,respiration=session.respiration,prominence=session.prominence,prominence_calibration=session.prominence_calibration)
+   target.mkdir();stage=PerformanceSession(session.root,target/'staging',session.evaluator,mode='physical',aligner=session.aligner,temporal_policy=session.temporal_policy,scene_compiler=session.scene_compiler,conditioning='selected_anchor',articulation=session.articulation,cold_start=session.cold_start,respiration=session.respiration,prominence=session.prominence,prominence_calibration=session.prominence_calibration,lexical_recovery=session.lexical_recovery)
    try:
     event_audio=stage.directory/'event.wav';event_receipt=realize(prior,event,bank_path,event_audio);stage.commit(None,{'scope':'private uncommitted episode stage','last_request':'event','state':event_receipt['final_state'],'audio_sha256':sha(event_audio),'parent_record_hash':digest(previous)if previous else None},stage.directory/'event.receipt.json',event_receipt)
     lexical=stage.render_turn('lexical',continuation,scene,seed=seed,diagnostic=True);lexical_audio=stage.directory/'lexical/performance.wav';a,sr=sf.read(event_audio,dtype='int16');b,bsr=sf.read(lexical_audio,dtype='int16')

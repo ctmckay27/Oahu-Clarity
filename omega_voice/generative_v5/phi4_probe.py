@@ -29,6 +29,9 @@ class Phi4Probe:
   if audio is None or not audio.numel()or not torch.isfinite(audio).all():raise ValueError('actual audio absent from evaluator')
   audit={'audio_sha256':sha(path),'decoded_PCM_sha256':hashlib.sha256(x.tobytes()).hexdigest(),'sample_rate':sr,'frames':len(x),'prompt':prompt,'processor_tensor_shapes':{k:list(v.shape)for k,v in inputs.items()if torch.is_tensor(v)},'audio_features_sha256':hashlib.sha256(audio.float().numpy().tobytes()).hexdigest(),'audio_features_min':float(audio.min()),'audio_features_max':float(audio.max()),'input_mode':inputs['input_mode'].tolist(),'generation':{'do_sample':False,'max_new_tokens':max_new_tokens}}
   inputs={k:(v.to(torch.bfloat16)if torch.is_tensor(v)and v.is_floating_point()else v)for k,v in inputs.items()};started=time.monotonic()
-  with torch.inference_mode():output=self.model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=False)
+  # Official prepare_inputs_for_generation defaults this to None, whereas
+  # forward requires an integer. Generation needs only final-token logits.
+  audit['generation']['num_logits_to_keep']=1
+  with torch.inference_mode():output=self.model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=False,num_logits_to_keep=1)
   generated=output[:,inputs['input_ids'].shape[1]:];response=self.processor.batch_decode(generated,skip_special_tokens=True,clean_up_tokenization_spaces=False)[0]
   return dict(audit,response=response,elapsed_s=time.monotonic()-started,generated_tokens=generated.shape[1],truncated=generated.shape[1]>=max_new_tokens)
