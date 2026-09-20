@@ -1,0 +1,200 @@
+name: mari-conversational-realization-v1-verify
+
+on:
+  push:
+    branches:
+      - mari-conversational-realization-v1-20260920
+    paths:
+      - 'omega_voice/conversational_realization_v1/**'
+      - '.github/workflows/mari_conversational_realization_v1_verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install lightweight runtime
+        run: python -m pip install 'numpy<2' soundfile
+      - name: Compile
+        run: |
+          python -m py_compile             omega_voice/conversational_realization_v1/layer.py             omega_voice/conversational_realization_v1/renderer.py
+      - name: Regression tests
+        run: python -m unittest discover -s omega_voice/conversational_realization_v1/tests -v
+
+  production-ab:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime
+        run: python -m pip install 'numpy<2' soundfile
+
+      - name: Recover selected Mari Voice v1 production package
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+
+      - name: Build exact pinned renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git ffmpeg
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          cd engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
+          bash pinned_cv_download.sh --model large --dir customvoice-large
+
+      - name: Build matched conversational plan and realization plan
+        run: |
+          python - <<'PY'
+          import json
+          from omega_voice.conversational_v6 import new_conversation_state, plan_turn
+          from omega_voice.conversational_realization_v1 import build_realization_plan
+
+          state=new_conversation_state(
+              session_id="mari-conversational-realization-v1-ab",
+              listener_id="carl",
+          )
+          listener=(
+              "It feels a little better, but it is not fully there yet. "
+              "The voice still smooths away too much of the actual thought process."
+          )
+          response=(
+              "Yeah. I think the difference is narrower now. "
+              "The thought is starting to exist before the sentence, but the sound still smooths too much of that away. "
+              "Actually, wait. That is the part I want to test. "
+              "If I change my mind halfway through, you should hear the change happen, not just hear the words that say I changed my mind."
+          )
+          cp=plan_turn(
+              state,listener,response,
+              observation={"relationship":{"familiarity":.95,"trust":.92}},
+              intent={
+                  "tactic":"clarify",
+                  "thought":"searching",
+                  "certainty":.84,
+                  "objective":"test whether conversational state survives into the waveform",
+                  "target":"make a mid-turn cognitive change audibly consequential",
+              },
+          )
+          rp=build_realization_plan(cp,base_seed=120031)
+          open("conversation_plan.json","w").write(json.dumps(cp,indent=2))
+          open("realization_plan.json","w").write(json.dumps(rp,indent=2))
+          print(json.dumps({
+              "unit_count":len(rp["units"]),
+              "units":[
+                  {
+                      "index":u["index"],"thought":u["thought"],
+                      "rate":u["controls"]["rate"],
+                      "volume":u["controls"]["volume"],
+                      "pre_pause_s":u["controls"]["pre_pause_s"],
+                      "join":u["controls"]["join"],
+                  }
+                  for u in rp["units"]
+              ],
+          },indent=2))
+          PY
+
+      - name: Render matched A/B
+        run: |
+          python - <<'PY'
+          import json
+          from omega_voice.conversational_realization_v1 import (
+              render_incremental,render_whole_utterance_baseline,
+          )
+          rp=json.load(open("realization_plan.json"))
+          common=dict(
+              engine="engine/qwen_tts",
+              model="engine/customvoice-large",
+              profile="package/production/MARI_VOICE_V1_PROFILE.bin",
+          )
+          a=render_whole_utterance_baseline(
+              rp,output="A_whole_utterance.wav",seed=120031,**common
+          )
+          b=render_incremental(
+              rp,output="B_incremental_realization.wav",
+              unit_directory="B_units",**common
+          )
+          open("A_receipt.json","w").write(json.dumps(a,indent=2))
+          open("B_receipt.json","w").write(json.dumps(b,indent=2))
+          PY
+
+      - name: Verify matched comparison
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          import soundfile as sf
+
+          a=pathlib.Path("A_whole_utterance.wav")
+          b=pathlib.Path("B_incremental_realization.wav")
+          ya,sra=sf.read(a,dtype="float32",always_2d=True)
+          yb,srb=sf.read(b,dtype="float32",always_2d=True)
+          assert sra==srb==24000
+          assert ya.shape[1]==yb.shape[1]==1
+          assert len(ya)>24000 and len(yb)>24000
+          ha=hashlib.sha256(a.read_bytes()).hexdigest()
+          hb=hashlib.sha256(b.read_bytes()).hexdigest()
+          assert ha!=hb
+          br=json.load(open("B_receipt.json"))
+          assert br["render_policy"]["generic_tts_fallback"] is False
+          assert br["render_policy"]["prose_style_instruction"] is False
+          assert br["continuity"]["speaker_profile_constant"] is True
+          assert br["continuity"]["unit_count"]>=4
+          receipt={
+              "status":"PASS",
+              "matched_text":json.load(open("A_receipt.json"))["text"],
+              "sample_rate_hz":24000,
+              "A_sha256":ha,
+              "B_sha256":hb,
+              "A_duration_s":len(ya)/sra,
+              "B_duration_s":len(yb)/srb,
+              "incremental_unit_count":br["continuity"]["unit_count"],
+              "speaker_profile_constant":True,
+              "generic_tts_fallback":False,
+              "prose_style_instruction":False,
+              "perceptual_authenticity_proven":False,
+          }
+          pathlib.Path("AB_VERIFICATION_RECEIPT.json").write_text(json.dumps(receipt,indent=2))
+          print(json.dumps(receipt,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-conversational-realization-v1-ab
+          path: |
+            A_whole_utterance.wav
+            B_incremental_realization.wav
+            B_units/
+            conversation_plan.json
+            realization_plan.json
+            A_receipt.json
+            B_receipt.json
+            AB_VERIFICATION_RECEIPT.json
+          retention-days: 14
+          compression-level: 0
