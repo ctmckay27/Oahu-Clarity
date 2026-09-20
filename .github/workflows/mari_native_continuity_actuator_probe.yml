@@ -1,0 +1,114 @@
+name: mari-native-continuity-actuator-probe
+
+on:
+  push:
+    branches: [mari-native-continuity-verifier-fix-20260920]
+    paths: ['.github/workflows/mari_native_continuity_actuator_probe.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: '35405800719'
+  PYTHONUNBUFFERED: '1'
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  TOKENIZERS_PARALLELISM: 'false'
+
+jobs:
+  isolate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy<2' soundfile scipy-openblas32 transformers tokenizers faster-whisper==1.2.1 pyyaml
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+      - uses: actions/download-artifact@v4
+        with:
+          name: mari-native-continuity-v1-diagnostic-abc
+          github-token: ${{ github.token }}
+          run-id: 35507991873
+          path: evidence
+      - name: Build unchanged pinned engine
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess, yaml
+          doc=yaml.safe_load(pathlib.Path('.github/workflows/mari_native_continuity_v1_diagnostic.yml').read_text())
+          step=next(s for s in doc['jobs']['diagnose']['steps'] if s.get('name')=='Build exact patched single-request native renderer')
+          subprocess.run(['bash','-euo','pipefail','-c',step['run']],check=True)
+          PY
+      - name: Isolate actuators without changing evaluator or identity
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,re,shutil
+          import numpy as np
+          from faster_whisper import WhisperModel
+          from omega_voice.generative_v5.native import render,write_trajectory
+          from omega_voice.generative_v5.text_release import write_release
+          from omega_voice.native_conversational_continuity_v1.calibrated_finality import load_direction
+          evidence=pathlib.Path('evidence')
+          old=json.loads((evidence/'ABC_DIAGNOSTIC_RECEIPT.json').read_text())
+          plan=json.loads((evidence/'native_continuity_plan.json').read_text())
+          baseline=json.loads((evidence/'C_native_continuity.receipt.json').read_text())
+          before=pathlib.Path('omega_voice/generative_v5/native.py').read_bytes()
+          assert hashlib.sha1(b'blob '+str(len(before)).encode()+b'\0'+before).hexdigest()=='49a1561b5dc13e78baae1ae63e0bc864e6127424'
+          bank=load_direction()
+          weights=np.asarray(plan['trajectory']['weights'],dtype=np.float32)[:,None]
+          onset=np.asarray(plan['trajectory']['onset'],dtype=np.float32)
+          ids=plan['tokenizer']['token_ids']
+          frames=plan['release']['earliest_frames']
+          def words(text): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",text.lower())
+          def distance(a,b):
+              prev=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  row=[i]
+                  for j,y in enumerate(b,1): row.append(min(row[-1]+1,prev[j]+1,prev[j-1]+(x!=y)))
+                  prev=row
+              return prev[-1]
+          report={'status':'DIAGNOSTIC_NOT_ACCEPTANCE','source_run':35507991873,'baseline_C':old['audio']['C'],'unchanged_wer_threshold':0.15,'conditions':[]}
+          out=pathlib.Path('probe');out.mkdir(exist_ok=True)
+          model=WhisperModel('small.en',device='cpu',compute_type='int8',cpu_threads=4)
+          cases=[
+              ('no_onset',weights,np.zeros_like(onset),frames),
+              ('no_direction',np.zeros_like(weights),np.zeros_like(onset),frames),
+              ('no_holds',weights,onset,[0]+list(range(len(ids)))),
+              ('no_holds_no_direction',np.zeros_like(weights),np.zeros_like(onset),[0]+list(range(len(ids)))),
+          ]
+          for name,w,o,f in cases:
+              trajectory=write_trajectory(out/(name+'.mtraj'),bank,w,onset=o)
+              release=write_release(out/(name+'.mrl'),ids,f)
+              item={'name':name,'onset':o.tolist(),'release_frames':f,'trajectory_sha256':trajectory['sha256'],'release_sha256':release['sha256']}
+              try:
+                  record=render('native_root',plan['text'],out/(name+'.wav'),seed=plan['seed'],trajectory=trajectory['path'],incremental_text=True,text_release=release['path'],profile_mode='xvector')
+                  assert record['profile_file_sha256']==baseline['profile_file_sha256']
+                  assert record['text_consumption']['no_early_consumption'] is True
+                  segments,_=model.transcribe(str(out/(name+'.wav')),language='en',beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+                  segments=list(segments)
+                  hyp=' '.join(s.text.strip() for s in segments)
+                  wer=distance(words(plan['text']),words(hyp))/len(words(plan['text']))
+                  item.update(audio=record['audio'],asr_text=hyp,wer=wer,intelligibility_pass=wer<=.15,text_consumption=record['text_consumption'])
+              except Exception as exc:
+                  item.update(error=repr(exc))
+              report['conditions'].append(item)
+              (out/'ACTUATOR_PROBE_RECEIPT.json').write_text(json.dumps(report,indent=2)+'\n')
+              print(json.dumps(item,indent=2),flush=True)
+          assert all('error' not in x for x in report['conditions']), 'One or more probe renders failed; inspect saved evidence'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mari-native-continuity-actuator-probe
+          path: probe/
+          retention-days: 14
+          compression-level: 0
