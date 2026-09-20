@@ -1,0 +1,54 @@
+name: Facebook Post Bridge
+
+on:
+  push:
+    branches:
+      - automation/facebook-post-bridge
+    paths:
+      - automation/post.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Check out bridge branch
+        uses: actions/checkout@v4
+
+      - name: Check credential setup
+        id: preflight
+        shell: bash
+        env:
+          FB_LOGIN: ${{ secrets.FB_LOGIN }}
+          FB_PASSWORD: ${{ secrets.FB_PASSWORD }}
+        run: |
+          if [ -z "$FB_LOGIN" ] || [ -z "$FB_PASSWORD" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Facebook bridge is installed but inactive. Add repository Actions secrets FB_LOGIN and FB_PASSWORD, then push a new automation/post.json request."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node
+        if: steps.preflight.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Playwright
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Post to Facebook
+        if: steps.preflight.outputs.ready == 'true'
+        env:
+          FB_LOGIN: ${{ secrets.FB_LOGIN }}
+          FB_PASSWORD: ${{ secrets.FB_PASSWORD }}
+        run: node automation/facebook-post.js
