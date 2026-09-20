@@ -1,0 +1,162 @@
+name: mari-native-continuity-v1-diagnostic
+
+on:
+  push:
+    branches:
+      - mari-native-conversational-continuity-v1-20260920
+    paths:
+      - '.github/workflows/mari_native_continuity_v1_diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime and evaluation dependencies
+        run: python -m pip install 'numpy<2' soundfile scipy-openblas32 transformers tokenizers faster-whisper==1.2.1
+
+      - name: Recover selected Mari Voice v1 production package
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+
+      - name: Build exact patched single-request native renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential git ffmpeg
+          mkdir -p native_root/continuation native_root/models native_root/recovered/production_release
+          cp -R package/production native_root/recovered/production_release/production
+          git init native_root/continuation/engine
+          git -C native_root/continuation/engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C native_root/continuation/engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C native_root/continuation/engine checkout --detach FETCH_HEAD
+          test "$(git -C native_root/continuation/engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          python -m omega_voice.generative_v5.build_native native_root/continuation/engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" native_root/continuation/engine/download_model.sh > native_root/continuation/engine/pinned_cv_download.sh
+          bash native_root/continuation/engine/pinned_cv_download.sh --model large --dir native_root/models/qwen-custom
+          python - <<'PY'
+          import hashlib,json,pathlib,os
+          root=pathlib.Path('native_root/models/qwen-custom')
+          selected=['config.json','model.safetensors','speech_tokenizer/config.json','speech_tokenizer/model.safetensors']
+          files={}
+          for rel in selected:
+              p=root/rel
+              if not p.is_file(): raise SystemExit('missing pinned model file: '+rel)
+              files[rel]=hashlib.sha256(p.read_bytes()).hexdigest()
+          (root/'MARI_PINNED_MODEL_RECEIPT.json').write_text(json.dumps({'revision':os.environ['CV_REV'],'files':files},indent=2)+'\n')
+          PY
+
+      - name: Build matched plans
+        run: |
+          python - <<'PY'
+          import json
+          from transformers import AutoTokenizer
+          from omega_voice.conversational_v6 import new_conversation_state,plan_turn
+          from omega_voice.conversational_realization_v1 import build_realization_plan
+          from omega_voice.native_conversational_continuity_v1 import compile_native_continuity_plan
+          state=new_conversation_state(session_id='native-continuity-v1-diagnostic',listener_id='carl')
+          listener=('The incremental version kind of worked, but not really. I could hear the conversational distinctions, but it did not feel like one person staying continuous.')
+          response=('Yeah. I think that is the exact failure. The thought was changing, but the voice kept starting over. Actually, wait. That is still too generous. The clips were changing. I was not continuous between them. This time the thought should move while the same voice is still in motion.')
+          cp=plan_turn(state,listener,response,observation={'relationship':{'familiarity':.96,'trust':.93}},intent={'tactic':'clarify','thought':'searching','certainty':.87,'objective':'remain one continuous speaker while revising the thought','target':'make the correction happen inside one native acoustic stream'})
+          tokenizer=AutoTokenizer.from_pretrained('native_root/models/qwen-custom',local_files_only=True)
+          stitched=build_realization_plan(cp,base_seed=130021)
+          native=compile_native_continuity_plan(cp,tokenizer,seed=130021)
+          open('conversation_plan.json','w').write(json.dumps(cp,indent=2))
+          open('stitched_plan.json','w').write(json.dumps(stitched,indent=2))
+          open('native_continuity_plan.json','w').write(json.dumps(native,indent=2))
+          PY
+
+      - name: Render matched A/B/C
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          from transformers import AutoTokenizer
+          from omega_voice.conversational_realization_v1 import render_incremental
+          from omega_voice.native_conversational_continuity_v1 import render_native_continuity
+          cp=json.load(open('conversation_plan.json')); stitched=json.load(open('stitched_plan.json'))
+          common=dict(engine='native_root/continuation/engine/qwen_tts',model='native_root/models/qwen-custom',profile='native_root/recovered/production_release/production/MARI_VOICE_V1_PROFILE.bin')
+          subprocess.run(['python','package/production/omega_voice.py','--engine',common['engine'],'--model',common['model'],'--profile',common['profile'],'--text',cp['response_text'],'--performance','neutral','--output','A_whole_utterance.wav','--seed','130021'],check=True)
+          b=render_incremental(stitched,output='B_stitched_incremental.wav',unit_directory='B_units',**common)
+          open('B_receipt.json','w').write(json.dumps(b,indent=2))
+          tokenizer=AutoTokenizer.from_pretrained('native_root/models/qwen-custom',local_files_only=True)
+          c=render_native_continuity('native_root',cp,tokenizer,'C_native_continuity.wav',seed=130021)
+          open('C_receipt.json','w').write(json.dumps(c,indent=2))
+          PY
+
+      - name: Diagnose mechanics and intelligibility
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,re
+          import soundfile as sf
+          from faster_whisper import WhisperModel
+          expected=json.load(open('conversation_plan.json'))['response_text']
+          def words(t): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1): c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+          audio={}; model=WhisperModel('small.en',device='cpu',compute_type='int8',cpu_threads=4)
+          for label,path in [('A','A_whole_utterance.wav'),('B','B_stitched_incremental.wav'),('C','C_native_continuity.wav')]:
+              y,sr=sf.read(path,dtype='float32',always_2d=True)
+              segs,_=model.transcribe(path,language='en',beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+              hyp=' '.join(s.text.strip() for s in segs)
+              audio[label]={'path':path,'sha256':hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest(),'sample_rate':sr,'channels':y.shape[1],'duration_s':len(y)/sr,'asr_text':hyp,'wer':ed(words(expected),words(hyp))/max(1,len(words(expected)))}
+          c=json.load(open('C_receipt.json')); native=c['native_execution']
+          mechanics={
+              'decoder_sessions':native['decoder_sessions'],'model_invocations':native['model_invocations'],'unit_restarts':native['unit_restarts'],'codec_state_resets':native['codec_state_resets'],'kv_cache_resets':native['kv_cache_resets'],'waveform_stitching':native['waveform_stitching'],'source_bound_text_release_verified':c['causal_inputs']['text_consumption']['no_early_consumption'],'generic_tts_fallback':c['render_policy']['generic_tts_fallback'],'prose_style_instruction':c['render_policy']['prose_style_instruction']}
+          receipt={'status':'DIAGNOSTIC','matched_text':expected,'audio':audio,'mechanics':mechanics,'C_intelligibility_gate_pass':audio['C']['wer']<=.15,'perceptual_authenticity_proven':False}
+          pathlib.Path('ABC_DIAGNOSTIC_RECEIPT.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          assert mechanics=={'decoder_sessions':1,'model_invocations':1,'unit_restarts':0,'codec_state_resets':0,'kv_cache_resets':0,'waveform_stitching':False,'source_bound_text_release_verified':True,'generic_tts_fallback':False,'prose_style_instruction':False}
+          PY
+
+      - name: Encode listening copies
+        if: always()
+        run: |
+          for x in A_whole_utterance B_stitched_incremental C_native_continuity; do
+            test -f "$x.wav" && ffmpeg -v error -y -i "$x.wav" -ar 48000 -ac 1 -b:a 192k "$x.mp3" || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mari-native-continuity-v1-diagnostic-abc
+          path: |
+            A_whole_utterance.*
+            B_stitched_incremental.*
+            C_native_continuity.*
+            B_units/
+            conversation_plan.json
+            stitched_plan.json
+            native_continuity_plan.json
+            B_receipt.json
+            C_receipt.json
+            C_native_continuity_native_packets/
+            ABC_DIAGNOSTIC_RECEIPT.json
+          retention-days: 14
+          compression-level: 0
