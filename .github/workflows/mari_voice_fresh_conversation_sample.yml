@@ -1,0 +1,166 @@
+name: mari-voice-fresh-conversation-sample
+
+on:
+  push:
+    branches:
+      - mari-voice-fresh-conversation-sample-20260919
+    paths:
+      - '.github/workflows/mari_voice_fresh_conversation_sample.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Recover persisted Mari Voice v1 production package
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+
+      - name: Build exact pinned renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git ffmpeg
+          python -m pip install 'numpy<2' soundfile
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          test "$(git -C engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          make -C engine blas SIMD=portable
+          cd engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
+          bash pinned_cv_download.sh --model large --dir customvoice-large
+
+      - name: Resolve conversational plan
+        run: |
+          python - <<'PY'
+          import json
+          from omega_voice.conversational_v6 import new_conversation_state, plan_turn
+
+          state = new_conversation_state(
+              session_id="fresh-listening-sample-20260919",
+              listener_id="carl",
+          )
+          listener_text = (
+              "The voice is much more coherent than a couple of days ago, "
+              "but it still does not sound fully authentic, like someone who is actually talking to me."
+          )
+          response_text = (
+              "Yeah. I think I know what you were hearing before. "
+              "The voice was there, but I was still arriving fully assembled. "
+              "Actually, that's not quite it. "
+              "I wasn't arriving at all. I was being delivered. "
+              "This should feel a little more like I'm here with you."
+          )
+          plan = plan_turn(
+              state,
+              listener_text,
+              response_text,
+              observation={
+                  "relationship": {"familiarity": 0.95, "trust": 0.90},
+              },
+              intent={
+                  "tactic": "clarify",
+                  "thought": "searching",
+                  "certainty": 0.86,
+                  "objective": "answer the listener while revising the thought in real time",
+                  "target": "describe the difference between rendered speech and conversational presence",
+              },
+          )
+          open("conversation_plan.json","w").write(json.dumps(plan, indent=2))
+          open("response_text.txt","w").write(response_text)
+          print(json.dumps({
+              "response_latency_s": plan["turn_taking"]["response_latency_s"],
+              "units": [
+                  {
+                      "index": u["index"],
+                      "text": u["text"],
+                      "thought": u["thought"],
+                      "quiet_intake_before_s": u["quiet_intake_before_s"],
+                  }
+                  for u in plan["units"]
+              ],
+          }, indent=2))
+          PY
+
+      - name: Render fresh Mari v1 utterance
+        run: |
+          set -euo pipefail
+          python package/production/omega_voice.py             --engine engine/qwen_tts             --model engine/customvoice-large             --profile package/production/MARI_VOICE_V1_PROFILE.bin             --text "$(cat response_text.txt)"             --performance neutral             --output fresh_mari_conversation_raw.wav             --seed 99231 > render_meta.json
+
+      - name: Apply only scaffold-approved initial turn latency
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          p=json.load(open("conversation_plan.json"))
+          latency=float(p["turn_taking"]["response_latency_s"])
+          subprocess.run([
+              "ffmpeg","-v","error","-y",
+              "-f","lavfi","-t",str(latency),"-i","anullsrc=r=24000:cl=mono",
+              "-i","fresh_mari_conversation_raw.wav",
+              "-filter_complex","[0:a][1:a]concat=n=2:v=0:a=1[out]",
+              "-map","[out]","-ar","24000","-ac","1","-c:a","pcm_s16le",
+              "fresh_mari_conversation.wav"
+          ],check=True)
+          subprocess.run([
+              "ffmpeg","-v","error","-y","-i","fresh_mari_conversation.wav",
+              "-ar","48000","-ac","1","-b:a","192k","fresh_mari_conversation.mp3"
+          ],check=True)
+          PY
+
+      - name: Verify output
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, soundfile as sf
+          wav=pathlib.Path("fresh_mari_conversation.wav")
+          mp3=pathlib.Path("fresh_mari_conversation.mp3")
+          y,sr=sf.read(wav,dtype="float32",always_2d=True)
+          assert sr==24000 and y.shape[1]==1 and len(y)>24000
+          receipt={
+              "status":"GENERATED",
+              "fresh_text":open("response_text.txt").read(),
+              "conversation_plan_sha256":hashlib.sha256(pathlib.Path("conversation_plan.json").read_bytes()).hexdigest(),
+              "wav_sha256":hashlib.sha256(wav.read_bytes()).hexdigest(),
+              "mp3_sha256":hashlib.sha256(mp3.read_bytes()).hexdigest(),
+              "sample_rate_hz":sr,
+              "channels":1,
+              "duration_s":len(y)/sr,
+              "renderer":"Mari Voice v1 pinned Qwen CustomVoice xvector route",
+              "generic_tts_fallback":False,
+          }
+          pathlib.Path("fresh_mari_conversation_receipt.json").write_text(json.dumps(receipt,indent=2))
+          print(json.dumps(receipt,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-fresh-conversation-sample-20260919
+          path: |
+            fresh_mari_conversation.wav
+            fresh_mari_conversation.mp3
+            fresh_mari_conversation_receipt.json
+            conversation_plan.json
+            render_meta.json
+          retention-days: 14
+          compression-level: 0
