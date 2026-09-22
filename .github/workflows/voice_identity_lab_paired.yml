@@ -1,0 +1,116 @@
+name: sealed-audio-matched-comparisons
+on:
+  push:
+    branches: [voice-identity-lab-sealed-20260922]
+    paths: [voice_lab_pairing/**, .github/workflows/voice_identity_lab_paired.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
+    env:
+      SHARD: ${{ matrix.shard }}
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+      OPENBLAS_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare pinned isolated renderer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p private/results private/logs sealed
+          sudo apt-get update -qq > private/logs/apt.log 2>&1
+          sudo apt-get install -y -qq build-essential libopenblas-dev ffmpeg git curl >> private/logs/apt.log 2>&1
+          python -m pip install numpy soundfile scipy cryptography > private/logs/pip_core.log 2>&1
+          curl -fsSL --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            https://api.github.com/repos/ctmckay27/Oahu-Clarity/actions/artifacts/10573250057/zip -o private/source.zip
+          echo 'f03b9acb3dec82735ce3a2087ac9b4d99e718bee8569fc3429ba8a72a29a0b2e  private/source.zip' | sha256sum -c - > private/logs/input_verification.log
+          git init private/engine > private/logs/engine.log 2>&1
+          git -C private/engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C private/engine fetch --depth 1 origin e391ec5467b0218eeb175f4888ad65b259d1e7c7 >> private/logs/engine.log 2>&1
+          git -C private/engine checkout --detach FETCH_HEAD >> private/logs/engine.log 2>&1
+          test "$(git -C private/engine rev-parse HEAD)" = e391ec5467b0218eeb175f4888ad65b259d1e7c7
+          make -C private/engine blas SIMD=portable >> private/logs/engine.log 2>&1
+          private/engine/qwen_tts --caps > private/results/engine_capabilities.txt 2>&1
+          private/engine/qwen_tts --self-test > private/results/engine_self_test.txt 2>&1
+          sed 's|/resolve/main|/resolve/0c0e3051f131929182e2c023b9537f8b1c68adfe|g' private/engine/download_model.sh > private/engine/pinned_download.sh
+          cd private/engine
+          bash pinned_download.sh --model large --dir ../model > ../logs/model_download.log 2>&1
+      - name: Render matched conditions
+        shell: bash
+        run: |
+          python voice_lab_pairing/paired_runner.py generate --shard "$SHARD" --shards 2 > private/logs/generation.log 2>&1
+      - name: Install optional observers
+        continue-on-error: true
+        shell: bash
+        run: |
+          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu > private/logs/pip_torch.log 2>&1
+          python -m pip install speechbrain==1.0.3 huggingface_hub==0.36.0 faster-whisper==1.2.1 > private/logs/pip_observers.log 2>&1
+      - name: Measure without adjudication
+        continue-on-error: true
+        shell: bash
+        run: |
+          python voice_lab_pairing/paired_runner.py evaluate > private/logs/evaluation.log 2>&1
+      - name: Encrypt all output
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,pathlib,shutil,zipfile
+          from cryptography.hazmat.primitives import hashes,serialization
+          from cryptography.hazmat.primitives.asymmetric import padding
+          from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+          public=b'''-----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEArxkV2a902hKk9SqAvJAj
+          dQlKpyrnsSA1suPX4NO3uLI6qUjb2iBxPOU3w+uoQDFN+mStQ200G7hvlwxHS2/l
+          jN1qwVQlzAIBwx1jUKg+MaFb5GV2eQyJqaR8ywnpz5N21XMFEJhwk3Czu1DN8Spy
+          jTYA8iUkz3T+xYwmf3WJDyS2FYy/EPaw9HfUmoDvcL58okGOsjGaO2xoczrIW4yX
+          /cia9BvdMmciA6A+z8idEjjvemIY6MCVA4WRjTfSPgwZTwcIZhQP7p6EttVZ/Ol3
+          2o85Kdaa7etuEqzjcsEbznYVrjyFm7AlWwzaAPZtkS/fWC0teP0lfpkc/DPO7Pri
+          rruDVMpnzMfGPJVS3atncwE2ZuANlpjVWPptjjCMFbZA9ArAkHP1pAhj2bVKZX2k
+          RSfUopEWqvrksly8ImfMztGQ34piRNWVMgBd6DC2kVdhkI1KRn/ZgRBwKVDdRPwR
+          /dxx0Nd/OTD6/q46IAUsDw/HNCwKwQ8QC1zfou81Zc8ZAgMBAAE=
+          -----END PUBLIC KEY-----'''
+          root=pathlib.Path('private');root.mkdir(exist_ok=True)
+          results=root/'results';results.mkdir(exist_ok=True)
+          logs=root/'logs';logs.mkdir(exist_ok=True)
+          for src in ['voice_lab_sealed/runner.py','voice_lab_pairing/paired_runner.py','.github/workflows/voice_identity_lab_paired.yml']:
+              p=pathlib.Path(src)
+              if p.exists():shutil.copy2(p,results/p.name)
+          archive=root/'return.zip'
+          with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
+              for folder in [results,logs]:
+                  for p in sorted(folder.rglob('*')):
+                      if p.is_file():z.write(p,p.relative_to(root))
+          key=AESGCM.generate_key(bit_length=256);nonce=os.urandom(12)
+          aad=('voice-lab-20260922-pairs-shard-'+os.environ['SHARD']).encode()
+          ciphertext=AESGCM(key).encrypt(nonce,archive.read_bytes(),aad)
+          rsa=serialization.load_pem_public_key(public)
+          wrapped=rsa.encrypt(key,padding.OAEP(mgf=padding.MGF1(hashes.SHA256()),algorithm=hashes.SHA256(),label=None))
+          dest=pathlib.Path('sealed');dest.mkdir(exist_ok=True)
+          (dest/'payload.aesgcm').write_bytes(ciphertext)
+          (dest/'key.rsa_oaep').write_bytes(wrapped)
+          (dest/'transport.json').write_text(json.dumps(dict(shard=int(os.environ['SHARD']),batch='matched',nonce_hex=nonce.hex(),associated_data=aad.decode(),ciphertext_sha256=hashlib.sha256(ciphertext).hexdigest(),encryption='AES-256-GCM with RSA-3072-OAEP-SHA256 wrapped ephemeral key',plaintext_artifacts_uploaded=False,certification='NOT_CERTIFIED'),indent=2))
+          archive.unlink()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sealed-voice-lab-matched-${{ matrix.shard }}
+          path: sealed/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
