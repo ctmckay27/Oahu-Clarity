@@ -1,0 +1,67 @@
+name: sealed-audio-backend-comparison
+on:
+  push:
+    branches: [voice-identity-lab-sealed-20260922]
+    paths: [voice_lab_backend/**, .github/workflows/voice_identity_lab_backend.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SHARD: backend
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+      OPENBLAS_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare exact Base checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m pip install pyyaml >/dev/null 2>&1
+          python - <<'PY'
+          import pathlib,subprocess,yaml
+          doc=yaml.safe_load(pathlib.Path('.github/workflows/voice_identity_lab_sealed.yml').read_text())
+          steps=doc['jobs']['research']['steps']
+          command=next(s['run'] for s in steps if s.get('name')=='Prepare isolated renderer and verify historical input')
+          command=command.replace('0c0e3051f131929182e2c023b9537f8b1c68adfe','fd4b254389122332181a7c3db7f27e918eec64e3').replace('--model large','--model base-large')
+          subprocess.run(['bash','-c',command],check=True)
+          PY
+      - name: Generate renderer probes
+        run: python voice_lab_backend/backend_runner.py generate > private/logs/generation.log 2>&1
+      - name: Install observers
+        continue-on-error: true
+        run: |
+          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu > private/logs/pip_torch.log 2>&1
+          python -m pip install speechbrain==1.0.3 huggingface_hub==0.36.0 faster-whisper==1.2.1 > private/logs/pip_observers.log 2>&1
+      - name: Measure without identity judgment
+        continue-on-error: true
+        run: python voice_lab_backend/backend_runner.py evaluate > private/logs/evaluation.log 2>&1
+      - name: Encrypt results using the isolated return key
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,yaml,shutil,os
+          out=pathlib.Path('private/results');out.mkdir(parents=True,exist_ok=True)
+          for s in ['voice_lab_backend/backend_runner.py','.github/workflows/voice_identity_lab_backend.yml']:
+              shutil.copy2(s,out/pathlib.Path(s).name)
+          doc=yaml.safe_load(pathlib.Path('.github/workflows/voice_identity_lab_sealed.yml').read_text())
+          command=next(s['run'] for s in doc['jobs']['research']['steps'] if s.get('name')=='Seal every returned artifact')
+          os.environ['SHARD']='9'
+          subprocess.run(['bash','-c',command],check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sealed-voice-lab-backend
+          path: sealed/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
