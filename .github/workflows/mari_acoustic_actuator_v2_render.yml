@@ -1,0 +1,82 @@
+name: mari-acoustic-actuator-v2-render
+on:
+  push:
+    branches: [mari-acoustic-actuator-v2-render-20260922]
+permissions:
+  contents: read
+  actions: read
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install 'numpy<2' soundfile pytest
+      - name: Regression
+        run: python -m pytest -q omega_voice/presence_v7/tests omega_voice/acoustic_actuator_v2/tests
+      - name: Recover G1-1
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+      - name: Build pinned renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libopenblas-dev git ffmpeg
+          git init engine
+          git -C engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C engine checkout --detach FETCH_HEAD
+          make -C engine blas SIMD=portable
+          cd engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" download_model.sh > pinned_cv_download.sh
+          bash pinned_cv_download.sh --model large --dir customvoice-large
+      - name: Build plans and render blinded envelope
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          from omega_voice.conversational_v6 import new_conversation_state,plan_turn
+          from omega_voice.presence_v7 import compile_presence
+          from omega_voice.conversational_realization_v1 import build_realization_plan
+          from omega_voice.acoustic_actuator_v2 import compile_actuation,envelope_sweep,blind_manifest
+          from omega_voice.acoustic_actuator_v2.renderer import render_actuated,patched_condition
+          s=new_conversation_state(session_id="mari-actuator-v2",listener_id="carl")
+          cp=plan_turn(s,"It sounds much better, but I can still hear the generated voice performing you.",
+            "Yeah. I hear the gap now. Actually, wait. That isn't quite right. I don't want to perform being natural. I want the thought to reach you before the machinery does.",
+            observation={"relationship":{"familiarity":.95,"trust":.92}},
+            intent={"tactic":"clarify","thought":"searching","certainty":.86})
+          pp=compile_presence(cp,semantic_focus=["gap","thought","you"],nonlexical=[])
+          rp=build_realization_plan(cp,base_seed=120031)
+          ap=compile_actuation(rp,pp); bm=blind_manifest(ap)
+          pathlib.Path("plans").mkdir()
+          for n,o in [("conversation",cp),("presence",pp),("realization",rp),("actuator",ap),("blind_manifest_private",bm)]:
+            pathlib.Path(f"plans/{n}.json").write_text(json.dumps(o,indent=2))
+          common=dict(engine="engine/qwen_tts",model="engine/customvoice-large",profile="package/production/MARI_VOICE_V1_PROFILE.bin")
+          pathlib.Path("blind").mkdir()
+          public=[]
+          for item in bm["conditions"]:
+            cond=item["condition"]; bid=item["blind_id"]
+            p=patched_condition(ap,cond["patch"])
+            rec=render_actuated(p,output=f"blind/{bid}.wav",unit_directory=f"blind/{bid}_units",**common)
+            pathlib.Path(f"blind/{bid}.receipt.json").write_text(json.dumps(rec,indent=2))
+            public.append({"blind_id":bid,"audio":f"{bid}.wav"})
+          pathlib.Path("BLIND_LISTENING_MANIFEST.json").write_text(json.dumps({"dimensions":bm["dimensions"],"items":public},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-acoustic-actuator-v2-blind-envelope
+          path: |
+            blind/*.wav
+            blind/*.receipt.json
+            BLIND_LISTENING_MANIFEST.json
+            plans/
+          retention-days: 14
+          compression-level: 0
