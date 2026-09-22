@@ -1,0 +1,24 @@
+name: mari-presence-v7-verify
+on:
+  push:
+    branches: [mari-conversational-realization-v1-20260920]
+    paths:
+      - 'omega_voice/presence_v7/**'
+      - 'omega_voice/conversational_v6/**'
+      - 'omega_voice/conversational_realization_v1/**'
+      - '.github/workflows/mari_presence_v7_verify.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install 'numpy<2' soundfile
+      - name: Presence + conversational + realization regression
+        run: |
+          python -m pytest -q omega_voice/presence_v7/tests omega_voice/conversational_v6/tests
+          python -m unittest discover -s omega_voice/conversational_realization_v1/tests -v
