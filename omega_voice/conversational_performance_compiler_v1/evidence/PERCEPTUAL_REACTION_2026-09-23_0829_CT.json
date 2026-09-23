@@ -1,0 +1,30 @@
+{
+  "schema": "mari-conversational-performance-reaction/1.0",
+  "subject": "Mari404 voice / CPC v1",
+  "observed_at": "2026-09-23T08:29:00-05:00",
+  "source": "Carl ordinary listening reaction in ChatGPT",
+  "reaction": "It's getting a little better. Not really there yet though.",
+  "interpretation": {
+    "positive_delta": true,
+    "magnitude": "small",
+    "target_reached": false,
+    "perceptual_naturalness": "INSUFFICIENT",
+    "localization": "GLOBAL_OR_UNLOCALIZED",
+    "note": "Evidence supports that CPC v1 moved the result in the desired direction, but does not identify one specific failing acoustic dimension."
+  },
+  "routed_components": [
+    "performance_projection",
+    "discourse_turn_integration",
+    "unlocalized_perceptual_mismatch"
+  ],
+  "candidate_next_frontier": [
+    "qualify additional identity-safe native acoustic dimensions beyond finality/continuation",
+    "improve phrase-level timing and prosodic contour from discourse structure",
+    "retain non-starving source release and one-session continuity",
+    "do not auto-apply parameter changes from this reaction alone"
+  ],
+  "automatic_parameter_update": false,
+  "numeric_rating_required": false,
+  "identity_alert": false,
+  "status": "EVIDENCE_CAPTURED_NOT_APPLIED"
+}
