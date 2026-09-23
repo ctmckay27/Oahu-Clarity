@@ -1,0 +1,258 @@
+name: mari-conversational-performance-compiler-v1-verify
+
+on:
+  push:
+    branches: [mari-conversational-performance-compiler-v1-20260923]
+    paths:
+      - 'omega_voice/conversational_performance_compiler_v1/**'
+      - '.github/workflows/mari_conversational_performance_compiler_v1_verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy<2' soundfile
+      - name: Compile
+        run: |
+          python -m py_compile \
+            omega_voice/conversational_performance_compiler_v1/discourse.py \
+            omega_voice/conversational_performance_compiler_v1/turns.py \
+            omega_voice/conversational_performance_compiler_v1/microtiming.py \
+            omega_voice/conversational_performance_compiler_v1/manifold.py \
+            omega_voice/conversational_performance_compiler_v1/respiration.py \
+            omega_voice/conversational_performance_compiler_v1/compiler.py \
+            omega_voice/conversational_performance_compiler_v1/adapter.py \
+            omega_voice/conversational_performance_compiler_v1/renderer.py \
+            omega_voice/conversational_performance_compiler_v1/learning.py \
+            omega_voice/conversational_performance_compiler_v1/runtime.py
+      - name: Regression
+        run: python -m unittest discover -s omega_voice/conversational_performance_compiler_v1/tests -v
+
+  production-context-transfer:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy<2' soundfile scipy-openblas32 transformers tokenizers faster-whisper==1.2.1
+
+      - name: Recover selected Mari Voice v1 production package
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+
+      - name: Build exact pinned one-session renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential git ffmpeg
+          mkdir -p native_root/continuation native_root/models native_root/recovered/production_release
+          cp -R package/production native_root/recovered/production_release/production
+          git init native_root/continuation/engine
+          git -C native_root/continuation/engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C native_root/continuation/engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C native_root/continuation/engine checkout --detach FETCH_HEAD
+          test "$(git -C native_root/continuation/engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          python -m omega_voice.generative_v5.build_native native_root/continuation/engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" native_root/continuation/engine/download_model.sh > native_root/continuation/engine/pinned_cv_download.sh
+          bash native_root/continuation/engine/pinned_cv_download.sh --model large --dir native_root/models/qwen-custom
+          python - <<'PY'
+          import hashlib,json,pathlib,os
+          root=pathlib.Path('native_root/models/qwen-custom')
+          selected=['config.json','model.safetensors','speech_tokenizer/config.json','speech_tokenizer/model.safetensors']
+          files={}
+          for rel in selected:
+              p=root/rel
+              if not p.is_file(): raise SystemExit('missing pinned model file: '+rel)
+              files[rel]=hashlib.sha256(p.read_bytes()).hexdigest()
+          (root/'MARI_PINNED_MODEL_RECEIPT.json').write_text(json.dumps({
+              'revision':os.environ['CV_REV'],'files':files,
+              'scope':'exact files required by Mari CPC v1 production verification'
+          },indent=2)+'\n')
+          PY
+
+      - name: Compile context-sensitive matched-text plans
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          from transformers import AutoTokenizer
+          from omega_voice.conversational_v6 import new_conversation_state,plan_turn
+          from omega_voice.conversational_performance_compiler_v1 import (
+              compile_native_performance,compile_performance_plan,
+          )
+
+          tok=AutoTokenizer.from_pretrained('native_root/models/qwen-custom',local_files_only=True)
+          response="Yeah, I can do that."
+          scenes=[
+            {
+              'id':'ordinary_acceptance',
+              'listener':'Can you handle that today?',
+              'observation':{'relationship':{'familiarity':.96,'trust':.94}},
+              'intent':{'tactic':'share','thought':'known','certainty':.95,
+                        'objective':'accept the task plainly','target':'confirm capability'},
+              'seed':161001,
+            },
+            {
+              'id':'repair_misunderstanding',
+              'listener':"So you're saying you can't do it?",
+              'observation':{'feedback':'misunderstood','relationship':{'familiarity':.96,'trust':.94}},
+              'intent':{'tactic':'correct','thought':'known','certainty':.95,
+                        'objective':"repair the listener's mistaken inference",'target':'confirm capability'},
+              'seed':161001,
+            },
+            {
+              'id':'charger_revision',
+              'listener':"Did you move the charger? I can't find it.",
+              'response':"I think I left it on the desk. Wait, no, I had it with me downstairs. Check beside the couch.",
+              'observation':{'relationship':{'familiarity':.96,'trust':.94}},
+              'intent':{'tactic':'clarify','thought':'searching','certainty':.82,
+                        'objective':'help Carl locate the charger while revising the answer if necessary',
+                        'target':'give the best current location'},
+              'seed':161002,
+            },
+          ]
+          root=pathlib.Path('plans');root.mkdir()
+          index=[]
+          for scene in scenes:
+              state=new_conversation_state(session_id='cpc-'+scene['id'],listener_id='carl')
+              cp=plan_turn(state,scene['listener'],scene.get('response',response),
+                           observation=scene['observation'],intent=scene['intent'])
+              perf=compile_performance_plan(cp)
+              native=compile_native_performance(cp,tok,performance_plan=perf,seed=scene['seed'])
+              d=root/scene['id'];d.mkdir()
+              for name,obj in [('conversation',cp),('performance',perf),('native',native)]:
+                  (d/(name+'.json')).write_text(json.dumps(obj,indent=2))
+              index.append({'id':scene['id'],'seed':scene['seed'],'text':cp['response_text']})
+          a=json.loads((root/'ordinary_acceptance/native.json').read_text())
+          b=json.loads((root/'repair_misunderstanding/native.json').read_text())
+          assert a['native_plan']['text']==b['native_plan']['text']==response
+          assert a['native_plan']['seed']==b['native_plan']['seed']
+          assert a['native_plan']['identity']==b['native_plan']['identity']
+          assert a['native_plan']['trajectory']['weights']!=b['native_plan']['trajectory']['weights']
+          assert all(h['applied_frames']==0 for h in a['native_plan']['release']['holds'])
+          assert all(h['applied_frames']==0 for h in b['native_plan']['release']['holds'])
+          (root/'index.json').write_text(json.dumps(index,indent=2))
+          PY
+
+      - name: Render through CPC native adapter
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          from omega_voice.conversational_performance_compiler_v1 import render_native_performance
+          index=json.loads(pathlib.Path('plans/index.json').read_text())
+          out=pathlib.Path('renders');out.mkdir()
+          for scene in index:
+              p=json.loads(pathlib.Path(f"plans/{scene['id']}/native.json").read_text())
+              r=render_native_performance('native_root',p,out/f"{scene['id']}.wav")
+              pathlib.Path(out/f"{scene['id']}.receipt.full.json").write_text(json.dumps(r,indent=2))
+          PY
+
+      - name: Verify intelligibility, context consequence, and execution invariants
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,re
+          import soundfile as sf
+          from faster_whisper import WhisperModel
+
+          def words(t): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1):
+                      c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+
+          asr=WhisperModel('small.en',device='cpu',compute_type='int8',cpu_threads=4)
+          index=json.loads(pathlib.Path('plans/index.json').read_text())
+          report={
+            'schema':'mari-cpc-v1-technical-verification/1.0',
+            'status':'PASS',
+            'perceptual_naturalness_proven':False,
+            'physical_respiration_actuator_qualified':False,
+            'scenes':[],
+          }
+          hashes={}
+          for scene in index:
+              p=pathlib.Path(f"renders/{scene['id']}.wav")
+              y,sr=sf.read(p,dtype='float32',always_2d=True)
+              assert sr==24000 and y.shape[1]==1 and len(y)>12000
+              segs,_=asr.transcribe(str(p),language='en',beam_size=5,temperature=0,
+                                    condition_on_previous_text=False,vad_filter=False)
+              hyp=' '.join(s.text.strip() for s in segs)
+              wer=ed(words(scene['text']),words(hyp))/max(1,len(words(scene['text'])))
+              assert wer<=.15
+              h=hashlib.sha256(p.read_bytes()).hexdigest();hashes[scene['id']]=h
+              receipt=json.loads(pathlib.Path(f"renders/{scene['id']}.cpc.receipt.json").read_text())
+              assert receipt['identity']['profile_file_sha256']=='9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa'
+              assert receipt['native_execution']['decoder_sessions']==1
+              assert receipt['native_execution']['model_invocations']==1
+              assert receipt['native_execution']['waveform_stitching'] is False
+              assert receipt['render_policy']['source_release_holds'] is False
+              assert receipt['performance']['respiration']['source_tokens_withheld'] is False
+              report['scenes'].append({
+                'id':scene['id'],'text':scene['text'],'sha256':h,
+                'duration_s':len(y)/sr,'wer':wer,'asr_text':hyp,
+              })
+          assert hashes['ordinary_acceptance']!=hashes['repair_misunderstanding']
+          report['same_text_same_seed_same_identity_context_changes_audio']=True
+          pathlib.Path('TECHNICAL_VERIFICATION_RECEIPT.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
+          PY
+
+      - name: Build listening artifact
+        run: |
+          mkdir -p public
+          cp renders/ordinary_acceptance.wav public/C01.wav
+          cp renders/repair_misunderstanding.wav public/C02.wav
+          cp renders/charger_revision.wav public/C03.wav
+          for x in public/*.wav; do ffmpeg -v error -y -i "$x" -ar 48000 -ac 1 -b:a 192k "${x%.wav}.mp3"; done
+          python - <<'PY'
+          import json,pathlib
+          pathlib.Path('public/MANIFEST.json').write_text(json.dumps({
+            'schema':'mari-cpc-v1-listening/1.0',
+            'items':[
+              {'id':'C01','purpose':'ordinary acceptance'},
+              {'id':'C02','purpose':'same words/seed/identity, repair context'},
+              {'id':'C03','purpose':'multi-group search + explicit self-correction'},
+            ],
+            'note':'Technical gates passing does not establish naturalness. These files expose the actual CPC v1 consequence.',
+          },indent=2)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-conversational-performance-compiler-v1
+          path: |
+            public/
+            TECHNICAL_VERIFICATION_RECEIPT.json
+            plans/
+            renders/*.receipt.json
+            renders/*.cpc.receipt.json
+          retention-days: 14
+          compression-level: 0
