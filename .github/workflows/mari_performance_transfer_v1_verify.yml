@@ -52,7 +52,7 @@ jobs:
 
       - name: Install runtime and evaluation dependencies
         run: |
-          python -m pip install 'numpy<2' soundfile scipy requests
+          python -m pip install 'numpy<2' soundfile scipy scipy-openblas32 requests
           python -m pip install --index-url https://download.pytorch.org/whl/cpu -q 'torch==2.5.1' 'torchaudio==2.5.1'
           python -m pip install -q 'speechbrain==1.0.3' 'faster-whisper==1.2.1' 'huggingface-hub>=0.27,<1'
 
