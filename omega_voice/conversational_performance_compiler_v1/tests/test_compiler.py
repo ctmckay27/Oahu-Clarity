@@ -19,7 +19,7 @@ from omega_voice.conversational_performance_compiler_v1 import (
 
 class FakeTokenizer:
     def __call__(self, text, add_special_tokens=False, return_offsets_mapping=False):
-        spans = [m.span() for m in re.finditer(r"\\S+", text)]
+        spans = [m.span() for m in re.finditer(r"\S+", text)]
         out = {"input_ids": [3000 + i for i in range(len(spans))]}
         if return_offsets_mapping:
             out["offset_mapping"] = spans
