@@ -6,7 +6,7 @@ on:
       - mari-native-continuity-release-fix-20260922
     paths:
       - 'omega_voice/native_conversational_continuity_v1/**'
-      - '.github/workflows/mari_native_conversational_continuity_v1_verify.yml'
+      - '.github/workflows/mari_native_continuity_release_fix.yml'
   workflow_dispatch:
 
 permissions:
