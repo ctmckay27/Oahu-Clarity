@@ -1,0 +1,263 @@
+name: mari-unperformed-conversation-v1-verify
+
+on:
+  push:
+    branches: [mari-unperformed-conversation-v1-20260922]
+    paths:
+      - 'omega_voice/unperformed_conversation_v1/**'
+      - '.github/workflows/mari_unperformed_conversation_v1_verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy<2' soundfile
+      - name: Compile
+        run: |
+          python -m py_compile \
+            omega_voice/unperformed_conversation_v1/planner.py \
+            omega_voice/unperformed_conversation_v1/renderer.py
+      - name: Regression
+        run: python -m unittest discover -s omega_voice/unperformed_conversation_v1/tests -v
+
+  production-dialogue:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy<2' soundfile scipy-openblas32 transformers tokenizers faster-whisper==1.2.1
+      - name: Recover selected Mari Voice v1 production package
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+      - name: Build exact pinned one-session renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential git ffmpeg
+          mkdir -p native_root/continuation native_root/models native_root/recovered/production_release
+          cp -R package/production native_root/recovered/production_release/production
+          git init native_root/continuation/engine
+          git -C native_root/continuation/engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C native_root/continuation/engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C native_root/continuation/engine checkout --detach FETCH_HEAD
+          test "$(git -C native_root/continuation/engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          python -m omega_voice.generative_v5.build_native native_root/continuation/engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" native_root/continuation/engine/download_model.sh > native_root/continuation/engine/pinned_cv_download.sh
+          bash native_root/continuation/engine/pinned_cv_download.sh --model large --dir native_root/models/qwen-custom
+          python - <<'PY'
+          import hashlib,json,pathlib,os
+          root=pathlib.Path('native_root/models/qwen-custom')
+          selected=['config.json','model.safetensors','speech_tokenizer/config.json','speech_tokenizer/model.safetensors']
+          files={}
+          for rel in selected:
+              p=root/rel
+              if not p.is_file(): raise SystemExit('missing pinned model file: '+rel)
+              files[rel]=hashlib.sha256(p.read_bytes()).hexdigest()
+          (root/'MARI_PINNED_MODEL_RECEIPT.json').write_text(json.dumps({
+              'revision':os.environ['CV_REV'],'files':files,
+              'scope':'exact files required by Mari unperformed conversation verification'
+          },indent=2)+'\n')
+          PY
+
+      - name: Build ordinary-dialogue matched plans
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          import numpy as np
+          from transformers import AutoTokenizer
+          from omega_voice.conversational_v6 import new_conversation_state,plan_turn
+          from omega_voice.native_conversational_continuity_v1 import compile_native_continuity_plan
+          from omega_voice.unperformed_conversation_v1 import compile_unperformed_conversation
+
+          tokenizer=AutoTokenizer.from_pretrained('native_root/models/qwen-custom',local_files_only=True)
+          scenes=[
+            {
+              'id':'charger',
+              'seed':141001,
+              'listener':"Did you move the charger? I can't find it.",
+              'response':"No, I left it on the desk. Wait, no, I had it with me downstairs. Check beside the couch.",
+              'observation':{'relationship':{'familiarity':.96,'trust':.94}},
+              'intent':{'tactic':'clarify','thought':'searching','certainty':.88,
+                        'objective':'help Carl find the charger without pretending certainty',
+                        'target':'give the best current location and revise it if necessary'},
+            },
+            {
+              'id':'milk',
+              'seed':141002,
+              'listener':"Do we still need milk, or did you get some?",
+              'response':"We need it. I bought eggs and coffee, not milk. If you're already going out, grab one.",
+              'observation':{'relationship':{'familiarity':.96,'trust':.94}},
+              'intent':{'tactic':'share','thought':'known','certainty':.96,
+                        'objective':'answer the grocery question plainly',
+                        'target':'make the missing item clear without overexplaining'},
+            },
+            {
+              'id':'reminder',
+              'seed':141003,
+              'listener':"You knew I was going to forget, didn't you?",
+              'response':"I suspected it. I wasn't going to say anything, but yes, I moved the reminder where you'd actually see it.",
+              'observation':{'relationship':{'familiarity':.98,'trust':.95,'playfulness':.55}},
+              'intent':{'tactic':'tease','thought':'judging','certainty':.91,
+                        'objective':'admit the intervention without turning it into a performance',
+                        'target':'answer directly and keep the exchange light'},
+            },
+          ]
+          root=pathlib.Path('plans');root.mkdir()
+          index=[]
+          for scene in scenes:
+              state=new_conversation_state(session_id='unperformed-'+scene['id'],listener_id='carl')
+              cp=plan_turn(state,scene['listener'],scene['response'],
+                           observation=scene['observation'],intent=scene['intent'])
+              current=compile_native_continuity_plan(cp,tokenizer,seed=scene['seed'])
+              unperformed=compile_unperformed_conversation(cp,tokenizer,seed=scene['seed'])
+              assert np.count_nonzero(np.asarray(current['trajectory']['weights']))>0
+              assert np.count_nonzero(np.asarray(unperformed['native_plan']['trajectory']['weights']))==0
+              d=root/scene['id'];d.mkdir()
+              for name,obj in [('conversation',cp),('current_native',current),('unperformed',unperformed)]:
+                  (d/(name+'.json')).write_text(json.dumps(obj,indent=2))
+              index.append({'id':scene['id'],'seed':scene['seed'],'text':scene['response']})
+          (root/'index.json').write_text(json.dumps(index,indent=2))
+          PY
+
+      - name: Render current versus unperformed
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          from transformers import AutoTokenizer
+          from omega_voice.native_conversational_continuity_v1 import render_native_continuity
+          from omega_voice.unperformed_conversation_v1 import render_unperformed
+
+          tokenizer=AutoTokenizer.from_pretrained('native_root/models/qwen-custom',local_files_only=True)
+          out=pathlib.Path('renders');out.mkdir()
+          index=json.loads(pathlib.Path('plans/index.json').read_text())
+          for scene in index:
+              sid=scene['id'];seed=scene['seed']
+              cp=json.loads(pathlib.Path(f'plans/{sid}/conversation.json').read_text())
+              up=json.loads(pathlib.Path(f'plans/{sid}/unperformed.json').read_text())
+              a=render_native_continuity('native_root',cp,tokenizer,out/f'{sid}_current.wav',seed=seed)
+              b=render_unperformed('native_root',up,out/f'{sid}_unperformed.wav')
+              pathlib.Path(out/f'{sid}_current.receipt.json').write_text(json.dumps(a,indent=2))
+              pathlib.Path(out/f'{sid}_unperformed.receipt.json').write_text(json.dumps(b,indent=2))
+          PY
+
+      - name: Verify identity continuity and intelligibility
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,re
+          import numpy as np
+          import soundfile as sf
+          from faster_whisper import WhisperModel
+
+          def words(t): return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1):
+                      c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+
+          model=WhisperModel('small.en',device='cpu',compute_type='int8',cpu_threads=4)
+          index=json.loads(pathlib.Path('plans/index.json').read_text())
+          report={'status':'PASS','scenes':[],'same_text_seed_profile_within_each_pair':True,
+                  'perceptual_conversationality_proven':False}
+          for scene in index:
+              sid=scene['id'];expected=scene['text'];rows=[]
+              hashes=[]
+              for condition in ('current','unperformed'):
+                  p=pathlib.Path(f'renders/{sid}_{condition}.wav')
+                  y,sr=sf.read(p,dtype='float32',always_2d=True)
+                  assert sr==24000 and y.shape[1]==1 and len(y)>24000
+                  segs,_=model.transcribe(str(p),language='en',beam_size=5,temperature=0,
+                                          condition_on_previous_text=False,vad_filter=False)
+                  hyp=' '.join(s.text.strip() for s in segs)
+                  wer=ed(words(expected),words(hyp))/max(1,len(words(expected)))
+                  assert wer<=.15
+                  h=hashlib.sha256(p.read_bytes()).hexdigest();hashes.append(h)
+                  rows.append({'condition':condition,'sha256':h,'duration_s':len(y)/sr,
+                               'asr_text':hyp,'wer':wer})
+              assert len(set(hashes))==2
+              up=json.loads(pathlib.Path(f'plans/{sid}/unperformed.json').read_text())
+              assert up['audibility_gate']['injected_acoustic_controls'] is False
+              assert up['native_plan']['trajectory']['all_injected_weights_zero'] is True
+              assert all(h['applied_frames']==0 for h in up['native_plan']['release']['holds'])
+              report['scenes'].append({'id':sid,'seed':scene['seed'],'text':expected,'audio':rows})
+          pathlib.Path('TECHNICAL_VERIFICATION_RECEIPT.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
+          PY
+
+      - name: Build blinded ordinary-dialogue listening set
+        run: |
+          mkdir -p public
+          # Hidden mapping; public filenames do not identify condition.
+          cp renders/charger_unperformed.wav public/B01.wav
+          cp renders/reminder_current.wav public/B02.wav
+          cp renders/milk_unperformed.wav public/B03.wav
+          cp renders/charger_current.wav public/B04.wav
+          cp renders/reminder_unperformed.wav public/B05.wav
+          cp renders/milk_current.wav public/B06.wav
+          for x in public/*.wav; do ffmpeg -v error -y -i "$x" -ar 48000 -ac 1 -b:a 192k "${x%.wav}.mp3"; done
+          python - <<'PY'
+          import json,pathlib
+          public={
+            'schema':'mari-unperformed-blind-listening/1.0',
+            'instruction':'For each scene, listen for ordinary conversational presence, not expressiveness. Note which clip sounds less performed.',
+            'pairs':[
+              {'scene':'charger correction','items':['B01','B04']},
+              {'scene':'grocery answer','items':['B03','B06']},
+              {'scene':'light admission','items':['B02','B05']},
+            ],
+            'dimensions':['conversationality','performedness','speaker_coherence','situational_fit'],
+            'reveal_excluded_from_public_manifest':True,
+          }
+          reveal={
+            'B01':'charger / unperformed zero-actuation',
+            'B04':'charger / current state-actuated native',
+            'B03':'milk / unperformed zero-actuation',
+            'B06':'milk / current state-actuated native',
+            'B05':'reminder / unperformed zero-actuation',
+            'B02':'reminder / current state-actuated native',
+          }
+          pathlib.Path('public/BLIND_LISTENING_MANIFEST.json').write_text(json.dumps(public,indent=2)+'\n')
+          pathlib.Path('PRIVATE_REVEAL.json').write_text(json.dumps(reveal,indent=2)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-unperformed-conversation-v1-diagnostic
+          path: |
+            public/
+            PRIVATE_REVEAL.json
+            TECHNICAL_VERIFICATION_RECEIPT.json
+            plans/
+            renders/*.receipt.json
+            renders/*.unperformed.receipt.json
+          retention-days: 14
+          compression-level: 0
