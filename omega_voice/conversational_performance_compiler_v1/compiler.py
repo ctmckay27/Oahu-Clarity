@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Tuple
 from ..conversational_v6.runtime import verify_plan as verify_conversation_plan
 from .discourse import compile_thought_groups, resolve_communicative_state
 from .microtiming import compile_microtiming, verify_microtiming
+from .manifold import compile_manifold, verify_manifold
 from .respiration import compile_respiration_contract, verify_respiration_contract
 from .turns import compile_turn_controller, verify_turn_controller
 
@@ -193,6 +194,7 @@ def compile_performance_plan(conversation_plan: Dict[str, Any]) -> Dict[str, Any
     if not groups:
         raise ValueError("performance compiler requires at least one discourse group")
 
+    manifold = compile_manifold(conversation_plan, communicative, groups)
     turn = compile_turn_controller(conversation_plan, communicative)
     microtiming = compile_microtiming(conversation_plan, groups, turn)
     respiration = compile_respiration_contract(microtiming)
@@ -216,6 +218,7 @@ def compile_performance_plan(conversation_plan: Dict[str, Any]) -> Dict[str, Any
         },
         "communicative_state": communicative,
         "thought_groups": groups,
+        "performance_manifold": manifold,
         "group_targets": group_targets,
         "performance_space": performance_space,
         "microtiming": microtiming,
@@ -263,6 +266,7 @@ def verify_performance_plan(plan: Dict[str, Any]) -> bool:
         raise ValueError("Mari identity mismatch")
     if identity.get("identity_changed") is not False:
         raise ValueError("Mari identity changed")
+    verify_manifold(plan["performance_manifold"])
     verify_turn_controller(plan["turn_controller"])
     verify_microtiming(plan["microtiming"])
     verify_respiration_contract(plan["respiration"])
