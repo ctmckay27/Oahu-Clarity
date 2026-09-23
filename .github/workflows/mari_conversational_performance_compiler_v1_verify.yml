@@ -36,11 +36,13 @@ jobs:
             omega_voice/conversational_performance_compiler_v1/discourse.py \
             omega_voice/conversational_performance_compiler_v1/turns.py \
             omega_voice/conversational_performance_compiler_v1/microtiming.py \
+            omega_voice/conversational_performance_compiler_v1/manifold.py \
             omega_voice/conversational_performance_compiler_v1/respiration.py \
             omega_voice/conversational_performance_compiler_v1/compiler.py \
             omega_voice/conversational_performance_compiler_v1/adapter.py \
             omega_voice/conversational_performance_compiler_v1/renderer.py \
-            omega_voice/conversational_performance_compiler_v1/learning.py
+            omega_voice/conversational_performance_compiler_v1/learning.py \
+            omega_voice/conversational_performance_compiler_v1/runtime.py
       - name: Regression
         run: python -m unittest discover -s omega_voice/conversational_performance_compiler_v1/tests -v
 
