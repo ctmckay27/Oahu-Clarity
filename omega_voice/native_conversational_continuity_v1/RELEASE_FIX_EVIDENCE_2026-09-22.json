@@ -1,0 +1,46 @@
+{
+  "schema": "mari-native-continuity-release-fix-evidence/1.0",
+  "date": "2026-09-22",
+  "subject": "MARI_NATIVE_CONVERSATIONAL_CONTINUITY_LAYER_v1",
+  "predecessor_branch": "mari-native-conversational-continuity-v1-20260920",
+  "repair_branch_tested": "mari-native-continuity-release-fix-20260922",
+  "clean_integration_branch": "mari-native-continuity-release-fix-clean-20260922",
+  "diagnosis": {
+    "source_diagnostic_run": 35507991873,
+    "actuator_probe_run": 35532768636,
+    "baseline_native_C_wer": 0.2857142857142857,
+    "no_holds_with_trajectory_wer": 0.02040816326530612,
+    "no_holds_no_direction_wer": 0,
+    "localized_failure": "extra source-token release holds caused late-utterance starvation/premature termination"
+  },
+  "repair": {
+    "policy": "NO_EXTRA_SOURCE_WITHHOLDING_AFTER_STARVATION_EVIDENCE",
+    "legacy_hold_requests": "recorded but not applied",
+    "thought_state_actuation": "measured native acoustic trajectory remains active",
+    "physical_quiet_intake_timing": "unresolved in native route until a non-starving pause actuator is qualified"
+  },
+  "verification": {
+    "workflow_run": 35808842130,
+    "artifact_id": 10728704549,
+    "artifact_name": "mari-native-continuity-release-fix-abc",
+    "artifact_digest": "sha256:aee3426a6a5ad31d58aff77d6ba8953b52e30b104f0371fdc0946a5df93d2689",
+    "result": "PASS",
+    "A_wer": 0,
+    "B_wer": 0,
+    "C_wer": 0,
+    "C_duration_s": 20.96,
+    "C_sha256": "94b1f282dd71aaab3d15d76ebcf455fc515be182da4cb62393aba7f926460c01",
+    "C_decoder_sessions": 1,
+    "C_model_invocations": 1,
+    "C_unit_restarts": 0,
+    "C_waveform_stitching": false,
+    "same_selected_Mari_profile": true,
+    "profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+    "perceptual_authenticity_proven": false
+  },
+  "tested_source_blobs": {
+    "planner_blob_sha": "9c2d7a334dc74826f56eb3bc4997f69150bc6dec",
+    "tests_blob_sha": "ba06cf62a06d818aaeff0e17e9647960c2cc4108"
+  },
+  "proof_ceiling": "Technical continuity and lexical delivery are verified for the tested production case. This does not establish Mari-specific personhood, naturalness, or perceptual authenticity; blind human listening remains required before promotion."
+}
