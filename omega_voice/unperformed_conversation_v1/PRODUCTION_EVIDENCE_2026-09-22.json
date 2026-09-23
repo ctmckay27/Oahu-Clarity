@@ -1,0 +1,84 @@
+{
+  "schema": "mari-unperformed-conversation-evidence/1.0",
+  "subject": "MARI_UNPERFORMED_CONVERSATION_v1",
+  "owner_path": [
+    "Mari404",
+    "Voice",
+    "Conversational Realization",
+    "Unperformed Conversation"
+  ],
+  "date": "2026-09-22",
+  "base_commit": "65eeca9b91714a9170a46efb228c564e675d0705",
+  "implementation_branch": "mari-unperformed-conversation-v1-20260922",
+  "verification": {
+    "workflow_run": 35811714676,
+    "artifact_id": 10729789796,
+    "artifact_name": "mari-unperformed-conversation-v1-diagnostic",
+    "artifact_digest": "sha256:b6aed2f4c658ee58eb8d19dbf4cf8679d8ea6209548a7a11c1808358ebbd6be1",
+    "code_regressions": "PASS",
+    "production_dialogue": "PASS",
+    "same_text_seed_profile_within_each_pair": true,
+    "perceptual_conversationality_proven": false
+  },
+  "contract": {
+    "same_selected_Mari_profile": true,
+    "one_decoder_session": true,
+    "one_model_invocation": true,
+    "waveform_stitching": false,
+    "source_release_holds": false,
+    "categorical_state_to_prosody": false,
+    "relationship_to_performance": false,
+    "injected_trajectory_weights_zero": true,
+    "injected_onset_zero": true,
+    "lexical_revision_preserved": true,
+    "ordinary_dialogue_not_voice_diagnostic_prose": true
+  },
+  "scenes": [
+    {
+      "id": "charger",
+      "seed": 141001,
+      "text": "No, I left it on the desk. Wait, no, I had it with me downstairs. Check beside the couch.",
+      "current": {
+        "sha256": "0337d8788c23cf73eab4805263a4d81376455cb563f596abb89d4ac79a899e54",
+        "duration_s": 8.4,
+        "wer": 0
+      },
+      "unperformed": {
+        "sha256": "dffe9b894bb9ddab633b9900781f49a06e5de630374d037be9472700308a8df9",
+        "duration_s": 8.64,
+        "wer": 0
+      }
+    },
+    {
+      "id": "milk",
+      "seed": 141002,
+      "text": "We need it. I bought eggs and coffee, not milk. If you're already going out, grab one.",
+      "current": {
+        "sha256": "26892a483f595803a2942d92bd8e0a720e80030f1f45707ad4ff3508668d65e1",
+        "duration_s": 6.32,
+        "wer": 0
+      },
+      "unperformed": {
+        "sha256": "1f6221586f3453a57d14f108b3005b83d375709b3b4b0608e236ae7020837ffd",
+        "duration_s": 6.08,
+        "wer": 0
+      }
+    },
+    {
+      "id": "reminder",
+      "seed": 141003,
+      "text": "I suspected it. I wasn't going to say anything, but yes, I moved the reminder where you'd actually see it.",
+      "current": {
+        "sha256": "f728f59d3632aa0ee0d6c7ec0ca0c873deaa91859df6923bcf84164e20bf9511",
+        "duration_s": 7.52,
+        "wer": 0
+      },
+      "unperformed": {
+        "sha256": "144856372cbc9e944669625bd18222419872ed14dc13a6362214f4c96b6d0220",
+        "duration_s": 7.28,
+        "wer": 0
+      }
+    }
+  ],
+  "proof_ceiling": "Technical execution verifies the subtractive route and matched audible divergence. It does not establish that the unperformed condition is more conversational or more Mari-like; that remains a listening judgment."
+}
