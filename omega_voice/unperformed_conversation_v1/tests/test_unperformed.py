@@ -57,7 +57,8 @@ class UnperformedConversationTests(unittest.TestCase):
         p=compile_unperformed_conversation(sample_plan(),FakeTokenizer())
         repair=[e for e in p["audibility_gate"]["events"] if e["gate"]=="LEXICAL_STRUCTURAL"]
         self.assertTrue(repair)
-        self.assertTrue(any("Wait, no" in e["text"] for e in repair))
+        self.assertTrue(any(e["source_thought"]=="correcting" or e["speech_act"]=="repair" for e in repair))
+        self.assertTrue(any(e["text"].strip().lower().startswith("wait") for e in repair))
         self.assertTrue(all(e["injected_acoustic_control"] is False for e in repair))
 
     def test_internal_state_does_not_become_prosody_recipe(self):
