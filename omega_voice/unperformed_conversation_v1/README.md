@@ -44,3 +44,5 @@ This is deliberately subtractive. It does not claim that zero explicit actuation
 Does Mari become more conversational when the coherent carrier is allowed to speak without being directed to perform its internal state?
 
 Any acoustic control added after v1 must be justified by a specific conversational event that cannot survive through wording/structure/native generation alone.
+
+Production verification is fail-closed: technical success does not promote perceptual conversationality without listening evidence.
