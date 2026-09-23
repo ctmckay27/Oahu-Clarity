@@ -1,0 +1,265 @@
+name: mari-performance-transfer-v1-verify
+
+on:
+  push:
+    branches: [mari-performance-transfer-v1-20260922]
+    paths:
+      - 'omega_voice/performance_transfer_v1/**'
+      - 'omega_voice/generative_v5/native.py'
+      - '.github/workflows/mari_performance_transfer_v1_verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  QWEN_C_SHA: e391ec5467b0218eeb175f4888ad65b259d1e7c7
+  CV_REV: 0c0e3051f131929182e2c023b9537f8b1c68adfe
+  PROD_RUN: "35405800719"
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install 'numpy<2' soundfile scipy
+      - name: Compile
+        run: |
+          python -m py_compile \
+            omega_voice/performance_transfer_v1/reference.py \
+            omega_voice/performance_transfer_v1/renderer.py \
+            omega_voice/performance_transfer_v1/observer.py \
+            omega_voice/performance_transfer_v1/fetch_ami_performance_refs.py \
+            omega_voice/generative_v5/native.py
+      - name: Regression
+        run: python -m unittest discover -s omega_voice/performance_transfer_v1/tests -v
+
+  production-transfer:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Install runtime and evaluation dependencies
+        run: |
+          python -m pip install 'numpy<2' soundfile scipy requests
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu -q 'torch==2.5.1' 'torchaudio==2.5.1'
+          python -m pip install -q 'speechbrain==1.0.3' 'faster-whisper==1.2.1' 'huggingface-hub>=0.27,<1'
+
+      - name: Recover selected Mari Voice v1 production package
+        uses: actions/download-artifact@v4
+        with:
+          name: mari-voice-v1-production-xvector
+          github-token: ${{ github.token }}
+          run-id: ${{ env.PROD_RUN }}
+          path: package
+
+      - name: Build exact pinned renderer
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential git ffmpeg
+          mkdir -p native_root/continuation native_root/models native_root/recovered/production_release
+          cp -R package/production native_root/recovered/production_release/production
+          git init native_root/continuation/engine
+          git -C native_root/continuation/engine remote add origin https://github.com/gabriele-mastrapasqua/qwen3-tts.git
+          git -C native_root/continuation/engine fetch --depth 1 origin "$QWEN_C_SHA"
+          git -C native_root/continuation/engine checkout --detach FETCH_HEAD
+          test "$(git -C native_root/continuation/engine rev-parse HEAD)" = "$QWEN_C_SHA"
+          python -m omega_voice.generative_v5.build_native native_root/continuation/engine
+          sed "s|/resolve/main|/resolve/$CV_REV|g" native_root/continuation/engine/download_model.sh > native_root/continuation/engine/pinned_cv_download.sh
+          bash native_root/continuation/engine/pinned_cv_download.sh --model large --dir native_root/models/qwen-custom
+          python - <<'PY'
+          import hashlib,json,pathlib,os
+          root=pathlib.Path('native_root/models/qwen-custom')
+          selected=['config.json','model.safetensors','speech_tokenizer/config.json','speech_tokenizer/model.safetensors']
+          files={}
+          for rel in selected:
+              p=root/rel
+              if not p.is_file(): raise SystemExit('missing pinned model file: '+rel)
+              files[rel]=hashlib.sha256(p.read_bytes()).hexdigest()
+          (root/'MARI_PINNED_MODEL_RECEIPT.json').write_text(json.dumps({
+              'revision':os.environ['CV_REV'],'files':files,
+              'scope':'exact files required by Mari performance-transfer v1 verification'
+          },indent=2)+'\n')
+          PY
+
+      - name: Build deterministic human performance reference bank
+        run: |
+          python -m omega_voice.generative_v5.fetch_ami_annotations reference_bank
+          python -m omega_voice.performance_transfer_v1.fetch_ami_performance_refs reference_bank
+          python - <<'PY'
+          from omega_voice.performance_transfer_v1 import load_reference_bank
+          refs=load_reference_bank('reference_bank/performance_refs/REFERENCE_BANK.json')
+          assert len(refs)==3
+          assert len({r['donor_id'] for r in refs})==3
+          print([(r['donor_id'],r['text']) for r in refs])
+          PY
+
+      - name: Render matched baseline and performance-transfer conditions
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          from omega_voice.generative_v5.native import render
+          from omega_voice.performance_transfer_v1 import load_reference_bank,render_transfer
+
+          refs=load_reference_bank('reference_bank/performance_refs/REFERENCE_BANK.json')
+          targets=[
+            {'id':'correction','seed':151001,
+             'text':"I don't think that's right. Give me a second. The keys are in the kitchen, not the car."},
+            {'id':'admission','seed':151002,
+             'text':"I noticed. I just wasn't going to make a thing out of it unless you asked."},
+          ]
+          out=pathlib.Path('renders');out.mkdir()
+          manifest={'targets':targets,'conditions':[]}
+          for target in targets:
+              tid=target['id'];text=target['text'];seed=target['seed']
+              base=out/f'{tid}_baseline.wav'
+              br=render('native_root',text,base,seed=seed,profile_mode='xvector')
+              pathlib.Path(out/f'{tid}_baseline.receipt.json').write_text(json.dumps(br,indent=2))
+              manifest['conditions'].append({'target':tid,'condition':'baseline','audio':str(base),'seed':seed})
+              for ref in refs:
+                  rid=ref['donor_id']
+                  p=out/f'{tid}_{rid}.wav'
+                  rr=render_transfer('native_root',text=text,reference=ref,output=p,seed=seed)
+                  pathlib.Path(out/f'{tid}_{rid}.receipt.json').write_text(json.dumps(rr,indent=2))
+                  manifest['conditions'].append({'target':tid,'condition':rid,'audio':str(p),'seed':seed})
+          pathlib.Path('RENDER_MANIFEST.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+
+      - name: Verify identity firewall, intelligibility, and acoustic consequence
+        run: |
+          python - <<'PY'
+          import json,pathlib,re
+          import numpy as np,soundfile as sf,torch
+          from math import gcd
+          from scipy.signal import resample_poly
+          from speechbrain.inference.speaker import EncoderClassifier
+          from faster_whisper import WhisperModel
+          from huggingface_hub import HfApi,snapshot_download
+          from omega_voice.performance_transfer_v1 import load_reference_bank
+          from omega_voice.performance_transfer_v1.observer import transfer_observation
+
+          torch.set_num_threads(4)
+          spk=EncoderClassifier.from_hparams(source='speechbrain/spkrec-ecapa-voxceleb',savedir='models/ecapa',run_opts={'device':'cpu'})
+          aid='Systran/faster-whisper-small.en';rev=HfApi().model_info(aid).sha
+          asr=WhisperModel(snapshot_download(aid,revision=rev),device='cpu',compute_type='int8',cpu_threads=4)
+          refs={r['donor_id']:r for r in load_reference_bank('reference_bank/performance_refs/REFERENCE_BANK.json')}
+          manifest=json.loads(pathlib.Path('RENDER_MANIFEST.json').read_text())
+          targets={x['id']:x for x in manifest['targets']}
+          def words(t):return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",t.lower())
+          def ed(a,b):
+              p=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  c=[i]
+                  for j,y in enumerate(b,1):c.append(min(c[-1]+1,p[j]+1,p[j-1]+(x!=y)))
+                  p=c
+              return p[-1]
+          def load16(path):
+              y,sr=sf.read(path,dtype='float32',always_2d=True);y=y.mean(1)
+              g=gcd(sr,16000);return y,resample_poly(y,16000//g,sr//g).astype('float32'),sr
+          def emb(y16):
+              with torch.no_grad():e=spk.encode_batch(torch.from_numpy(y16).float().unsqueeze(0)).squeeze().cpu().numpy()
+              return e/np.linalg.norm(e)
+
+          _,anchor16,_=load16('native_root/recovered/production_release/production/MARI_VOICE_V1_ANCHOR.wav')
+          anchor_e=emb(anchor16)
+          donor_emb={}
+          for rid,ref in refs.items():
+              _,r16,_=load16(ref['audio']);donor_emb[rid]=emb(r16)
+
+          report={'status':'PASS','identity_firewall':'MARI_VOICE_V1_PROFILE_ONLY',
+                  'perceptual_performance_improvement_proven':False,'targets':[]}
+          for tid,target in targets.items():
+              base=pathlib.Path(f'renders/{tid}_baseline.wav')
+              _,b16,_=load16(base);base_sim=float(np.dot(anchor_e,emb(b16)))
+              trow={'id':tid,'text':target['text'],'seed':target['seed'],
+                    'baseline_mari_similarity':base_sim,'conditions':[]}
+              baseline_receipt=json.loads(pathlib.Path(f'renders/{tid}_baseline.receipt.json').read_text())
+              assert baseline_receipt['profile_file_sha256']=='9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa'
+              for rid,ref in refs.items():
+                  p=pathlib.Path(f'renders/{tid}_{rid}.wav')
+                  y,y16,sr=load16(p);out_e=emb(y16)
+                  mari_sim=float(np.dot(anchor_e,out_e))
+                  donor_sim=float(np.dot(donor_emb[rid],out_e))
+                  segs,_=asr.transcribe(y16,language='en',beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+                  hyp=' '.join(s.text.strip() for s in segs)
+                  wer=ed(words(target['text']),words(hyp))/max(1,len(words(target['text'])))
+                  receipt=json.loads(pathlib.Path(f'renders/{tid}_{rid}.receipt.json').read_text())
+                  assert receipt['identity']['speaker_profile_sha256']=='9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa'
+                  assert receipt['identity']['authority']=='MARI_VOICE_V1_PROFILE_ONLY'
+                  assert receipt['identity']['donor_identity_authority'] is False
+                  identity_pass=bool(mari_sim>=.60 and mari_sim>=base_sim-.12)
+                  intelligibility_pass=bool(wer<=.15)
+                  if not identity_pass or not intelligibility_pass:
+                      report['status']='FAILED_BLOCKED'
+                  obs=transfer_observation(base,p,ref['audio'])
+                  trow['conditions'].append({
+                      'donor_id':rid,'mari_similarity':mari_sim,'donor_similarity':donor_sim,
+                      'baseline_mari_similarity':base_sim,'identity_pass':identity_pass,
+                      'wer':wer,'asr_text':hyp,'intelligibility_pass':intelligibility_pass,
+                      'duration_s':len(y)/sr,'observer':obs,
+                  })
+              report['targets'].append(trow)
+          pathlib.Path('TECHNICAL_VERIFICATION_RECEIPT.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
+          if report['status']!='PASS':raise SystemExit('Performance transfer identity/intelligibility firewall failed')
+          PY
+
+      - name: Build blinded listening set
+        run: |
+          set -euo pipefail
+          mkdir -p public
+          # Two four-way sets: baseline + A/B/D donor references. Mapping stays private.
+          cp renders/correction_AMI_ES2002a_A.wav public/P01.wav
+          cp renders/admission_baseline.wav public/P02.wav
+          cp renders/correction_baseline.wav public/P03.wav
+          cp renders/admission_AMI_ES2002a_D.wav public/P04.wav
+          cp renders/correction_AMI_ES2002a_D.wav public/P05.wav
+          cp renders/admission_AMI_ES2002a_A.wav public/P06.wav
+          cp renders/correction_AMI_ES2002a_B.wav public/P07.wav
+          cp renders/admission_AMI_ES2002a_B.wav public/P08.wav
+          for x in public/*.wav; do ffmpeg -v error -y -i "$x" -ar 48000 -ac 1 -b:a 192k "${x%.wav}.mp3"; done
+          python - <<'PY'
+          import json,pathlib
+          public={
+            'schema':'mari-performance-transfer-blind-listening/1.0',
+            'instruction':'Judge only the sound of the performance: believable, authentic, human nuance, good acting, and whether it still sounds like Mari. Do not infer condition from wording; text is matched within each set.',
+            'sets':[
+              {'target':'correction','items':['P01','P03','P05','P07']},
+              {'target':'admission','items':['P02','P04','P06','P08']},
+            ],
+            'dimensions':['believability','authenticity','human_nuance','acting_quality','Mari_identity'],
+            'reveal_excluded':True,
+          }
+          reveal={
+            'P01':'correction / AMI donor A','P03':'correction / baseline','P05':'correction / AMI donor D','P07':'correction / AMI donor B',
+            'P02':'admission / baseline','P04':'admission / AMI donor D','P06':'admission / AMI donor A','P08':'admission / AMI donor B',
+          }
+          pathlib.Path('public/BLIND_LISTENING_MANIFEST.json').write_text(json.dumps(public,indent=2)+'\n')
+          pathlib.Path('PRIVATE_REVEAL.json').write_text(json.dumps(reveal,indent=2)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mari-performance-transfer-v1-diagnostic
+          path: |
+            public/
+            PRIVATE_REVEAL.json
+            TECHNICAL_VERIFICATION_RECEIPT.json
+            RENDER_MANIFEST.json
+            reference_bank/performance_refs/
+            renders/*.receipt.json
+            renders/*.performance-transfer.receipt.json
+          retention-days: 14
+          compression-level: 0
