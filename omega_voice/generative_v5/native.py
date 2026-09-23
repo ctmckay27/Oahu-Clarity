@@ -61,7 +61,7 @@ def verify_runtime(root):
   if sha(model/rel)!=h:raise ValueError('model bytes changed: '+rel)
  return {'build':receipt,'model':prov}
 
-def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None,incremental_text=False,text_release=None,profile_mode='xvector'):
+def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=None,reference=None,performance_reference=None,incremental_text=False,text_release=None,profile_mode='xvector'):
  root=Path(root);out=Path(out);out.parent.mkdir(parents=True,exist_ok=True)
  if out.exists():raise FileExistsError(out)
  if not text.strip() or re.search(r'[\[\]<>]',text):raise ValueError('invalid spoken text')
@@ -74,13 +74,14 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   profile=root/'continuation/graft_recovery/assets/Mari404/Voice/Production/v2.0_2026-09-18/MARI_VOICE_V1_EXPRESSIVE_GRAFT.qvoice'
   if sha(profile)!='fee566c1bc44a31896cd0414905bbcd8ef47731ccad46d42a35b3063e5a744ab':raise ValueError('unselected graft bytes')
   profile_flag='--icl-only'
-  if reference or incremental_text or text_release:raise ValueError('graft combined conditioning is not yet qualified')
+  if reference or performance_reference or incremental_text or text_release:raise ValueError('graft combined conditioning is not yet qualified')
  elif profile_mode!='xvector':raise ValueError('unknown explicit profile mode')
  cmd=[str(engine/'qwen_tts'),'-d',str(model),'--load-voice',str(profile),profile_flag,'-l','English','--text',text,'--seed',str(seed),'--temperature','.42','--top-k','40','--top-p','.95','--rep-penalty','1.05','-j4','-o',str(out)]
  reference_record=None
+ performance_reference_record=None
+ if reference and performance_reference:raise ValueError('same-speaker and cross-speaker performance references are mutually exclusive')
  if reference:
-  # This route uses the selected speaker embedding unchanged and places only
-  # an explicitly hash-bound diagnostic recording in the acoustic prefix.
+  # Same-Mari mechanism diagnostic. Reference identity is the selected anchor lineage.
   if teacher_codes:raise ValueError('reference conditioning and forced reconstruction are separate routes')
   if set(reference)!={'audio','text','sha256','source_carrier_sha256','role'}:raise ValueError('incomplete reference provenance')
   ref=Path(reference['audio']);_,refsr,refinfo=inspect_audio(ref)
@@ -88,12 +89,29 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   if refsr!=24000 or not reference['text'].strip() or re.search(r'[\[\]<>]',reference['text']):raise ValueError('invalid reference format or transcript')
   cmd.extend(['--emo-ref',str(ref),'--emo-ref-text',reference['text']])
   reference_record=dict(reference,audio_info=refinfo)
+ if performance_reference:
+  # Cross-speaker performance conditioning. The donor is explicitly NOT Mari
+  # identity; Mari's frozen x-vector remains the only speaker-profile input.
+  if teacher_codes or trajectory or incremental_text or text_release or reference:
+   raise ValueError('performance reference v1 requires isolated whole-utterance x-vector generation')
+  required={'audio','text','sha256','role','license','attribution','source_url','donor_id','identity_authority'}
+  if set(performance_reference)!=required:raise ValueError('incomplete performance-reference provenance')
+  if performance_reference['identity_authority']!='PERFORMANCE_ONLY_NOT_MARI_IDENTITY':
+   raise ValueError('performance donor may not become Mari identity authority')
+  pref=Path(performance_reference['audio']);_,psr,pinfo=inspect_audio(pref)
+  if sha(pref)!=performance_reference['sha256']:raise ValueError('performance reference hash mismatch')
+  if psr!=24000 or not performance_reference['text'].strip() or re.search(r'[\[\]<>]',performance_reference['text']):
+   raise ValueError('invalid performance reference format or transcript')
+  if not performance_reference['license'].strip() or not performance_reference['attribution'].strip() or not performance_reference['source_url'].strip():
+   raise ValueError('performance reference provenance incomplete')
+  cmd.extend(['--emo-ref',str(pref),'--emo-ref-text',performance_reference['text']])
+  performance_reference_record=dict(performance_reference,audio_info=pinfo)
  env={k:v for k,v in os.environ.items() if not k.startswith(('QWEN_','MARI_'))}
  if not isinstance(incremental_text,bool):raise ValueError('incremental text flag must be boolean')
  if incremental_text:
   env['QWEN_TTS_STREAM_LAYOUT']='1';env['QWEN_DUMP_CODE0']=str(out.with_suffix('.code0.txt'))
  if text_release:
-  if not incremental_text or reference or teacher_codes:raise ValueError('text release requires explicit incremental non-ICL free generation')
+  if not incremental_text or reference or performance_reference or teacher_codes:raise ValueError('text release requires explicit incremental non-ICL free generation')
   from .text_release import read_release
   read_release(text_release)
   env['MARI_TEXT_RELEASE']=str(Path(text_release).resolve());env['MARI_TEXT_RELEASE_AUDIT']=str(out.with_suffix('.release.csv'))
@@ -113,6 +131,8 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
  if incremental_text and not re.search(r'stream_common=\d+, trailing_text=[1-9][0-9]*',r.stderr):raise RuntimeError('incremental text layout did not enter native renderer')
  if reference and ('Emotion-by-example:' not in r.stderr or not re.search(r'icl_codes=[1-9][0-9]*',r.stderr)):
   raise RuntimeError('reference conditioning did not enter native renderer; output is not admitted')
+ if performance_reference and ('Emotion-by-example:' not in r.stderr or not re.search(r'icl_codes=[1-9][0-9]*',r.stderr)):
+  raise RuntimeError('performance conditioning did not enter native renderer; output is not admitted')
  if profile_mode=='expressive_graft':verify_graft_log(r.stderr)
  if teacher_codes and f'teacher-forcing replay: {len(codes)} reference frames' not in r.stderr:raise RuntimeError('teacher forcing did not enter renderer')
  _,_,audio=inspect_audio(out)
@@ -123,7 +143,7 @@ def render(root,text,out,seed=88000,trajectory=None,capture=False,teacher_codes=
   if len(seq)!=expected:raise RuntimeError('capture/frame count mismatch')
   capture_info={'frames':len(seq),'sha256':sha(out.with_suffix('.qseq'))}
  record={'role':'native generative diagnostic','command':cmd,'explicit_environment':{k:v for k,v in env.items() if k.startswith(('QWEN_','MARI_'))},'audio':audio,'text':text,'seed':seed,'elapsed_wall_s':time.monotonic()-start,'binary_sha256':receipt['binary_sha256'],'prose_instructions':False,'trajectory_sha256':sha(trajectory) if trajectory else None}
- record.update(runtime_lock=lock,capture=capture_info,reference=reference_record,profile_mode=profile_mode,profile_file_sha256=sha(profile))
+ record.update(runtime_lock=lock,capture=capture_info,reference=reference_record,performance_reference=performance_reference_record,profile_mode=profile_mode,profile_file_sha256=sha(profile),speaker_identity_authority='MARI_VOICE_V1_PROFILE_ONLY')
  if incremental_text:
   codes=out.with_suffix('.code0.txt')
   if not codes.is_file() or not codes.stat().st_size:raise RuntimeError('incremental token evidence absent')
