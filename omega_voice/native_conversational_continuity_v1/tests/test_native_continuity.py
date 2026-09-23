@@ -59,16 +59,18 @@ class NativeContinuityTests(unittest.TestCase):
         self.assertEqual(native["kv_cache_resets"],0)
         self.assertNotIn("seed",plan["units"][0])
 
-    def test_release_is_monotonic_and_source_bound(self):
+    def test_release_is_monotonic_source_bound_and_nonstarving(self):
         plan=compile_native_continuity_plan(conversation_plan(),FakeTokenizer())
         frames=plan["release"]["earliest_frames"]
-        self.assertEqual(frames[0],0)
+        token_count=plan["tokenizer"]["token_count"]
+        self.assertEqual(frames,[0]+list(range(token_count)))
+        self.assertEqual(plan["release"]["policy"],"NO_EXTRA_SOURCE_WITHHOLDING_AFTER_STARVATION_EVIDENCE")
+        self.assertTrue(plan["release"]["legacy_hold_requests_recorded_not_applied"])
         self.assertTrue(all(a<=b for a,b in zip(frames,frames[1:])))
-        searching=[h for h in plan["release"]["holds"] if h["thought"]=="searching"]
-        correcting=[h for h in plan["release"]["holds"] if h["thought"]=="correcting"]
-        self.assertTrue(searching)
-        self.assertTrue(correcting)
-        self.assertTrue(any(h["requested_frames"]>=2 for h in searching+correcting))
+        holds=plan["release"]["holds"]
+        self.assertTrue(any(h["requested_frames"]>=2 for h in holds))
+        self.assertTrue(all(h["applied_frames"]==0 for h in holds))
+        self.assertTrue(all(h["status"]=="RECORDED_NOT_APPLIED" for h in holds))
 
     def test_native_weights_are_local_and_bounded(self):
         plan=compile_native_continuity_plan(conversation_plan(),FakeTokenizer())
@@ -90,6 +92,8 @@ class NativeContinuityTests(unittest.TestCase):
         self.assertFalse(laws["style_prompting"])
         self.assertFalse(laws["random_humanization"])
         self.assertTrue(laws["unsupported_dimensions_remain_unrealized"])
+        self.assertFalse(laws["source_release_holds"])
+        self.assertFalse(laws["physical_quiet_intake_via_source_withholding"])
 
     def test_packets_round_trip(self):
         plan=compile_native_continuity_plan(conversation_plan(),FakeTokenizer())
