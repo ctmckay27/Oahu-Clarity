@@ -15,6 +15,8 @@ from .adapter import (
 from .renderer import RECEIPT_SCHEMA, render_native_performance
 from .learning import capture_reaction, new_learning_state, append_reaction
 from .respiration import qualification_candidate
+from .manifold import compile_manifold, verify_manifold
+from .runtime import plan_native_turn, render_planned_turn, commit_actual_delivery, record_ordinary_reaction
 
 __all__ = [
     "SCHEMA",
@@ -31,4 +33,10 @@ __all__ = [
     "new_learning_state",
     "append_reaction",
     "qualification_candidate",
+    "compile_manifold",
+    "verify_manifold",
+    "plan_native_turn",
+    "render_planned_turn",
+    "commit_actual_delivery",
+    "record_ordinary_reaction",
 ]
