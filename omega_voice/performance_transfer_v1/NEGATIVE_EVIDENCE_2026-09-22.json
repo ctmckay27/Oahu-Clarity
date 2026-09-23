@@ -1,0 +1,135 @@
+{
+  "schema": "mari-performance-transfer-negative-evidence/1.0",
+  "subject": "MARI_PERFORMANCE_TRANSFER_v1",
+  "date": "2026-09-22",
+  "status": "IMPLEMENTED_DIAGNOSTIC__FAILED_BLOCKED_BY_SPEAKER_IDENTITY_ENTANGLEMENT",
+  "base_commit": "b7e068fa90e1c27e98cdca5a48d03e97dfeee45c",
+  "implementation_branch": "mari-performance-transfer-v1-20260922",
+  "renderer": {
+    "engine_revision": "e391ec5467b0218eeb175f4888ad65b259d1e7c7",
+    "model_revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+    "mari_profile_sha256": "9c49146ae2bd3c5a32c686ad1705fd912391af4a39db0d63e9dc353640d304fa",
+    "channel": "cross-speaker --emo-ref acoustic prefix while retaining Mari x-vector",
+    "intended_identity_authority": "MARI_VOICE_V1_PROFILE_ONLY"
+  },
+  "references": {
+    "source": "AMI Meeting Corpus ES2002a",
+    "license": "CC BY 4.0",
+    "attribution": "AMI Meeting Corpus, University of Edinburgh, https://groups.inf.ed.ac.uk/ami/corpus/",
+    "selection_rule": "one deterministic medium-length lexical dialogue act per A/B/D; no Mari-similarity or output-quality selection",
+    "donors": [
+      {
+        "donor_id": "AMI_ES2002a_A",
+        "text": "so um fish was a natural choice .",
+        "duration_s": 2.81
+      },
+      {
+        "donor_id": "AMI_ES2002a_B",
+        "text": "Do you want to introduce yourself again ?",
+        "duration_s": 2.87
+      },
+      {
+        "donor_id": "AMI_ES2002a_D",
+        "text": "Boy , let me tell you .",
+        "duration_s": 2.89
+      }
+    ]
+  },
+  "verification": {
+    "workflow_run": 35813270301,
+    "production_job_id": 107029327849,
+    "code_and_provenance_tests": "PASS",
+    "renderer_build": "PASS",
+    "reference_bank_build": "PASS",
+    "all_8_renders_completed": true,
+    "identity_intelligibility_gate": "FAILED_BLOCKED",
+    "blind_listening_artifact_published": false,
+    "reason": "all six donor-conditioned outputs failed Mari speaker-identity admission"
+  },
+  "targets": [
+    {
+      "id": "correction",
+      "text": "I don't think that's right. Give me a second. The keys are in the kitchen, not the car.",
+      "seed": 151001,
+      "baseline_mari_similarity": 0.7749754786491394,
+      "conditions": [
+        {
+          "donor_id": "AMI_ES2002a_A",
+          "mari_similarity": 0.17850954830646515,
+          "donor_similarity": 0.35374608635902405,
+          "identity_pass": false,
+          "wer": 0.05555555555555555,
+          "duration_s": 5.92
+        },
+        {
+          "donor_id": "AMI_ES2002a_B",
+          "mari_similarity": 0.387334942817688,
+          "donor_similarity": 0.2669423818588257,
+          "identity_pass": false,
+          "wer": 0,
+          "duration_s": 7.92
+        },
+        {
+          "donor_id": "AMI_ES2002a_D",
+          "mari_similarity": 0.3652830719947815,
+          "donor_similarity": -0.004557142034173012,
+          "identity_pass": false,
+          "wer": 0,
+          "duration_s": 8.88
+        }
+      ]
+    },
+    {
+      "id": "admission",
+      "text": "I noticed. I just wasn't going to make a thing out of it unless you asked.",
+      "seed": 151002,
+      "baseline_mari_similarity": 0.7446339130401611,
+      "conditions": [
+        {
+          "donor_id": "AMI_ES2002a_A",
+          "mari_similarity": 0.14932632446289062,
+          "donor_similarity": 0.3896216154098511,
+          "identity_pass": false,
+          "wer": 0,
+          "duration_s": 6.08
+        },
+        {
+          "donor_id": "AMI_ES2002a_B",
+          "mari_similarity": 0.4935522675514221,
+          "donor_similarity": 0.20797878503799438,
+          "identity_pass": false,
+          "wer": 0,
+          "duration_s": 5.84
+        },
+        {
+          "donor_id": "AMI_ES2002a_D",
+          "mari_similarity": 0.05333533510565758,
+          "donor_similarity": 0.48780161142349243,
+          "identity_pass": false,
+          "wer": 0,
+          "duration_s": 7.36
+        }
+      ]
+    }
+  ],
+  "finding": {
+    "established": [
+      "The native cross-speaker acoustic-reference route has strong acoustic consequence.",
+      "Target lexical intelligibility can remain high under that conditioning.",
+      "Supplying Mari's frozen x-vector does not prevent the acoustic-reference route from strongly changing speaker identity.",
+      "The current --emo-ref route is too speaker-entangled to serve as identity-safe performance transfer."
+    ],
+    "not_established": [
+      "Whether any failed conditioned clip has better acting or conversational believability.",
+      "Whether performance transfer as a general concept is impossible.",
+      "Whether a speaker-invariant or explicitly disentangled performance representation would fail."
+    ]
+  },
+  "decision": {
+    "promotion": "REJECTED",
+    "merge_into_current_voice_line": false,
+    "blind_human_listening": "WITHHELD_BECAUSE_IDENTITY_GATE_FAILED",
+    "next_architecture_candidate": "extract/learn speaker-invariant performance representation across multiple human speakers, then condition Mari through a channel explicitly orthogonalized against speaker identity rather than raw acoustic prefix conditioning"
+  },
+  "proof_ceiling": "This experiment rejects this specific raw cross-speaker acoustic-prefix route for Mari performance transfer. It does not reject the broader goal of transferring performance separately from speaker identity."
+}
