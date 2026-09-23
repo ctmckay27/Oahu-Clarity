@@ -129,26 +129,32 @@ def _assign_tokens(located: List[Dict[str,Any]], offsets: List[Tuple[int,int]]) 
 
 
 def _compile_release_frames(units: List[Dict[str,Any]], token_count: int) -> Tuple[List[int],List[Dict[str,Any]]]:
-    # Packet contains N token pairs plus EOS. Token zero is prefilled at time zero;
-    # later tokens become available at most one per native codec frame.
+    # Evidence-bounded repair, 2026-09-22:
+    # delaying lexical source tokens at represented thought boundaries can starve
+    # the live decoder late in an utterance and provoke premature EOS. Production
+    # probe evidence showed the same frozen Mari profile/seed/engine improved from
+    # WER 0.285714 to 0.020408 when these extra holds were removed, while one-session
+    # continuity and the measured acoustic trajectory remained active.
+    #
+    # Source availability therefore advances monotonically at one token per native
+    # codec frame with no additional semantic/respiratory withholding. Thought
+    # state remains causally represented through the native acoustic trajectory.
+    # Physical quiet-intake timing is recorded below as an unapplied request until
+    # a non-starving native pause mechanism is qualified.
     frames=[0]+list(range(token_count))
-    holds=[];cumulative=0
-    for pos,unit in enumerate(units):
+    holds=[]
+    for unit in units:
         thought=unit.get("thought")
         if thought not in THOUGHT_HOLD_FRAMES: raise ValueError("unsupported thought state: "+str(thought))
         quiet=float(unit.get("quiet_intake_before_s",0.0) or 0.0)
         if not math.isfinite(quiet) or quiet<0 or quiet>1.5: raise ValueError("invalid physical quiet-intake duration")
         requested=max(THOUGHT_HOLD_FRAMES[thought],int(math.ceil(quiet/FRAME_S)))
-        # The first source token must remain available at time zero. Its thought
-        # state is carried by MTR2 onset conditioning instead of a release delay.
-        applied=0 if unit["token_start"]==0 else requested
-        if applied:
-            cumulative+=applied
-            for i in range(unit["token_start"],len(frames)): frames[i]+=applied
         holds.append({
             "unit_index":unit["index"],"thought":thought,"token_start":unit["token_start"],
-            "requested_frames":requested,"applied_frames":applied,"cumulative_frames":cumulative,
-            "cause":"represented thought boundary and/or physical quiet-intake requirement",
+            "requested_frames":requested,"applied_frames":0,"cumulative_frames":0,
+            "cause":"legacy represented thought boundary and/or physical quiet-intake request",
+            "status":"RECORDED_NOT_APPLIED",
+            "reason":"source-token holds caused verified late-utterance starvation; timing must use a non-starving actuator",
         })
     for a,b in zip(frames,frames[1:]):
         if b<a: raise RuntimeError("release chronology became nonmonotonic")
@@ -230,7 +236,9 @@ def compile_native_continuity_plan(
             "token_span":[u["token_start"],u["token_end"]],
             "quiet_intake_before_s":u.get("quiet_intake_before_s",0.0),
         } for u in units],
-        "release":{"earliest_frames":release_frames,"holds":holds,"frame_period_s":FRAME_S},
+        "release":{"earliest_frames":release_frames,"holds":holds,"frame_period_s":FRAME_S,
+                   "policy":"NO_EXTRA_SOURCE_WITHHOLDING_AFTER_STARVATION_EVIDENCE",
+                   "legacy_hold_requests_recorded_not_applied":True},
         "trajectory":{
             "frame_count":len(weights),"weights":weights[:,0].tolist(),
             "onset":onset.tolist(),"segments":segments,
@@ -247,8 +255,10 @@ def compile_native_continuity_plan(
             "waveform_stitching":False,"style_prompting":False,
             "random_humanization":False,"fake_breath_audio":False,
             "unsupported_dimensions_remain_unrealized":True,
+            "source_release_holds":False,
+            "physical_quiet_intake_via_source_withholding":False,
         },
-        "proof_ceiling":"Native continuity and causal actuation are executable; person-like authenticity remains a listening claim.",
+        "proof_ceiling":"Native continuity and measured trajectory actuation are executable. Source-token holds are disabled after starvation evidence; physical quiet-intake timing remains unresolved in this route. Person-like authenticity remains a listening claim.",
     }
     plan["plan_hash"]=digest(plan)
     return plan
