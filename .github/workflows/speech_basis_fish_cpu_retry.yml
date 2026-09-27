@@ -1,0 +1,70 @@
+name: speech-basis-fish-cpu-repair
+on:
+  push:
+    branches: [speech-basis-family-probe-20260926]
+    paths: ['.github/workflows/speech_basis_fish_cpu_retry.yml']
+permissions:
+  contents: read
+  actions: read
+env:
+  PYTHONUNBUFFERED: '1'
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DISABLE_XET: '1'
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  OPENBLAS_NUM_THREADS: '4'
+  TOKENIZERS_PARALLELISM: 'false'
+jobs:
+  repair-and-render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '35405800719'
+          name: mari-voice-v1-production-xvector
+          path: package
+      - name: Install pinned CPU source
+        run: |
+          mkdir -p output
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg sox libsox-dev libsndfile1 build-essential portaudio19-dev
+          python -m pip install uv
+          git clone https://github.com/fishaudio/fish-speech.git engine_fish
+          git -C engine_fish checkout --detach 214da3cd841bda85da2496b96cd3c4d7edb1337e
+          cd engine_fish
+          uv sync --extra cpu --no-dev
+          git rev-parse HEAD > ../output/UPSTREAM_COMMIT.txt
+          cp LICENSE ../output/UPSTREAM_LICENSE.txt
+      - name: Apply exact nonpersistent-buffer repair
+        run: |
+          python - <<'PY'
+          import pathlib,hashlib,json
+          p=pathlib.Path('omega_voice/basis_family_probe/family_probe.py')
+          before=p.read_bytes();s=before.decode()
+          needle='    missing=[n for n,p in model.named_parameters() if p.is_meta]'
+          assert s.count(needle)==1
+          replacement="    model.causal_mask=torch.tril(torch.ones(model.config.max_seq_len,model.config.max_seq_len,dtype=torch.bool))\n"+needle
+          s=s.replace(needle,replacement);p.write_text(s)
+          pathlib.Path('output/CPU_REPAIR.json').write_text(json.dumps({'symptom':'only causal_mask remained meta after all checkpoint weights loaded','repair':'recreate the original lower-triangular boolean nonpersistent buffer on CPU','weights_changed':False,'source_sha256_before':hashlib.sha256(before).hexdigest(),'source_sha256_after':hashlib.sha256(p.read_bytes()).hexdigest()},indent=2)+'\n')
+          pathlib.Path('output/executed_family_probe.py').write_bytes(p.read_bytes())
+          PY
+      - name: Execute repaired Fish route
+        run: |
+          set +e
+          timeout --signal=TERM --kill-after=30s 2100s engine_fish/.venv/bin/python omega_voice/basis_family_probe/family_probe.py fish --assets package --out output --work work > output/runner.log 2>&1
+          STATUS=$?
+          printf '{"process_exit":%s,"perceptual_pass_claimed":false}\n' "$STATUS" > output/PROCESS_EXIT.json
+          exit "$STATUS"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: basis-probe-fish-repaired
+          path: output/
+          retention-days: 14
+          compression-level: 0
