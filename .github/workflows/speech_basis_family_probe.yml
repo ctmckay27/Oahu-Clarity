@@ -1,0 +1,185 @@
+name: speech-basis-family-probe
+on:
+  push:
+    branches: [speech-basis-family-probe-20260926]
+    paths: ['.github/workflows/speech_basis_family_probe.yml']
+permissions:
+  contents: read
+  actions: read
+env:
+  PYTHONUNBUFFERED: '1'
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DISABLE_XET: '1'
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  OPENBLAS_NUM_THREADS: '4'
+  TOKENIZERS_PARALLELISM: 'false'
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        family: [native, qwen_reference, f5, fish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Initialize bounded execution receipt
+        run: |
+          mkdir -p output
+          printf '%s\n' '{"scope":"exploratory synthesis, not a voice release","family":"${{ matrix.family }}","training":false,"production_promotion":false}' > output/JOB_SCOPE.json
+          free -h > output/initial-memory.txt
+          df -h > output/initial-disk.txt
+      - name: Recover existing hash-bound reference package
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '35405800719'
+          name: mari-voice-v1-production-xvector
+          path: package
+      - name: System dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg sox libsox-dev libsndfile1 build-essential portaudio19-dev
+          python -m pip install uv
+      - name: Native environment
+        if: matrix.family == 'native'
+        run: python -m pip install 'numpy<2' soundfile scipy-openblas32 'huggingface_hub<1'
+      - name: Torch CPU environment
+        if: matrix.family == 'qwen_reference' || matrix.family == 'f5'
+        run: |
+          python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'numpy<2' 'huggingface_hub<1' soundfile
+      - name: Official Qwen reference API
+        if: matrix.family == 'qwen_reference'
+        run: python -m pip install qwen-tts==0.1.1
+      - name: Pinned F5 source
+        if: matrix.family == 'f5'
+        run: |
+          git clone https://github.com/SWivid/F5-TTS.git engine_f5
+          git -C engine_f5 checkout --detach 283252563dbf91be625e0c27926acfaac449186c
+          python -m pip install -e ./engine_f5
+          git -C engine_f5 rev-parse HEAD > output/UPSTREAM_COMMIT.txt
+          cp engine_f5/LICENSE output/UPSTREAM_LICENSE.txt
+      - name: Pinned Fish CPU source environment
+        if: matrix.family == 'fish'
+        run: |
+          git clone https://github.com/fishaudio/fish-speech.git engine_fish
+          git -C engine_fish checkout --detach 214da3cd841bda85da2496b96cd3c4d7edb1337e
+          cd engine_fish
+          uv sync --extra cpu --no-dev
+          git rev-parse HEAD > ../output/UPSTREAM_COMMIT.txt
+          cp LICENSE ../output/UPSTREAM_LICENSE.txt
+      - name: Execute isolated family and retain every result
+        run: |
+          set +e
+          PY=python
+          if [ '${{ matrix.family }}' = fish ]; then PY="$PWD/engine_fish/.venv/bin/python"; fi
+          timeout --signal=TERM --kill-after=30s 2400s "$PY" omega_voice/basis_family_probe/family_probe.py '${{ matrix.family }}' --assets package --out output --work work > output/runner.log 2>&1
+          STATUS=$?
+          printf '{"process_exit":%s,"timeout_exit_is_124":true,"perceptual_pass_claimed":false}\n' "$STATUS" > output/PROCESS_EXIT.json
+          exit "$STATUS"
+      - name: Record final state
+        if: always()
+        run: |
+          mkdir -p output
+          free -h > output/final-memory.txt
+          df -h > output/final-disk.txt
+          find output -type f -printf '%P %s bytes\n' > output/FILE_LIST.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: basis-probe-${{ matrix.family }}
+          path: output/
+          retention-days: 14
+          compression-level: 0
+  independent-audit:
+    needs: render
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: basis-probe-*
+          path: cohorts
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '35405800719'
+          name: mari-voice-v1-production-xvector
+          path: package
+      - name: Independent CPU analysis dependencies
+        run: |
+          python -m pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'numpy<2' soundfile scipy 'huggingface_hub<1' faster-whisper==1.2.1 speechbrain==1.0.3
+      - name: Audit all audio, without promoting a voice
+        run: |
+          mkdir -p audit
+          python - <<'PY'
+          import hashlib,json,pathlib,re,sys,traceback
+          import numpy as np,soundfile as sf,torch,torchaudio
+          from huggingface_hub import HfApi,snapshot_download
+          from faster_whisper import WhisperModel
+          sys.path.insert(0,'omega_voice/basis_family_probe')
+          from family_probe import assets,digest,write
+          torch.set_num_threads(4)
+          anchor,_=assets(pathlib.Path('package'))
+          root=pathlib.Path('audit')
+          errors=[];encoder=None;asr=None
+          try:
+              rev=HfApi().model_info('Systran/faster-whisper-small.en').sha
+              p=snapshot_download('Systran/faster-whisper-small.en',revision=rev)
+              asr=WhisperModel(p,device='cpu',compute_type='int8',cpu_threads=4)
+              write(root/'ASR_MODEL.json',{'model':'Systran/faster-whisper-small.en','revision':rev})
+          except Exception as e: errors.append({'component':'ASR','error':repr(e)})
+          try:
+              from speechbrain.inference.speaker import EncoderClassifier
+              rev=HfApi().model_info('speechbrain/spkrec-ecapa-voxceleb').sha
+              p=snapshot_download('speechbrain/spkrec-ecapa-voxceleb',revision=rev)
+              encoder=EncoderClassifier.from_hparams(source=p,savedir='ecapa_runtime',overrides={'pretrained_path':p},run_opts={'device':'cpu'})
+              write(root/'SPEAKER_MODEL.json',{'model':'speechbrain/spkrec-ecapa-voxceleb','revision':rev,'scope':'uncalibrated similarity proxy, not Mari recognition'})
+          except Exception as e: errors.append({'component':'speaker_encoder','error':repr(e)})
+          def embed(p):
+              y,sr=sf.read(p,dtype='float32',always_2d=True)
+              y=torch.from_numpy(y.mean(1)).unsqueeze(0)
+              if sr!=16000:y=torchaudio.functional.resample(y,sr,16000)
+              with torch.no_grad():return encoder.encode_batch(y).reshape(-1)
+          def words(s):return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?",s.lower())
+          def dist(a,b):
+              prev=list(range(len(b)+1))
+              for i,x in enumerate(a,1):
+                  cur=[i]
+                  for j,y in enumerate(b,1):cur.append(min(cur[-1]+1,prev[j]+1,prev[j-1]+(x!=y)))
+                  prev=cur
+              return prev[-1]
+          ae=embed(anchor) if encoder else None
+          rows=[]
+          for f in sorted(pathlib.Path('cohorts').rglob('*.wav')):
+              row={'path':str(f),'sha256':digest(f),'human_accepted':False}
+              try:
+                  r=json.loads(f.with_suffix('.json').read_text());y,sr=sf.read(f,always_2d=True)
+                  row.update({'route':r['route'],'case_id':r['id'],'text':r['text'],'seed':r['seed'],'duration_s':len(y)/sr,'sample_rate':sr,'receipt_matches':digest(f)==r['waveform_sha256'],'peak':float(np.max(np.abs(y)))})
+                  if asr:
+                      segs,_=asr.transcribe(str(f),language='en',beam_size=5,temperature=0,condition_on_previous_text=False,vad_filter=False)
+                      hyp=' '.join(s.text.strip() for s in segs);a,b=words(r['text']),words(hyp)
+                      row.update({'asr_text':hyp,'literal_wer':dist(a,b)/max(1,len(a)),'wer_requires_number_and_contraction_review':True})
+                  if encoder:row['anchor_ecapa_cosine']=float(torch.nn.functional.cosine_similarity(ae,embed(f),dim=0))
+              except Exception as e:row['audit_error']=repr(e)
+              rows.append(row);write(root/'AUDIO_AUDIT.json',{'rows':rows,'errors':errors,'scope':'technical evidence only; no listener ratings or automatic promotion'})
+          write(root/'AUDIO_AUDIT.json',{'rows':rows,'errors':errors,'waveforms':len(rows),'scope':'technical evidence only; no listener ratings or automatic promotion'})
+          print(json.dumps({'waveforms':len(rows),'errors':errors}))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: basis-probe-independent-audit
+          path: audit/
+          retention-days: 14
