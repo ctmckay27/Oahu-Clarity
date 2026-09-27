@@ -1,0 +1,90 @@
+name: speech-basis-complete-audit
+on:
+  push:
+    branches: [speech-basis-family-probe-20260926]
+    paths: ['.github/workflows/speech_basis_complete_audit.yml']
+permissions:
+  contents: read
+  actions: read
+env:
+  PYTHONUNBUFFERED: '1'
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  HF_HUB_DISABLE_XET: '1'
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  OPENBLAS_NUM_THREADS: '4'
+jobs:
+  complete-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install independent CPU evaluators
+        run: |
+          python -m pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'numpy<2' soundfile scipy 'huggingface_hub<1' faster-whisper==1.2.1 speechbrain==1.0.3 requests
+      - name: Await bounded source jobs, recording actual terminal states
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p audit
+          python - <<'PY'
+          import os,time,json,pathlib,requests
+          base='https://api.github.com/repos/ctmckay27/Oahu-Clarity/actions'
+          s=requests.Session();s.headers.update({'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          targets={36291907750:['render (native)','render (qwen_reference)','render (f5)','render (fish)'],36292096984:['repair-and-render']}
+          last={}
+          for attempt in range(130):
+              done=True
+              for run,names in targets.items():
+                  response=s.get(f'{base}/runs/{run}/jobs',params={'per_page':100},timeout=30);response.raise_for_status()
+                  jobs=[j for j in response.json()['jobs'] if j['name'] in names]
+                  last[str(run)]=[{'id':j['id'],'name':j['name'],'status':j['status'],'conclusion':j['conclusion']} for j in jobs]
+                  done &= len(jobs)==len(names) and all(j['status']=='completed' for j in jobs)
+              pathlib.Path('audit/SOURCE_JOB_STATES.json').write_text(json.dumps(last,indent=2)+'\n')
+              if done:break
+              time.sleep(10)
+          else:raise SystemExit('Source jobs not terminal within audit wait bound; no completion claim')
+          print(json.dumps(last,indent=2))
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '35405800719'
+          name: mari-voice-v1-production-xvector
+          path: package
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '36291907750'
+          pattern: basis-probe-*
+          path: cohorts
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '36292096984'
+          name: basis-probe-fish-repaired
+          path: cohorts/fish_repaired
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '36291964926'
+          name: basis-external-natural-speech-evidence
+          path: external
+      - name: Audit raw audio and save learned embeddings
+        run: |
+          python omega_voice/basis_family_probe/complete_audit.py
+          mkdir -p audit/source
+          cp omega_voice/basis_family_probe/*.py audit/source/
+          cp .github/workflows/speech_basis*.yml audit/source/
+          python -m pip freeze > audit/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: basis-probe-complete-audit
+          path: audit/
+          retention-days: 14
+          compression-level: 0
