@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: mari404-browser-actuator
+    runtime: docker
+    repo: https://github.com/ctmckay27/Oahu-Clarity
+    branch: automation/mari404-browser-actuator
+    dockerfilePath: ./browser-actuator/Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: ACTUATOR_TOKEN
+        generateValue: true
+      - key: VNC_PASSWORD
+        generateValue: true
