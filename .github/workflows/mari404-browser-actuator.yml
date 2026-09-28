@@ -36,6 +36,40 @@ jobs:
           curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /tmp/cloudflared
           chmod +x /tmp/cloudflared
 
+      - name: Probe existing Mari404ever infrastructure
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "=== UTC ==="
+            date -u
+            echo
+            echo "=== DNS: git.chatgpt-team.site ==="
+            getent hosts git.chatgpt-team.site
+            echo "dns_exit=$?"
+            echo
+            echo "=== Git remote read probe (no interactive auth) ==="
+            GIT_TERMINAL_PROMPT=0 git ls-remote --heads "https://git.chatgpt-team.site/f674afb2-ae18-4aac-8cb9-0e328c40a32d/appgprj_6aa06a5c8a608191a2d5cf5f9ef5543a.git"
+            echo "git_exit=$?"
+            echo
+            echo "=== ChatGPT Sites entry HTTP ==="
+            curl -L -sS -o /dev/null -D - --max-time 20 https://chatgpt.com/sites
+            echo "chatgpt_exit=$?"
+            echo
+            echo "=== Mari404ever public site HTTP ==="
+            curl -L -sS -o /dev/null -D - --max-time 20 https://mari404ever.carlitoesblanco.chatgpt.site/
+            echo "site_exit=$?"
+          } > /tmp/reachability.txt 2>&1
+          cat /tmp/reachability.txt
+
+      - name: Upload reachability evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: mari404-reachability
+          path: /tmp/reachability.txt
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Start scoped browser actuator
         shell: bash
         run: |
