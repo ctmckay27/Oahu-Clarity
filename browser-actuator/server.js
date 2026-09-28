@@ -116,6 +116,7 @@ app.get('/api/click-text',auth,async(req,res)=>{
     res.json({ok:true,url:p.url(),title:await p.title()});
   }catch(e){res.status(500).json({ok:false,error:String(e)});}
 });
+app.get('/api/fill',auth,async(req,res)=>{try{const value=String(req.query.value||'');if(value.length>30000)throw new Error('value too long');const p=await getPage();await p.locator(selector(req.query.selector)).first().fill(value,{timeout:15000});res.json({ok:true});}catch(e){res.status(500).json({ok:false,error:String(e)});}});
 app.get('/api/press',auth,async(req,res)=>{
   try{
     const key=String(req.query.key||'');
