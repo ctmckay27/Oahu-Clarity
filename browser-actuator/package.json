@@ -1,6 +1,6 @@
 {
   "name": "mari404-browser-actuator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
@@ -9,6 +9,6 @@
   "dependencies": {
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
-    "playwright-core": "1.56.1"
+    "playwright": "1.56.1"
   }
 }
